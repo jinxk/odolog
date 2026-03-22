@@ -191,6 +191,69 @@ void main() {
     },
   );
 
+  test(
+    'an override that rewinds the odometer produces no degenerate window',
+    () {
+      final entries = [
+        entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
+        entry(
+          id: 2,
+          odometer: 800,
+          quantity: 25,
+          pricePaid: 2500,
+          odometerOverride: true,
+        ),
+        entry(id: 3, odometer: 1300, quantity: 30, pricePaid: 3000),
+      ];
+
+      final windows = calculator.windows(entries);
+
+      // The rewind from 1000 to 800 closes nothing. The next full fill opens a
+      // window at the rewound fill and closes a sane one over positive distance.
+      expect(windows, hasLength(1));
+      final window = windows.single;
+      expect(window.openingEntryId, 2);
+      expect(window.closingEntryId, 3);
+      expect(window.distance, 500);
+      expect(window.fuelConsumed, 30.0);
+      expect(window.mileage, closeTo(16.6666, 0.0001));
+    },
+  );
+
+  test('the fuel of a skipped span rolls into the next window', () {
+    final entries = [
+      entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
+      entry(
+        id: 2,
+        odometer: 1200,
+        quantity: 10,
+        pricePaid: 1000,
+        fullTank: false,
+      ),
+      entry(
+        id: 3,
+        odometer: 900,
+        quantity: 28,
+        pricePaid: 2800,
+        odometerOverride: true,
+      ),
+      entry(id: 4, odometer: 1400, quantity: 30, pricePaid: 3000),
+    ];
+
+    final windows = calculator.windows(entries);
+    expect(windows, hasLength(1));
+    final window = windows.single;
+    // Opening is the rewound full fill (id 3); its own 28 litres do not count.
+    // The partial's 10 litres from the skipped span carry into this window
+    // alongside the closing fill's 30, for 40 litres over 500 km.
+    expect(window.openingEntryId, 3);
+    expect(window.closingEntryId, 4);
+    expect(window.distance, 500);
+    expect(window.fuelConsumed, 40.0);
+    expect(window.costInWindow, 4000.0);
+    expect(window.mileage, 12.5);
+  });
+
   test('CNG runs the same math with kg in place of litres', () {
     final entries = [
       entry(id: 1, odometer: 0, quantity: 5, pricePaid: 400),
