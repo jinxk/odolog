@@ -95,7 +95,7 @@ void main() {
     required String price,
     bool fullTank = true,
     bool expectOrderError = false,
-    String? expectQuantityLabel,
+    String? expectQuantityUnit,
   }) async {
     final router = GoRouter(
       initialLocation: '/',
@@ -120,8 +120,8 @@ void main() {
     unawaited(router.push('/add'));
     await tester.pumpAndSettle();
 
-    if (expectQuantityLabel != null) {
-      expect(find.text(expectQuantityLabel), findsOneWidget);
+    if (expectQuantityUnit != null) {
+      expect(find.text(expectQuantityUnit), findsOneWidget);
     }
 
     await tester.enterText(find.byKey(const Key('odometerField')), odometer);
@@ -130,13 +130,9 @@ void main() {
     await tester.pump();
 
     if (!fullTank) {
-      await tester.tap(find.text('Optional details'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('fullTankToggle')));
-      await tester.pumpAndSettle();
-      // The flag lives in the form provider, so collapsing the section keeps it
-      // off while shrinking the lazy list back so the save button stays built.
-      await tester.tap(find.text('Optional details'));
+      // The full tank choice is always visible in the fast path now, so no
+      // expander to open first.
+      await tester.tap(find.text('Part fill'));
       await tester.pumpAndSettle();
     }
 
@@ -302,7 +298,7 @@ void main() {
       odometer: '20000',
       quantity: '10',
       price: '900',
-      expectQuantityLabel: 'Quantity (kg)',
+      expectQuantityUnit: 'kg',
     );
     await logRefuel(
       tester,
