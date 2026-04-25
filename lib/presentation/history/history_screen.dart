@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/theme/colors.dart';
+import '../../app/theme/spacing.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
 import '../../domain/value_objects/window_mileage.dart';
 import '../common/empty_state.dart';
 import '../common/formatting.dart';
+import '../common/motion.dart';
 import '../providers/app_providers.dart';
 import '../providers/settings_provider.dart';
 
-/// A reverse chronological timeline of fills for the active vehicle. Partial
-/// fills are marked, since they do not close a mileage window on their own, and
-/// the per window mileage is shown against the fill that closed the window.
+/// A reverse chronological timeline of fills for the active vehicle, grouped
+/// under month headers. Partial fills are marked, since they do not close a
+/// mileage window on their own, and the per window mileage is shown against the
+/// fill that closed the window.
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
@@ -20,17 +24,18 @@ class HistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final vehicle = ref.watch(currentVehicleProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('History')),
-      body: vehicle.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('$error')),
-        data: (vehicle) => vehicle == null
-            ? const EmptyState(
-                icon: Icons.history,
-                title: 'No history yet',
-                message: 'Add a vehicle and log a fill to see it here.',
-              )
-            : _HistoryList(vehicle: vehicle),
+      body: SafeArea(
+        child: vehicle.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(child: Text('$error')),
+          data: (vehicle) => vehicle == null
+              ? const EmptyState(
+                  icon: Icons.history,
+                  title: 'No history yet',
+                  message: 'Add a vehicle and log a fill to see it here.',
+                )
+              : _HistoryList(vehicle: vehicle),
+        ),
       ),
     );
   }
@@ -43,6 +48,10 @@ class _HistoryList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final roles =
+        theme.extension<AppColorRoles>() ??
+        AppColorRoles.of(theme.colorScheme.onSurface, theme.brightness);
     final history = ref.watch(historyProvider(vehicle.id));
     final windows =
         ref.watch(vehicleWindowsProvider(vehicle.id)).value ??
@@ -62,21 +71,67 @@ class _HistoryList extends ConsumerWidget {
           );
         }
         final reversed = items.reversed.toList();
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: reversed.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final item = reversed[index];
-            return _HistoryRow(
+        // Rows carry their own month header when the month changes, so one flat
+        // list stays lazy instead of building every group up front.
+        final children = <Widget>[
+          const EntranceFade(child: _ScreenTitle('History')),
+        ];
+        DateTime? runningMonth;
+        for (var i = 0; i < reversed.length; i++) {
+          final item = reversed[i];
+          final month = DateTime(
+            item.entry.filledAt.year,
+            item.entry.filledAt.month,
+          );
+          final newMonth = runningMonth == null || month != runningMonth;
+          if (newMonth) {
+            runningMonth = month;
+            children.add(
+              Padding(
+                padding: EdgeInsets.only(
+                  top: children.length == 1 ? 8 : AppSpacing.betweenSections,
+                  bottom: 4,
+                ),
+                child: Text(
+                  formatMonth(month),
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+            );
+          } else {
+            // Inset hairline between rows in the same month, stopping short of
+            // the row edges rather than cutting fully across.
+            children.add(Divider(height: 1, color: roles.hairline));
+          }
+          children.add(
+            _HistoryRow(
               vehicle: vehicle,
               item: item,
               window: byClosing[item.entry.id],
               currency: currency,
-            );
-          },
+            ),
+          );
+        }
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+          children: children,
         );
       },
+    );
+  }
+}
+
+/// The left aligned large title that anchors the screen.
+class _ScreenTitle extends StatelessWidget {
+  const _ScreenTitle(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Text(title, style: Theme.of(context).textTheme.headlineMedium),
     );
   }
 }
@@ -97,54 +152,100 @@ class _HistoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final roles =
+        theme.extension<AppColorRoles>() ??
+        AppColorRoles.of(theme.colorScheme.onSurface, theme.brightness);
+    final isDark = theme.brightness == Brightness.dark;
     final unit = unitLabel(vehicle.fuelCategory);
     final entry = item.entry;
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      title: Row(
-        children: [
-          Text(formatDate(entry.filledAt), style: theme.textTheme.titleMedium),
-          const SizedBox(width: 8),
-          if (!entry.fullTank)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.secondary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Partial',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.secondary,
-                ),
-              ),
-            ),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 4),
-          Text(
-            '${formatQuantity(entry.quantity)} $unit, '
-            '${formatMoney(entry.pricePaid, currency)}',
-          ),
-          if (window != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                '${formatMileage(window!.mileage)} '
-                '${mileageUnit(vehicle.fuelCategory)}, '
-                '${formatMoneyPerKm(window!.costPerKm, currency)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.secondary,
-                ),
-              ),
-            ),
-        ],
-      ),
-      trailing: const Icon(Icons.chevron_right),
+    // Amber marks the window mileage where it is legible, on the dark theme's
+    // dark rows. On the light surface amber drops to 1.72:1, so the figure falls
+    // back to a quiet tertiary and leans on its position and tabular weight
+    // instead of colour.
+    final mileageColor = isDark ? AppColors.amber : roles.textTertiary;
+    return InkWell(
       onTap: () => context.push('/entry/${entry.id}', extra: vehicle),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        formatDate(entry.filledAt),
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      if (!entry.fullTank) ...[
+                        const SizedBox(width: 8),
+                        const _PartialPill(),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${formatQuantity(entry.quantity)} $unit, '
+                    '${formatMoney(entry.pricePaid, currency)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: roles.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (window != null) ...[
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formatMileage(window!.mileage),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: mileageColor,
+                    ),
+                  ),
+                  Text(
+                    mileageUnit(vehicle.fuelCategory),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 18, color: roles.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A small teal pill marking a partial fill, which does not close a window.
+class _PartialPill extends StatelessWidget {
+  const _PartialPill();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final color = isDark ? AppColors.tealBright : theme.colorScheme.secondary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: ShapeDecoration(
+        color: color.withValues(alpha: 0.15),
+        shape: const StadiumBorder(),
+      ),
+      child: Text(
+        'Partial',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }

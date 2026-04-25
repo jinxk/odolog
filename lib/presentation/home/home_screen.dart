@@ -3,21 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/colors.dart';
+import '../../app/theme/shapes.dart';
+import '../../app/theme/spacing.dart';
 import '../../app/theme/theme.dart';
+import '../../domain/entities/refuel_entry.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/value_objects/vehicle_stats.dart';
+import '../add_refuel/refuel_args.dart';
 import '../common/empty_state.dart';
 import '../common/formatting.dart';
 import '../common/mileage_trend.dart';
-import '../add_refuel/refuel_args.dart';
+import '../common/motion.dart';
 import '../common/section_header.dart';
 import '../common/stat_card.dart';
+import '../common/trend_delta_chip.dart';
 import '../providers/app_providers.dart';
 import '../providers/settings_provider.dart';
 
-/// The home dashboard: greeting, the hero stat card, quick actions, and the
-/// last fill and this month cards. The centre of gravity is the add refuel
-/// action, reachable here and from the bottom navigation.
+/// The home dashboard: an editorial header, one dominant hero number, the add
+/// refuel action, and the last fill, this month, and trend cards. The centre of
+/// gravity is the add refuel action, reachable here and from the bottom
+/// navigation.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -58,14 +64,22 @@ class _Dashboard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currency = ref.watch(settingsProvider).value?.currencySymbol ?? 'Rs';
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenH,
+        vertical: 8,
+      ),
       children: [
-        _Greeting(vehicle: vehicle),
-        const SizedBox(height: 16),
-        _HeroCard(vehicle: vehicle, currency: currency),
+        _EditorialHeader(vehicle: vehicle),
         const SizedBox(height: 20),
-        _QuickActions(vehicle: vehicle),
-        const SizedBox(height: 8),
+        EntranceFade(
+          child: _HeroCard(vehicle: vehicle, currency: currency),
+        ),
+        const SizedBox(height: AppSpacing.betweenSections),
+        EntranceFade(
+          delay: const Duration(milliseconds: 40),
+          child: _PrimaryActions(vehicle: vehicle),
+        ),
+        const SizedBox(height: AppSpacing.betweenSections),
         _LastFillCard(vehicle: vehicle, currency: currency),
         _ThisMonthCard(vehicle: vehicle, currency: currency),
         _TrendCard(vehicle: vehicle),
@@ -74,51 +88,58 @@ class _Dashboard extends ConsumerWidget {
   }
 }
 
-class _Greeting extends ConsumerWidget {
-  const _Greeting({required this.vehicle});
+/// The screen header: a teal overline over the vehicle name as a large title,
+/// with a switcher chevron only when there is more than one vehicle to switch
+/// between. No container, left aligned, so the name anchors the screen the way
+/// a large title does.
+class _EditorialHeader extends ConsumerWidget {
+  const _EditorialHeader({required this.vehicle});
 
   final Vehicle vehicle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final vehicles = ref.watch(vehicleListProvider).value ?? const [];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('OdoLog', style: theme.textTheme.labelMedium),
-                const SizedBox(height: 2),
-                InkWell(
-                  onTap: vehicles.length > 1
-                      ? () => _openSwitcher(context, ref, vehicles)
-                      : null,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(vehicle.name, style: theme.textTheme.titleLarge),
-                      if (vehicles.length > 1)
-                        const Icon(Icons.arrow_drop_down),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    final hasMany = vehicles.length > 1;
+    // Teal reads at 5.7:1 on the light surface but only 3.2:1 on black, so the
+    // dark theme lifts the overline to the brighter teal.
+    final overlineColor = isDark ? AppColors.tealBright : AppColors.teal;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'OdoLog',
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: overlineColor,
+            fontWeight: FontWeight.w600,
           ),
-          const Icon(Icons.local_gas_station, size: 28),
-        ],
-      ),
+        ),
+        const SizedBox(height: 2),
+        InkWell(
+          onTap: hasMany ? () => _openSwitcher(context, ref, vehicles) : null,
+          borderRadius: BorderRadius.circular(8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  vehicle.name,
+                  style: theme.textTheme.headlineMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (hasMany)
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 28,
+                  color: theme.colorScheme.onSurface,
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -150,6 +171,11 @@ class _Greeting extends ConsumerWidget {
   }
 }
 
+/// The dark hero surface built around a single dominant number: window mileage
+/// as the amber numeral, with cost per km demoted below it. The fill stays dark
+/// ink in the light theme where it floats on a soft shadow, and lifts to
+/// surfaceDark with a hairline in the dark theme where ink on black would
+/// disappear.
 class _HeroCard extends ConsumerWidget {
   const _HeroCard({required this.vehicle, required this.currency});
 
@@ -158,26 +184,33 @@ class _HeroCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    // Fall back to the brightness-appropriate depth when the app theme
+    // extension is absent, so the hero still renders under a bare theme.
+    final depth =
+        theme.extension<AppDepth>() ??
+        (isDark ? AppDepth.dark : AppDepth.light);
     final stats = ref.watch(vehicleStatsProvider(vehicle.id));
-    // The hero keeps its dark ink fill in the light theme, where it floats
-    // against the near white surface. On the true black dark scaffold that same
-    // ink separates at only 1.14:1 and the card boundary disappears, so there
-    // the fill lifts to surfaceDark with an amber tinted hairline to read as a
-    // card without recolouring the numerals.
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final shape = isDark
+        ? ContinuousRectangleBorder(
+            borderRadius: BorderRadius.circular(AppShapes.heroRadius),
+            side: BorderSide(
+              color: depth.heroTopHighlight ?? Colors.transparent,
+            ),
+          )
+        : AppShapes.heroBorder;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.all(AppSpacing.heroPadding),
+      decoration: ShapeDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.ink,
-        borderRadius: BorderRadius.circular(24),
-        border: isDark
-            ? Border.all(color: AppColors.amber.withValues(alpha: 0.24))
-            : null,
+        shape: shape,
+        shadows: depth.heroShadow,
       ),
       child: stats.when(
         loading: () => const SizedBox(
-          height: 120,
+          height: 140,
           child: Center(child: CircularProgressIndicator()),
         ),
         error: (error, _) =>
@@ -201,80 +234,95 @@ class _HeroCard extends ConsumerWidget {
         message: 'Log one more full tank to see your mileage.',
       );
     }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: _HeroFigure(
-            label: 'Mileage',
-            value: formatMileage(window.mileage),
-            unit: mileageUnit(vehicle.fuelCategory),
-            valueColor: AppColors.amber,
-          ),
-        ),
-        Expanded(
-          child: _HeroFigure(
-            label: 'Cost per km',
-            value: '$currency ${window.costPerKm.toStringAsFixed(2)}',
-            unit: '/km',
-            valueColor: AppColors.offWhite,
-          ),
-        ),
-      ],
+    final theme = Theme.of(context);
+    final label = theme.textTheme.labelMedium?.copyWith(
+      color: AppColors.offWhite.withValues(alpha: 0.7),
     );
-  }
-}
-
-class _HeroFigure extends StatelessWidget {
-  const _HeroFigure({
-    required this.label,
-    required this.value,
-    required this.unit,
-    required this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final String unit;
-  final Color valueColor;
-
-  @override
-  Widget build(BuildContext context) {
+    // The trend rides against the vehicle's rolling average, so a fresh figure
+    // that has no average yet, or one that matches it exactly, shows no chip
+    // rather than a misleading zero.
+    final average = stats.averageMileage;
+    final delta = average == null ? 0.0 : window.mileage - average;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            color: AppColors.offWhite,
-            fontSize: 12,
-            letterSpacing: 1,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        // The 56px numeral must never overflow the narrow half of the row on a
-        // 360 to 412dp phone, so it scales down to fit rather than clipping.
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.bottomLeft,
-          child: Text(
-            value,
-            style: heroNumberStyle.copyWith(color: valueColor),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          unit,
-          style: const TextStyle(color: AppColors.offWhite, fontSize: 14),
+        Text('Mileage', style: label),
+        const SizedBox(height: 6),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.bottomLeft,
+                child: CountUpText(
+                  value: window.mileage,
+                  format: formatMileage,
+                  style: heroNumberStyle.copyWith(color: AppColors.amber),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                mileageUnit(vehicle.fuelCategory),
+                style: const TextStyle(
+                  color: AppColors.offWhite,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (delta != 0) ...[
+              const SizedBox(width: 10),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TrendDeltaChip(
+                  delta: delta,
+                  format: formatMileage,
+                  // The hero card is dark in both themes, so the delta always
+                  // uses the dark semantic pair.
+                  positiveColor: AppColors.positiveDark,
+                  negativeColor: AppColors.negativeDark,
+                ),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 6),
         Text(
           'over your last full tank window',
           style: TextStyle(
-            color: AppColors.offWhite.withValues(alpha: 0.7),
-            fontSize: 11,
+            color: AppColors.offWhite.withValues(alpha: 0.55),
+            fontSize: 12,
           ),
+        ),
+        const SizedBox(height: 22),
+        Text('Cost per km', style: label),
+        const SizedBox(height: 4),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            CountUpText(
+              value: window.costPerKm,
+              format: (v) => '$currency ${v.toStringAsFixed(2)}',
+              style: theme.textTheme.displaySmall!.copyWith(
+                color: AppColors.offWhite,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                '/km',
+                style: TextStyle(
+                  color: AppColors.offWhite.withValues(alpha: 0.7),
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -310,89 +358,97 @@ class _HeroMessage extends StatelessWidget {
   }
 }
 
-class _QuickActions extends StatelessWidget {
-  const _QuickActions({required this.vehicle});
+/// One taught primary action and three quiet links. The amber fill marks add
+/// refuel as the thing to do here; history, stats, and vehicles recede to text
+/// links so the eye is not asked to choose between four equal tiles.
+class _PrimaryActions extends StatelessWidget {
+  const _PrimaryActions({required this.vehicle});
 
   final Vehicle vehicle;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    return Column(
       children: [
-        _ActionTile(
-          icon: Icons.add,
-          label: 'Add refuel',
-          highlight: true,
-          onTap: () =>
-              context.push('/add', extra: RefuelArgs(vehicle: vehicle)),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => _openAddRefuel(context, vehicle),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(56),
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Add refuel'),
+          ),
         ),
-        _ActionTile(
-          icon: Icons.directions_car,
-          label: 'Vehicles',
-          onTap: () => context.push('/vehicles'),
-        ),
-        _ActionTile(
-          icon: Icons.history,
-          label: 'History',
-          onTap: () => context.go('/history'),
-        ),
-        _ActionTile(
-          icon: Icons.insights,
-          label: 'Stats',
-          onTap: () => context.go('/stats'),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            _QuietLink(
+              icon: Icons.history,
+              label: 'History',
+              color: onSurface,
+              onTap: () => context.go('/history'),
+            ),
+            _QuietLink(
+              icon: Icons.insights_outlined,
+              label: 'Stats',
+              color: onSurface,
+              onTap: () => context.go('/stats'),
+            ),
+            _QuietLink(
+              icon: Icons.directions_car_outlined,
+              label: 'Vehicles',
+              color: onSurface,
+              onTap: () => context.push('/vehicles'),
+            ),
+          ],
         ),
       ],
     );
   }
+
+  /// Pushes the add refuel form and confirms a committed write with a snack bar,
+  /// the same flow the shell's floating button runs, so the taught path here and
+  /// the everywhere path from the bar behave identically.
+  Future<void> _openAddRefuel(BuildContext context, Vehicle vehicle) async {
+    final saved = await context.push<RefuelEntry?>(
+      '/add',
+      extra: RefuelArgs(vehicle: vehicle),
+    );
+    if (saved != null && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Refuel saved')));
+    }
+  }
 }
 
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
+class _QuietLink extends StatelessWidget {
+  const _QuietLink({
     required this.icon,
     required this.label,
+    required this.color,
     required this.onTap,
-    this.highlight = false,
   });
 
   final IconData icon;
   final String label;
+  final Color color;
   final VoidCallback onTap;
-  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final background = highlight
-        ? AppColors.amber
-        : theme.colorScheme.onSurface.withValues(alpha: 0.06);
-    final foreground = highlight ? AppColors.ink : theme.colorScheme.onSurface;
     return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 72),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: foreground),
-                const SizedBox(height: 6),
-                Text(
-                  label,
-                  style: TextStyle(color: foreground, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+      child: TextButton.icon(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          foregroundColor: color,
+          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
+        icon: Icon(icon, size: 20),
+        label: Text(label),
       ),
     );
   }
@@ -463,6 +519,10 @@ class _LastFillCard extends ConsumerWidget {
   }
 }
 
+/// This month's spend, led by the figure and carrying a delta against last
+/// month so the answer to "am I spending more than usual?" is on the card. Laid
+/// out spend-first rather than as a tile grid so it does not read as a clone of
+/// the last fill card above it.
 class _ThisMonthCard extends ConsumerWidget {
   const _ThisMonthCard({required this.vehicle, required this.currency});
 
@@ -471,13 +531,19 @@ class _ThisMonthCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final roles =
+        theme.extension<AppColorRoles>() ??
+        AppColorRoles.of(theme.colorScheme.onSurface, theme.brightness);
     final monthly = ref.watch(vehicleMonthlyProvider(vehicle.id));
     return monthly.maybeWhen(
       orElse: () => const SizedBox.shrink(),
       data: (byMonth) {
         final now = DateTime.now();
-        final key = DateTime(now.year, now.month);
-        final stats = byMonth[key];
+        final stats = byMonth[DateTime(now.year, now.month)];
+        // DateTime normalises a month of 0 to December of the prior year, so
+        // this reaches last month without a special case in January.
+        final previous = byMonth[DateTime(now.year, now.month - 1)];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -486,19 +552,55 @@ class _ThisMonthCard extends ConsumerWidget {
               child: stats == null
                   ? Text(
                       'No fills this month yet.',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: roles.textSecondary,
+                      ),
                     )
-                  : Wrap(
-                      spacing: 24,
-                      runSpacing: 12,
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        StatTile(
-                          label: 'Spend',
-                          value: formatMoney(stats.totalSpend, currency),
+                        Text('Spend', style: theme.textTheme.labelMedium),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              formatMoney(stats.totalSpend, currency),
+                              style: theme.textTheme.displaySmall,
+                            ),
+                            const SizedBox(width: 12),
+                            if (previous != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: TrendDeltaChip(
+                                  delta: stats.totalSpend - previous.totalSpend,
+                                  format: (m) => formatMoney(m, currency),
+                                  higherIsBetter: false,
+                                  positiveColor: roles.positive,
+                                  negativeColor: roles.negative,
+                                ),
+                              ),
+                          ],
                         ),
-                        StatTile(
-                          label: 'Distance',
-                          value: formatDistance(stats.totalDistance),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.route_outlined,
+                              size: 18,
+                              color: roles.textSecondary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Distance',
+                              style: theme.textTheme.labelMedium,
+                            ),
+                            const Spacer(),
+                            Text(
+                              formatDistance(stats.totalDistance),
+                              style: theme.textTheme.titleLarge,
+                            ),
+                          ],
                         ),
                       ],
                     ),

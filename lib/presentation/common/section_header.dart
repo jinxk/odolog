@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// A small uppercase label that heads a group of cards or rows.
+/// A sentence-case label that heads a group of cards or rows.
+///
+/// Set in the section-title slot at semibold weight rather than uppercased:
+/// hierarchy on a screen comes from the jump between the large title, this, and
+/// the body, so casing does not have to do that work. Uppercase is rationed to
+/// at most one element per screen.
 class SectionHeader extends StatelessWidget {
   const SectionHeader(this.title, {super.key});
 
@@ -11,14 +16,7 @@ class SectionHeader extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: theme.textTheme.labelMedium?.copyWith(
-          letterSpacing: 1,
-          fontWeight: FontWeight.w700,
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-      ),
+      child: Text(title, style: theme.textTheme.titleMedium),
     );
   }
 }

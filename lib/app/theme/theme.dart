@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 import 'colors.dart';
@@ -55,6 +56,15 @@ abstract final class AppTheme {
     return base.copyWith(
       textTheme: _buildTextTheme(base.textTheme, onBackground),
       extensions: [depth, AppColorRoles.of(onBackground, brightness)],
+      // Pushed detail routes slide in horizontally with iOS momentum, which
+      // reads calmer than the default vertical Material fade. The builder still
+      // honours the Android system back gesture.
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       cardTheme: CardThemeData(
         color: card,
         elevation: 0,
