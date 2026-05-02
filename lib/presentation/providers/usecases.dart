@@ -5,8 +5,10 @@ import '../../domain/usecases/delete_refuel.dart';
 import '../../domain/usecases/delete_vehicle.dart';
 import '../../domain/usecases/edit_refuel.dart';
 import '../../domain/usecases/edit_vehicle.dart';
+import '../../domain/usecases/export_data.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
 import '../../domain/usecases/get_vehicle_stats.dart';
+import '../../domain/usecases/import_data.dart';
 import '../../domain/usecases/list_vehicles.dart';
 import '../../domain/usecases/load_fuel_catalog.dart';
 import '../../domain/usecases/log_refuel.dart';
@@ -54,3 +56,15 @@ GetVehicleStats getVehicleStats(Ref ref) => GetVehicleStats(
 @Riverpod(keepAlive: true)
 LoadFuelCatalog loadFuelCatalog(Ref ref) =>
     LoadFuelCatalog(ref.watch(catalogRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+ExportData exportData(Ref ref) => ExportData(
+  ref.watch(vehicleRepositoryProvider),
+  ref.watch(refuelRepositoryProvider),
+);
+
+@Riverpod(keepAlive: true)
+ImportData importData(Ref ref) => ImportData(
+  ref.watch(vehicleRepositoryProvider),
+  ref.watch(refuelRepositoryProvider),
+);

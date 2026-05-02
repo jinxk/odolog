@@ -5,12 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/theme/colors.dart';
 import '../../app/theme/shapes.dart';
 import '../../domain/entities/fuel_variant.dart';
 import '../../domain/entities/refuel_entry.dart';
 import '../../domain/entities/vehicle.dart';
+import '../common/csv_safe_text_formatter.dart';
 import '../common/formatting.dart';
+import '../common/grouped_list.dart';
 import '../providers/app_providers.dart';
 import '../providers/refuel_form_provider.dart';
 import '../providers/settings_provider.dart';
@@ -294,7 +295,7 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     final filledAt = state.filledAt ?? DateTime.now();
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: _GroupedList(
+      child: GroupedList(
         rows: [
           catalog.when(
             loading: () => const ListTile(
@@ -441,6 +442,7 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
         controller: controller,
         textCapitalization: capitalization,
         maxLines: maxLines,
+        inputFormatters: [csvSafeTextFormatter],
         decoration: InputDecoration(labelText: label, border: InputBorder.none),
         onChanged: onChanged,
       ),
@@ -496,36 +498,6 @@ class _SingleDecimalFormatter extends TextInputFormatter {
     if (newValue.text.isEmpty) return newValue;
     if (!_validPartial.hasMatch(newValue.text)) return oldValue;
     return newValue;
-  }
-}
-
-/// An inset grouped list container: one rounded surface holding several rows,
-/// each separated by a hairline that starts past the leading icon rather than
-/// running edge to edge.
-class _GroupedList extends StatelessWidget {
-  const _GroupedList({required this.rows});
-
-  final List<Widget> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    final hairline = Theme.of(context).extension<AppColorRoles>()?.hairline;
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(AppShapes.cardRadius),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0)
-              Divider(height: 1, indent: 56, endIndent: 16, color: hairline),
-            rows[i],
-          ],
-        ],
-      ),
-    );
   }
 }
 
