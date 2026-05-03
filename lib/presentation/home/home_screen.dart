@@ -358,9 +358,9 @@ class _HeroMessage extends StatelessWidget {
   }
 }
 
-/// One taught primary action and three quiet links. The amber fill marks add
-/// refuel as the thing to do here; history, stats, and vehicles recede to text
-/// links so the eye is not asked to choose between four equal tiles.
+/// The one taught primary action. The amber fill marks add refuel as the
+/// thing to do here; history, stats, and vehicles are reached from the bottom
+/// navigation and settings instead, so this card has no other pull on the eye.
 class _PrimaryActions extends StatelessWidget {
   const _PrimaryActions({required this.vehicle});
 
@@ -368,44 +368,14 @@ class _PrimaryActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => _openAddRefuel(context, vehicle),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(56),
-            ),
-            icon: const Icon(Icons.add),
-            label: const Text('Add refuel'),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            _QuietLink(
-              icon: Icons.history,
-              label: 'History',
-              color: onSurface,
-              onTap: () => context.go('/history'),
-            ),
-            _QuietLink(
-              icon: Icons.insights_outlined,
-              label: 'Stats',
-              color: onSurface,
-              onTap: () => context.go('/stats'),
-            ),
-            _QuietLink(
-              icon: Icons.directions_car_outlined,
-              label: 'Vehicles',
-              color: onSurface,
-              onTap: () => context.push('/vehicles'),
-            ),
-          ],
-        ),
-      ],
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: () => _openAddRefuel(context, vehicle),
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+        icon: const Icon(Icons.add),
+        label: const Text('Add refuel'),
+      ),
     );
   }
 
@@ -422,35 +392,6 @@ class _PrimaryActions extends StatelessWidget {
         context,
       ).showSnackBar(const SnackBar(content: Text('Refuel saved')));
     }
-  }
-}
-
-class _QuietLink extends StatelessWidget {
-  const _QuietLink({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: TextButton.icon(
-        onPressed: onTap,
-        style: TextButton.styleFrom(
-          foregroundColor: color,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-        icon: Icon(icon, size: 20),
-        label: Text(label),
-      ),
-    );
   }
 }
 

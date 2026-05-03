@@ -67,9 +67,11 @@ class _StatsBody extends ConsumerWidget {
           );
         }
         return ListView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenH,
-            vertical: 8,
+          padding: const EdgeInsets.only(
+            left: AppSpacing.screenH,
+            right: AppSpacing.screenH,
+            top: 8,
+            bottom: 88,
           ),
           children: [
             const EntranceFade(child: _ScreenTitle('Stats')),
