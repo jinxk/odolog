@@ -1,8 +1,10 @@
 /// Reads and writes the CSV format used for both a full backup and the blank
 /// import template. One file carries both entities: a schema header row, a
 /// `vehicles` section with its own column header, then a `refuels` section
-/// with its own. The schema version is written so a v0.3 column addition has
-/// somewhere to declare itself without breaking a v1 reader.
+/// with its own. The schema version lets the columns grow without breaking
+/// older files: the writer emits version 2 (vehicles gained a claimed mileage
+/// figure and four document expiry dates), and the reader still accepts a
+/// version 1 file, filling the new vehicle fields with null.
 library;
 
 import 'package:fpdart/fpdart.dart';
@@ -18,11 +20,20 @@ import 'csv_grammar.dart';
 /// on, kept in one place so they cannot drift apart from each other.
 abstract final class DataBundleCsvFormat {
   static const schemaTag = 'odolog';
-  static const schemaVersion = '1';
+
+  /// The version the writer emits. The reader accepts every version in
+  /// [supportedVersions].
+  static const schemaVersion = '2';
+
+  /// Versions the reader understands. Version 1 predates the vehicle document
+  /// and claimed mileage columns; its files still import.
+  static const supportedVersions = ['1', '2'];
+
   static const vehiclesSection = 'vehicles';
   static const refuelsSection = 'refuels';
 
-  static const vehicleHeader = [
+  /// The original six vehicle columns, still the shape of a version 1 file.
+  static const vehicleHeaderV1 = [
     'id',
     'name',
     'type',
@@ -30,6 +41,24 @@ abstract final class DataBundleCsvFormat {
     'registrationNo',
     'tankCapacity',
   ];
+
+  /// Version 2 appends the claimed mileage figure and the four document expiry
+  /// dates. Dates are written as ISO 8601, or empty when unset.
+  static const vehicleHeaderV2 = [
+    ...vehicleHeaderV1,
+    'claimedMileage',
+    'insuranceExpiry',
+    'pucExpiry',
+    'rcExpiry',
+    'fitnessExpiry',
+  ];
+
+  /// The header the writer emits: always the current version.
+  static const vehicleHeader = vehicleHeaderV2;
+
+  /// The expected vehicle header for a given file [version].
+  static List<String> vehicleHeaderFor(String version) =>
+      version == '1' ? vehicleHeaderV1 : vehicleHeaderV2;
 
   static const refuelHeader = [
     'id',
@@ -91,6 +120,11 @@ class DataBundleCsvWriter {
     vehicle.fuelCategory.name,
     vehicle.registrationNo ?? '',
     vehicle.tankCapacity?.toString() ?? '',
+    vehicle.claimedMileage?.toString() ?? '',
+    vehicle.insuranceExpiry?.toIso8601String() ?? '',
+    vehicle.pucExpiry?.toIso8601String() ?? '',
+    vehicle.rcExpiry?.toIso8601String() ?? '',
+    vehicle.fitnessExpiry?.toIso8601String() ?? '',
   ];
 
   static List<String> _refuelFields(RefuelEntry entry) => [
@@ -115,6 +149,9 @@ class DataBundleCsvWriter {
     fuelCategory: FuelCategory.petrol,
     registrationNo: 'MH12AB1234',
     tankCapacity: 5.3,
+    claimedMileage: 60,
+    insuranceExpiry: DateTime(2026, 8, 15),
+    pucExpiry: DateTime(2026, 4, 1),
   );
 
   static final _exampleEntry = RefuelEntry(
@@ -170,21 +207,21 @@ class DataBundleCsvReader {
     }
 
     var cursor = 0;
-    _expectSchemaHeader(records[cursor++]);
+    final version = _expectSchemaHeader(records[cursor++]);
 
     _expectSectionMarker(records, cursor, DataBundleCsvFormat.vehiclesSection);
     cursor++;
     _expectHeaderRow(
       records,
       cursor,
-      DataBundleCsvFormat.vehicleHeader,
+      DataBundleCsvFormat.vehicleHeaderFor(version),
       DataBundleCsvFormat.vehiclesSection,
     );
     cursor++;
 
     final vehicles = <Vehicle>[];
     while (cursor < records.length && records[cursor].fields.length != 1) {
-      vehicles.add(_parseVehicle(records[cursor]));
+      vehicles.add(_parseVehicle(records[cursor], version));
       cursor++;
     }
 
@@ -207,7 +244,10 @@ class DataBundleCsvReader {
     return (vehicles: vehicles, entries: entries);
   }
 
-  static void _expectSchemaHeader(CsvRecord record) {
+  /// Validates the schema header row and returns the declared version, which
+  /// the caller threads into vehicle parsing so an older file is read with its
+  /// own column set.
+  static String _expectSchemaHeader(CsvRecord record) {
     if (record.fields.length != 2 ||
         record.fields[0] != DataBundleCsvFormat.schemaTag) {
       throw _CsvFormatException(
@@ -217,17 +257,19 @@ class DataBundleCsvReader {
         ),
       );
     }
-    if (record.fields[1] != DataBundleCsvFormat.schemaVersion) {
+    final version = record.fields[1];
+    if (!DataBundleCsvFormat.supportedVersions.contains(version)) {
       throw _CsvFormatException(
         ValidationFailure(
           field: 'schema',
           reason:
               'Line ${record.line}: file format version '
-              '"${record.fields[1]}" is not supported here, expected '
-              '"${DataBundleCsvFormat.schemaVersion}".',
+              '"$version" is not supported here, expected one of '
+              '${DataBundleCsvFormat.supportedVersions.join(', ')}.',
         ),
       );
     }
+    return version;
   }
 
   static void _expectSectionMarker(
@@ -296,16 +338,17 @@ class DataBundleCsvReader {
     return true;
   }
 
-  static Vehicle _parseVehicle(CsvRecord record) {
+  static Vehicle _parseVehicle(CsvRecord record, String version) {
     const section = DataBundleCsvFormat.vehiclesSection;
+    final header = DataBundleCsvFormat.vehicleHeaderFor(version);
     final fields = record.fields;
-    if (fields.length != DataBundleCsvFormat.vehicleHeader.length) {
+    if (fields.length != header.length) {
       throw _CsvFormatException(
         ValidationFailure(
           field: section,
           reason:
               'Line ${record.line}: expected '
-              '${DataBundleCsvFormat.vehicleHeader.length} fields, found '
+              '${header.length} fields, found '
               '${fields.length}.',
         ),
       );
@@ -327,6 +370,8 @@ class DataBundleCsvReader {
         ),
       );
     }
+    // Version 1 files stop at tankCapacity, so the new fields read back null.
+    final hasV2 = version != '1';
     return Vehicle(
       id: id,
       name: name,
@@ -339,6 +384,46 @@ class DataBundleCsvReader {
         line: record.line,
         section: section,
       ),
+      claimedMileage: hasV2
+          ? _optionalDouble(
+              fields[6],
+              label: 'claimedMileage',
+              line: record.line,
+              section: section,
+            )
+          : null,
+      insuranceExpiry: hasV2
+          ? _optionalDateTime(
+              fields[7],
+              label: 'insuranceExpiry',
+              line: record.line,
+              section: section,
+            )
+          : null,
+      pucExpiry: hasV2
+          ? _optionalDateTime(
+              fields[8],
+              label: 'pucExpiry',
+              line: record.line,
+              section: section,
+            )
+          : null,
+      rcExpiry: hasV2
+          ? _optionalDateTime(
+              fields[9],
+              label: 'rcExpiry',
+              line: record.line,
+              section: section,
+            )
+          : null,
+      fitnessExpiry: hasV2
+          ? _optionalDateTime(
+              fields[10],
+              label: 'fitnessExpiry',
+              line: record.line,
+              section: section,
+            )
+          : null,
     );
   }
 
@@ -512,6 +597,25 @@ class DataBundleCsvReader {
         ValidationFailure(
           field: section,
           reason: 'Line $line: "filledAt" must be an ISO 8601 date and time.',
+        ),
+      );
+    }
+    return value;
+  }
+
+  static DateTime? _optionalDateTime(
+    String raw, {
+    required String label,
+    required int line,
+    required String section,
+  }) {
+    if (raw.isEmpty) return null;
+    final value = DateTime.tryParse(raw);
+    if (value == null) {
+      throw _CsvFormatException(
+        ValidationFailure(
+          field: section,
+          reason: 'Line $line: "$label" must be an ISO 8601 date, or empty.',
         ),
       );
     }

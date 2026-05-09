@@ -79,6 +79,14 @@ void main() {
       // After more details expands the fields read name, registration, tank.
       await tester.enterText(find.byType(TextField).at(2), plain(tankCapacity));
     }
+    // The form grew a claimed mileage field and a Documents section, so the
+    // save button can sit below the lazily built viewport; scroll until it is
+    // in the tree and on screen before tapping.
+    await tester.scrollUntilVisible(
+      find.text('Add vehicle'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Add vehicle'));
     await tester.pumpAndSettle();
     return saved!;

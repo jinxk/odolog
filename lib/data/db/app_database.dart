@@ -10,7 +10,7 @@ class AppDatabase {
   const AppDatabase._();
 
   static const databaseName = 'odolog.db';
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
   /// Opens the database, running configuration, creation, and upgrades. Pass a
   /// [path] in tests (for example `inMemoryDatabasePath`); production leaves it
@@ -45,12 +45,17 @@ class AppDatabase {
   static const List<String> _schema = [
     '''
     CREATE TABLE vehicles (
-      id             INTEGER PRIMARY KEY AUTOINCREMENT,
-      name           TEXT    NOT NULL,
-      type           TEXT    NOT NULL,
-      fuel_category  TEXT    NOT NULL,
-      registration   TEXT,
-      tank_capacity  REAL
+      id                INTEGER PRIMARY KEY AUTOINCREMENT,
+      name              TEXT    NOT NULL,
+      type              TEXT    NOT NULL,
+      fuel_category     TEXT    NOT NULL,
+      registration      TEXT,
+      tank_capacity     REAL,
+      claimed_mileage   REAL,
+      insurance_expiry  INTEGER,
+      puc_expiry        INTEGER,
+      rc_expiry         INTEGER,
+      fitness_expiry    INTEGER
     )
     ''',
     '''

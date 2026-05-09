@@ -134,7 +134,71 @@ void main() {
       final read = DataBundleCsvReader.read(csv).getRight().toNullable()!;
       expect(read.vehicles, hasLength(1));
       expect(read.entries, hasLength(1));
-      expect(csv, startsWith('"odolog","1"'));
+      expect(csv, startsWith('"odolog","2"'));
+    });
+  });
+
+  group('schema version 2', () {
+    test('the claimed mileage and document dates round trip', () {
+      final bundle = (
+        vehicles: [
+          Vehicle(
+            id: 1,
+            name: 'Swift',
+            type: VehicleType.car,
+            fuelCategory: FuelCategory.petrol,
+            claimedMileage: 21.5,
+            insuranceExpiry: DateTime(2026, 8, 15),
+            pucExpiry: DateTime(2026, 4, 1),
+            fitnessExpiry: DateTime(2030, 1, 20),
+          ),
+          // A vehicle that leaves every new field unset still round trips with
+          // them null rather than picking up a stray value.
+          const Vehicle(
+            id: 2,
+            name: 'Activa',
+            type: VehicleType.scooter,
+            fuelCategory: FuelCategory.petrol,
+          ),
+        ],
+        entries: <RefuelEntry>[],
+      );
+
+      final csv = DataBundleCsvWriter.write(bundle);
+      expect(csv, startsWith('"odolog","2"'));
+
+      final read = DataBundleCsvReader.read(csv).getRight().toNullable()!;
+      expect(read.vehicles, bundle.vehicles);
+      final swift = read.vehicles.first;
+      expect(swift.claimedMileage, 21.5);
+      expect(swift.insuranceExpiry, DateTime(2026, 8, 15));
+      expect(swift.rcExpiry, isNull);
+      final activa = read.vehicles[1];
+      expect(activa.claimedMileage, isNull);
+      expect(activa.insuranceExpiry, isNull);
+    });
+
+    test('a version 1 file still imports with the new fields null', () {
+      // A file written before v2: the six original vehicle columns only.
+      final read = DataBundleCsvReader.read(
+        '"odolog","1"\n"vehicles"\n'
+        '"id","name","type","fuelCategory","registrationNo","tankCapacity"\n'
+        '"1","Activa","scooter","petrol","MH12AB1234","5.3"\n'
+        '"refuels"\n'
+        '"id","vehicleId","filledAt","odometer","quantity","pricePaid",'
+        '"fullTank","variantId","variantOther","stationName","notes",'
+        '"odometerOverride"\n',
+      ).getRight().toNullable()!;
+
+      final vehicle = read.vehicles.single;
+      expect(vehicle.name, 'Activa');
+      expect(vehicle.registrationNo, 'MH12AB1234');
+      expect(vehicle.tankCapacity, 5.3);
+      expect(vehicle.claimedMileage, isNull);
+      expect(vehicle.insuranceExpiry, isNull);
+      expect(vehicle.pucExpiry, isNull);
+      expect(vehicle.rcExpiry, isNull);
+      expect(vehicle.fitnessExpiry, isNull);
     });
   });
 
@@ -152,7 +216,7 @@ void main() {
 
     test('an unsupported schema version is rejected', () {
       final result = DataBundleCsvReader.read(
-        '"odolog","2"\n"vehicles"\n'
+        '"odolog","3"\n"vehicles"\n'
         '"id","name","type","fuelCategory","registrationNo","tankCapacity"\n'
         '"refuels"\n'
         '"id","vehicleId","filledAt","odometer","quantity","pricePaid",'
