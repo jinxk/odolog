@@ -565,3 +565,78 @@ final class CatalogFamily extends $Family
   @override
   String toString() => r'catalogProvider';
 }
+
+/// Keeps the scheduled document reminders in step with the vehicles. Watched
+/// once by the app so it stays alive; it fires immediately on start and again
+/// whenever the vehicle list changes (a saved edit invalidates that list), so
+/// a newly entered or cleared expiry date reschedules without any extra call
+/// site. The sync itself is best effort and a no-op off Android.
+
+@ProviderFor(DocumentReminderSync)
+final documentReminderSyncProvider = DocumentReminderSyncProvider._();
+
+/// Keeps the scheduled document reminders in step with the vehicles. Watched
+/// once by the app so it stays alive; it fires immediately on start and again
+/// whenever the vehicle list changes (a saved edit invalidates that list), so
+/// a newly entered or cleared expiry date reschedules without any extra call
+/// site. The sync itself is best effort and a no-op off Android.
+final class DocumentReminderSyncProvider
+    extends $NotifierProvider<DocumentReminderSync, void> {
+  /// Keeps the scheduled document reminders in step with the vehicles. Watched
+  /// once by the app so it stays alive; it fires immediately on start and again
+  /// whenever the vehicle list changes (a saved edit invalidates that list), so
+  /// a newly entered or cleared expiry date reschedules without any extra call
+  /// site. The sync itself is best effort and a no-op off Android.
+  DocumentReminderSyncProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'documentReminderSyncProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$documentReminderSyncHash();
+
+  @$internal
+  @override
+  DocumentReminderSync create() => DocumentReminderSync();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$documentReminderSyncHash() =>
+    r'cf5a7212e034fa7136d0766adb7537bb815aa269';
+
+/// Keeps the scheduled document reminders in step with the vehicles. Watched
+/// once by the app so it stays alive; it fires immediately on start and again
+/// whenever the vehicle list changes (a saved edit invalidates that list), so
+/// a newly entered or cleared expiry date reschedules without any extra call
+/// site. The sync itself is best effort and a no-op off Android.
+
+abstract class _$DocumentReminderSync extends $Notifier<void> {
+  void build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<void, void>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<void, void>,
+              void,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

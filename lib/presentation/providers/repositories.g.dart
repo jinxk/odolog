@@ -199,3 +199,58 @@ final class CatalogRepositoryProvider
 }
 
 String _$catalogRepositoryHash() => r'eea770e029bd6d17747b2d817ec488a37014f592';
+
+/// The platform notification scheduler. Widget tests can override this with a
+/// no-op, though the real one already stands down off Android.
+
+@ProviderFor(reminderScheduler)
+final reminderSchedulerProvider = ReminderSchedulerProvider._();
+
+/// The platform notification scheduler. Widget tests can override this with a
+/// no-op, though the real one already stands down off Android.
+
+final class ReminderSchedulerProvider
+    extends
+        $FunctionalProvider<
+          ReminderScheduler,
+          ReminderScheduler,
+          ReminderScheduler
+        >
+    with $Provider<ReminderScheduler> {
+  /// The platform notification scheduler. Widget tests can override this with a
+  /// no-op, though the real one already stands down off Android.
+  ReminderSchedulerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'reminderSchedulerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$reminderSchedulerHash();
+
+  @$internal
+  @override
+  $ProviderElement<ReminderScheduler> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ReminderScheduler create(Ref ref) {
+    return reminderScheduler(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ReminderScheduler value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ReminderScheduler>(value),
+    );
+  }
+}
+
+String _$reminderSchedulerHash() => r'be7571a0b5f5b383c0752ec8bf9d7a94d39bce9c';

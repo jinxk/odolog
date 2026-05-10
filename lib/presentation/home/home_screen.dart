@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,8 +9,10 @@ import '../../app/theme/colors.dart';
 import '../../app/theme/shapes.dart';
 import '../../app/theme/spacing.dart';
 import '../../app/theme/theme.dart';
+import '../../domain/calculators/document_reminder_planner.dart';
 import '../../domain/entities/refuel_entry.dart';
 import '../../domain/entities/vehicle.dart';
+import '../../domain/value_objects/document_alert.dart';
 import '../../domain/value_objects/vehicle_stats.dart';
 import '../add_refuel/refuel_args.dart';
 import '../common/empty_state.dart';
@@ -18,6 +23,7 @@ import '../common/section_header.dart';
 import '../common/stat_card.dart';
 import '../common/trend_delta_chip.dart';
 import '../providers/app_providers.dart';
+import '../providers/reminder_nudge_provider.dart';
 import '../providers/settings_provider.dart';
 
 /// The home dashboard: an editorial header, one dominant hero number, the add
@@ -70,6 +76,7 @@ class _Dashboard extends ConsumerWidget {
       ),
       children: [
         _EditorialHeader(vehicle: vehicle),
+        _DocumentsGlance(vehicle: vehicle),
         const SizedBox(height: 20),
         EntranceFade(
           child: _HeroCard(vehicle: vehicle, currency: currency),
@@ -79,6 +86,7 @@ class _Dashboard extends ConsumerWidget {
           delay: const Duration(milliseconds: 40),
           child: _PrimaryActions(vehicle: vehicle),
         ),
+        _BatteryNudgeCard(vehicle: vehicle),
         const SizedBox(height: AppSpacing.betweenSections),
         _LastFillCard(vehicle: vehicle, currency: currency),
         _ThisMonthCard(vehicle: vehicle, currency: currency),
@@ -297,6 +305,11 @@ class _HeroCard extends ConsumerWidget {
             color: AppColors.offWhite.withValues(alpha: 0.55),
             fontSize: 12,
           ),
+        ),
+        _ClaimedComparison(
+          real: stats.averageMileage,
+          claimed: vehicle.claimedMileage,
+          category: vehicle.fuelCategory,
         ),
         const SizedBox(height: 22),
         Text('Cost per km', style: label),
@@ -574,5 +587,197 @@ class _TrendCard extends ConsumerWidget {
         );
       },
     );
+  }
+}
+
+/// The supporting line under the hero mileage that sets the owner's real
+/// average against the manufacturer's claimed figure, the "company bola 60,
+/// mil raha 45" comparison every Indian rider makes out loud. It uses the
+/// lifetime average as the honest "real" number and shows the ratio as a
+/// percentage. Hidden until both a claimed figure and a real average exist,
+/// since a comparison needs both sides. Labelled "claimed", never "ARAI".
+class _ClaimedComparison extends StatelessWidget {
+  const _ClaimedComparison({
+    required this.real,
+    required this.claimed,
+    required this.category,
+  });
+
+  final double? real;
+  final double? claimed;
+  final FuelCategory category;
+
+  @override
+  Widget build(BuildContext context) {
+    final realValue = real;
+    final claimedValue = claimed;
+    if (realValue == null || claimedValue == null || claimedValue <= 0) {
+      return const SizedBox.shrink();
+    }
+    final percent = (realValue / claimedValue * 100).round();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        '${formatMileage(realValue)} real vs '
+        '${formatMileage(claimedValue)} claimed ($percent%)',
+        style: TextStyle(
+          color: AppColors.offWhite.withValues(alpha: 0.7),
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+/// A slim, glanceable line that surfaces the nearest document expiry once it is
+/// within thirty days or already overdue. It follows the same rule as the trend
+/// chip: never colour alone. An icon and the words carry the meaning, and the
+/// colour only reinforces it, amber for an approaching date and the theme's
+/// negative for one that has lapsed. Renders nothing when nothing is due.
+class _DocumentsGlance extends StatelessWidget {
+  const _DocumentsGlance({required this.vehicle});
+
+  final Vehicle vehicle;
+
+  @override
+  Widget build(BuildContext context) {
+    final alert = const DocumentReminderPlanner().nearestAlert(
+      vehicle,
+      now: DateTime.now(),
+    );
+    if (alert == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final roles =
+        theme.extension<AppColorRoles>() ??
+        AppColorRoles.of(theme.colorScheme.onSurface, theme.brightness);
+    final isDark = theme.brightness == Brightness.dark;
+    final color = alert.overdue
+        ? roles.negative
+        : (isDark ? AppColors.amber : AppColors.teal);
+    final icon = alert.overdue
+        ? Icons.warning_amber_rounded
+        : Icons.schedule_outlined;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _glanceText(alert),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _glanceText(DocumentAlert alert) {
+    final label = documentLabel(alert.document);
+    if (alert.overdue) {
+      final days = -alert.daysRemaining;
+      return '$label expired ${_days(days)} ago';
+    }
+    if (alert.daysRemaining == 0) return '$label expires today';
+    return '$label expires in ${_days(alert.daysRemaining)}';
+  }
+
+  String _days(int days) => days == 1 ? '1 day' : '$days days';
+}
+
+/// A one-time, dismissible card that warns about aggressive OEM battery
+/// managers (MIUI, ColorOS, and the like) silently killing scheduled reminders,
+/// and offers a shortcut into the app's system settings so the owner can allow
+/// background activity. Shown only once the owner has entered at least one
+/// document date, so it appears exactly when reminders start to matter, and
+/// never again after it is dismissed.
+class _BatteryNudgeCard extends ConsumerWidget {
+  const _BatteryNudgeCard({required this.vehicle});
+
+  final Vehicle vehicle;
+
+  static const _packageName = 'com.jinxk.odolog';
+
+  bool get _hasAnyDocument =>
+      VehicleDocument.values.any((d) => vehicle.expiryFor(d) != null);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!_hasAnyDocument) return const SizedBox.shrink();
+    final dismissed = ref.watch(reminderNudgeDismissedProvider).value ?? true;
+    if (dismissed) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.betweenSections),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.battery_alert_outlined,
+                    size: 20,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Keep reminders alive',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Some phones (MIUI, ColorOS, and others) shut down background '
+                'apps to save battery, which can stop these reminders from '
+                'firing. Allowing OdoLog to run in the background keeps them '
+                'on time.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => ref
+                        .read(reminderNudgeDismissedProvider.notifier)
+                        .dismiss(),
+                    child: const Text('Got it'),
+                  ),
+                  if (Platform.isAndroid)
+                    FilledButton(
+                      onPressed: _openSettings,
+                      child: const Text('Open settings'),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Opens this app's system settings page, from which the battery and
+  /// background limits are reachable on every OEM skin. The exact autostart
+  /// screen is not a standard intent, so app details is the reliable landing
+  /// spot to point the owner at.
+  Future<void> _openSettings() async {
+    if (!Platform.isAndroid) return;
+    final intent = AndroidIntent(
+      action: 'android.settings.APPLICATION_DETAILS_SETTINGS',
+      data: 'package:$_packageName',
+    );
+    await intent.launch();
   }
 }

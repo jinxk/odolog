@@ -102,4 +102,41 @@ void main() {
     expect(find.text('kg'), findsOneWidget);
     expect(find.text('L'), findsNothing);
   });
+
+  testWidgets('the claimed mileage field carries the category mileage unit', (
+    tester,
+  ) async {
+    await pumpVehicleForm(tester);
+
+    await tester.tap(find.text('More details'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Company claimed mileage'), findsOneWidget);
+    // Petrol reads in km/l; the tank field's own 'L' suffix is a different
+    // string, so this matches only the mileage field.
+    expect(find.text('km/l'), findsOneWidget);
+  });
+
+  testWidgets('a document quick-set fills a date without auto-filling others', (
+    tester,
+  ) async {
+    await pumpVehicleForm(tester);
+
+    await tester.tap(find.text('Documents'));
+    await tester.pumpAndSettle();
+
+    // Every document starts unset.
+    expect(find.text('Not set'), findsNWidgets(VehicleDocument.values.length));
+
+    // Insurance offers a one year quick-set; tapping it sets only that row.
+    await tester.tap(find.text('+1 yr'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Not set'),
+      findsNWidgets(VehicleDocument.values.length - 1),
+    );
+    // The set row gains a clear button; no other row does.
+    expect(find.byIcon(Icons.close), findsOneWidget);
+  });
 }

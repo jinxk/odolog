@@ -31,12 +31,13 @@ final _workedExample = [
 Future<void> pumpHome(
   WidgetTester tester, {
   List<RefuelEntry> seed = const [],
+  Vehicle vehicle = _vehicle,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         vehicleRepositoryProvider.overrideWithValue(
-          FakeVehicleRepository([_vehicle]),
+          FakeVehicleRepository([vehicle]),
         ),
         refuelRepositoryProvider.overrideWithValue(FakeRefuelRepository(seed)),
         catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
@@ -77,5 +78,45 @@ void main() {
     expect(find.text('15.0'), findsOneWidget);
     expect(find.text('km/l'), findsOneWidget);
     expect(find.textContaining('6.71'), findsOneWidget);
+  });
+
+  testWidgets('sets the real average against the claimed figure on the hero', (
+    tester,
+  ) async {
+    // The worked example gives a 15.0 km/l real average; claimed is 20, so the
+    // line reads 15.0 real vs 20.0 claimed (75%).
+    await pumpHome(
+      tester,
+      seed: _workedExample,
+      vehicle: const Vehicle(
+        id: 1,
+        name: 'Swift',
+        type: VehicleType.car,
+        fuelCategory: FuelCategory.petrol,
+        tankCapacity: 35,
+        claimedMileage: 20,
+      ),
+    );
+
+    expect(find.text('15.0 real vs 20.0 claimed (75%)'), findsOneWidget);
+  });
+
+  testWidgets('surfaces the nearest document expiry within thirty days', (
+    tester,
+  ) async {
+    final pucExpiry = DateTime.now().add(const Duration(days: 5));
+    await pumpHome(
+      tester,
+      seed: _workedExample,
+      vehicle: Vehicle(
+        id: 1,
+        name: 'Swift',
+        type: VehicleType.car,
+        fuelCategory: FuelCategory.petrol,
+        pucExpiry: pucExpiry,
+      ),
+    );
+
+    expect(find.textContaining('PUC expires in 5 days'), findsOneWidget);
   });
 }
