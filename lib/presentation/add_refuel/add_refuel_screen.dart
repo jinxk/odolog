@@ -279,8 +279,15 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
           horizontal: 16,
           vertical: 20,
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppShapes.inputRadius),
+        // A filled field with an OutlineInputBorder puts the floating label on
+        // the border line itself, which straddles the fill and the page
+        // background around it. An UnderlineInputBorder never notches, so the
+        // label stays inside the fill and only the bottom indicator (grey at
+        // rest, amber on focus) shows the field's state.
+        border: UnderlineInputBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppShapes.inputRadius),
+          ),
         ),
       ),
       onChanged: onChanged,

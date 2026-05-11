@@ -139,7 +139,13 @@ void main() {
 
     if (!fullTank) {
       // The full tank choice is always visible in the fast path now, so no
-      // expander to open first.
+      // expander to open first. The taller fast path fields can push it below
+      // the fold, so scroll it into view before tapping.
+      await tester.scrollUntilVisible(
+        find.text('Part fill'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.tap(find.text('Part fill'));
       await tester.pumpAndSettle();
     }
