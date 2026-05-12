@@ -1,4 +1,6 @@
+import '../entities/expense.dart';
 import '../entities/refuel_entry.dart';
+import '../entities/service_log_entry.dart';
 import '../value_objects/vehicle_stats.dart';
 import '../value_objects/window_mileage.dart';
 import 'mileage_calculator.dart';
@@ -9,7 +11,16 @@ import 'mileage_calculator.dart';
 class AggregateCalculator {
   const AggregateCalculator();
 
-  VehicleStats lifetime(List<RefuelEntry> entries, {double? tankCapacity}) {
+  /// [expenses] and [serviceLog] are optional: passing them folds their cost
+  /// into [VehicleStats.nonFuelSpend] for the honest total cost of ownership
+  /// figure. Leaving them out (the per month rollup does) yields a lifetime
+  /// figure that is fuel only, same as before this existed.
+  VehicleStats lifetime(
+    List<RefuelEntry> entries, {
+    double? tankCapacity,
+    List<Expense> expenses = const [],
+    List<ServiceLogEntry> serviceLog = const [],
+  }) {
     const mileage = MileageCalculator();
     final closed = mileage.windows(entries);
     return VehicleStats(
@@ -23,7 +34,17 @@ class AggregateCalculator {
       latestWindow: mileage.latestWindow(entries),
       lastFillRange: mileage.lastFillRange(entries),
       projectedRange: mileage.projectedRange(entries, tankCapacity),
+      nonFuelSpend: _sumNonFuelSpend(expenses, serviceLog),
     );
+  }
+
+  double _sumNonFuelSpend(
+    List<Expense> expenses,
+    List<ServiceLogEntry> serviceLog,
+  ) {
+    final expenseTotal = expenses.fold(0.0, (sum, e) => sum + e.amount);
+    final serviceTotal = serviceLog.fold(0.0, (sum, e) => sum + (e.cost ?? 0));
+    return expenseTotal + serviceTotal;
   }
 
   /// One rollup per calendar month of `filledAt`, keyed by the first day of the
