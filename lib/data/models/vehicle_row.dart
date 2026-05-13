@@ -23,6 +23,8 @@ class VehicleRow {
       'puc_expiry': vehicle.pucExpiry?.millisecondsSinceEpoch,
       'rc_expiry': vehicle.rcExpiry?.millisecondsSinceEpoch,
       'fitness_expiry': vehicle.fitnessExpiry?.millisecondsSinceEpoch,
+      'engine_oil_interval_km': vehicle.engineOilIntervalKm,
+      'general_service_interval_days': vehicle.generalServiceIntervalDays,
     };
   }
 
@@ -39,6 +41,9 @@ class VehicleRow {
       pucExpiry: _dateFrom(map['puc_expiry']),
       rcExpiry: _dateFrom(map['rc_expiry']),
       fitnessExpiry: _dateFrom(map['fitness_expiry']),
+      engineOilIntervalKm: (map['engine_oil_interval_km'] as num?)?.toDouble(),
+      generalServiceIntervalDays: (map['general_service_interval_days'] as num?)
+          ?.toInt(),
     );
   }
 

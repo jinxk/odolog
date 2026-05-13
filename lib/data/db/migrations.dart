@@ -27,6 +27,48 @@ class Migrations {
         'ALTER TABLE vehicles ADD COLUMN fitness_expiry INTEGER',
       );
     },
+    // v3 adds the service log and non-fuel expense tables, plus the two
+    // per-vehicle service interval columns. Additive only: existing tables and
+    // rows are untouched, and the new columns are nullable with no default so
+    // every existing vehicle reads its intervals back null and falls back to
+    // ServiceDueCalculator's defaults.
+    3: (db) async {
+      await db.execute(
+        'ALTER TABLE vehicles ADD COLUMN engine_oil_interval_km REAL',
+      );
+      await db.execute(
+        'ALTER TABLE vehicles ADD COLUMN general_service_interval_days INTEGER',
+      );
+      await db.execute('''
+        CREATE TABLE service_log (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          vehicle_id    INTEGER NOT NULL,
+          template      TEXT    NOT NULL,
+          performed_at  INTEGER NOT NULL,
+          odometer      REAL    NOT NULL,
+          cost          REAL,
+          note          TEXT,
+          FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_service_log_vehicle ON service_log (vehicle_id)',
+      );
+      await db.execute('''
+        CREATE TABLE expenses (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          vehicle_id    INTEGER NOT NULL,
+          amount        REAL    NOT NULL,
+          date          INTEGER NOT NULL,
+          odometer      REAL,
+          category      TEXT    NOT NULL,
+          FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_expenses_vehicle ON expenses (vehicle_id)',
+      );
+    },
   };
 
   /// Applies every registered step for versions in (oldVersion, newVersion],
