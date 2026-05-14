@@ -3,9 +3,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/typedefs.dart';
 import '../../domain/calculators/aggregate_calculator.dart';
 import '../../domain/calculators/mileage_calculator.dart';
+import '../../domain/entities/expense.dart';
 import '../../domain/entities/fuel_variant.dart';
+import '../../domain/entities/service_log_entry.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
+import '../../domain/value_objects/service_due_status.dart';
 import '../../domain/value_objects/vehicle_stats.dart';
 import '../../domain/value_objects/window_mileage.dart';
 import 'usecases.dart';
@@ -88,6 +91,28 @@ Future<List<FuelVariant>> catalog(Ref ref, FuelCategory category) async {
   return _unwrap(result);
 }
 
+/// A vehicle's service history, most recent first.
+@riverpod
+Future<List<ServiceLogEntry>> serviceLog(Ref ref, int vehicleId) async {
+  final result = await ref.watch(getServiceLogProvider).execute(vehicleId);
+  return _unwrap(result);
+}
+
+/// A vehicle's non-fuel expenses, most recent first.
+@riverpod
+Future<List<Expense>> expenses(Ref ref, int vehicleId) async {
+  final result = await ref.watch(getExpensesProvider).execute(vehicleId);
+  return _unwrap(result);
+}
+
+/// Where a vehicle's two maintenance templates stand right now, for the
+/// dashboard glance and the service log screen's header.
+@riverpod
+Future<List<ServiceDueStatus>> serviceDue(Ref ref, Vehicle vehicle) async {
+  final result = await ref.watch(getServiceDueProvider).execute(vehicle);
+  return _unwrap(result);
+}
+
 /// Keeps the scheduled document reminders in step with the vehicles. Watched
 /// once by the app so it stays alive; it fires immediately on start and again
 /// whenever the vehicle list changes (a saved edit invalidates that list), so
@@ -101,6 +126,24 @@ class DocumentReminderSync extends _$DocumentReminderSync {
       final vehicles = next.value;
       if (vehicles == null) return;
       ref.read(syncDocumentRemindersProvider).execute(vehicles);
+    }, fireImmediately: true);
+  }
+}
+
+/// Keeps the scheduled service due reminders in step with the vehicles, the
+/// same pattern [DocumentReminderSync] uses: it fires on start and again
+/// whenever the vehicle list changes, so an edited interval reschedules
+/// without an extra call site. Logging a service does not change the vehicle
+/// list, so the service log screen also calls
+/// `syncServiceRemindersProvider` directly after a save.
+@Riverpod(keepAlive: true)
+class ServiceReminderSync extends _$ServiceReminderSync {
+  @override
+  void build() {
+    ref.listen(vehicleListProvider, (previous, next) {
+      final vehicles = next.value;
+      if (vehicles == null) return;
+      ref.read(syncServiceRemindersProvider).execute(vehicles);
     }, fireImmediately: true);
   }
 }

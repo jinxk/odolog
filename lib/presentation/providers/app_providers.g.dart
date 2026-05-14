@@ -566,6 +566,267 @@ final class CatalogFamily extends $Family
   String toString() => r'catalogProvider';
 }
 
+/// A vehicle's service history, most recent first.
+
+@ProviderFor(serviceLog)
+final serviceLogProvider = ServiceLogFamily._();
+
+/// A vehicle's service history, most recent first.
+
+final class ServiceLogProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ServiceLogEntry>>,
+          List<ServiceLogEntry>,
+          FutureOr<List<ServiceLogEntry>>
+        >
+    with
+        $FutureModifier<List<ServiceLogEntry>>,
+        $FutureProvider<List<ServiceLogEntry>> {
+  /// A vehicle's service history, most recent first.
+  ServiceLogProvider._({
+    required ServiceLogFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'serviceLogProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$serviceLogHash();
+
+  @override
+  String toString() {
+    return r'serviceLogProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<ServiceLogEntry>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<ServiceLogEntry>> create(Ref ref) {
+    final argument = this.argument as int;
+    return serviceLog(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ServiceLogProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$serviceLogHash() => r'688187b52eabffcb26189c6834ed7221095e7141';
+
+/// A vehicle's service history, most recent first.
+
+final class ServiceLogFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<ServiceLogEntry>>, int> {
+  ServiceLogFamily._()
+    : super(
+        retry: null,
+        name: r'serviceLogProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// A vehicle's service history, most recent first.
+
+  ServiceLogProvider call(int vehicleId) =>
+      ServiceLogProvider._(argument: vehicleId, from: this);
+
+  @override
+  String toString() => r'serviceLogProvider';
+}
+
+/// A vehicle's non-fuel expenses, most recent first.
+
+@ProviderFor(expenses)
+final expensesProvider = ExpensesFamily._();
+
+/// A vehicle's non-fuel expenses, most recent first.
+
+final class ExpensesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Expense>>,
+          List<Expense>,
+          FutureOr<List<Expense>>
+        >
+    with $FutureModifier<List<Expense>>, $FutureProvider<List<Expense>> {
+  /// A vehicle's non-fuel expenses, most recent first.
+  ExpensesProvider._({
+    required ExpensesFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'expensesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$expensesHash();
+
+  @override
+  String toString() {
+    return r'expensesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Expense>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Expense>> create(Ref ref) {
+    final argument = this.argument as int;
+    return expenses(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ExpensesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$expensesHash() => r'6fd9366687817f46ead5298def421c60138c9f39';
+
+/// A vehicle's non-fuel expenses, most recent first.
+
+final class ExpensesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<Expense>>, int> {
+  ExpensesFamily._()
+    : super(
+        retry: null,
+        name: r'expensesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// A vehicle's non-fuel expenses, most recent first.
+
+  ExpensesProvider call(int vehicleId) =>
+      ExpensesProvider._(argument: vehicleId, from: this);
+
+  @override
+  String toString() => r'expensesProvider';
+}
+
+/// Where a vehicle's two maintenance templates stand right now, for the
+/// dashboard glance and the service log screen's header.
+
+@ProviderFor(serviceDue)
+final serviceDueProvider = ServiceDueFamily._();
+
+/// Where a vehicle's two maintenance templates stand right now, for the
+/// dashboard glance and the service log screen's header.
+
+final class ServiceDueProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ServiceDueStatus>>,
+          List<ServiceDueStatus>,
+          FutureOr<List<ServiceDueStatus>>
+        >
+    with
+        $FutureModifier<List<ServiceDueStatus>>,
+        $FutureProvider<List<ServiceDueStatus>> {
+  /// Where a vehicle's two maintenance templates stand right now, for the
+  /// dashboard glance and the service log screen's header.
+  ServiceDueProvider._({
+    required ServiceDueFamily super.from,
+    required Vehicle super.argument,
+  }) : super(
+         retry: null,
+         name: r'serviceDueProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$serviceDueHash();
+
+  @override
+  String toString() {
+    return r'serviceDueProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<ServiceDueStatus>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<ServiceDueStatus>> create(Ref ref) {
+    final argument = this.argument as Vehicle;
+    return serviceDue(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ServiceDueProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$serviceDueHash() => r'3439d58ff30f7ac1bdd2cb7e7a01bf2f22b4e8dd';
+
+/// Where a vehicle's two maintenance templates stand right now, for the
+/// dashboard glance and the service log screen's header.
+
+final class ServiceDueFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<ServiceDueStatus>>, Vehicle> {
+  ServiceDueFamily._()
+    : super(
+        retry: null,
+        name: r'serviceDueProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Where a vehicle's two maintenance templates stand right now, for the
+  /// dashboard glance and the service log screen's header.
+
+  ServiceDueProvider call(Vehicle vehicle) =>
+      ServiceDueProvider._(argument: vehicle, from: this);
+
+  @override
+  String toString() => r'serviceDueProvider';
+}
+
 /// Keeps the scheduled document reminders in step with the vehicles. Watched
 /// once by the app so it stays alive; it fires immediately on start and again
 /// whenever the vehicle list changes (a saved edit invalidates that list), so
@@ -624,6 +885,85 @@ String _$documentReminderSyncHash() =>
 /// site. The sync itself is best effort and a no-op off Android.
 
 abstract class _$DocumentReminderSync extends $Notifier<void> {
+  void build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<void, void>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<void, void>,
+              void,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
+
+/// Keeps the scheduled service due reminders in step with the vehicles, the
+/// same pattern [DocumentReminderSync] uses: it fires on start and again
+/// whenever the vehicle list changes, so an edited interval reschedules
+/// without an extra call site. Logging a service does not change the vehicle
+/// list, so the service log screen also calls
+/// `syncServiceRemindersProvider` directly after a save.
+
+@ProviderFor(ServiceReminderSync)
+final serviceReminderSyncProvider = ServiceReminderSyncProvider._();
+
+/// Keeps the scheduled service due reminders in step with the vehicles, the
+/// same pattern [DocumentReminderSync] uses: it fires on start and again
+/// whenever the vehicle list changes, so an edited interval reschedules
+/// without an extra call site. Logging a service does not change the vehicle
+/// list, so the service log screen also calls
+/// `syncServiceRemindersProvider` directly after a save.
+final class ServiceReminderSyncProvider
+    extends $NotifierProvider<ServiceReminderSync, void> {
+  /// Keeps the scheduled service due reminders in step with the vehicles, the
+  /// same pattern [DocumentReminderSync] uses: it fires on start and again
+  /// whenever the vehicle list changes, so an edited interval reschedules
+  /// without an extra call site. Logging a service does not change the vehicle
+  /// list, so the service log screen also calls
+  /// `syncServiceRemindersProvider` directly after a save.
+  ServiceReminderSyncProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'serviceReminderSyncProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$serviceReminderSyncHash();
+
+  @$internal
+  @override
+  ServiceReminderSync create() => ServiceReminderSync();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$serviceReminderSyncHash() =>
+    r'67088510300a5e23bf645242e2d49423733154ba';
+
+/// Keeps the scheduled service due reminders in step with the vehicles, the
+/// same pattern [DocumentReminderSync] uses: it fires on start and again
+/// whenever the vehicle list changes, so an edited interval reschedules
+/// without an extra call site. Logging a service does not change the vehicle
+/// list, so the service log screen also calls
+/// `syncServiceRemindersProvider` directly after a save.
+
+abstract class _$ServiceReminderSync extends $Notifier<void> {
   void build();
   @$mustCallSuper
   @override

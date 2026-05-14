@@ -383,7 +383,7 @@ final class GetVehicleStatsProvider
   }
 }
 
-String _$getVehicleStatsHash() => r'89fa4385dae73eceea553d0ade06634eca3d69fe';
+String _$getVehicleStatsHash() => r'fb6e15d6e976ed5a05fc7b7ea2b809f93da51239';
 
 @ProviderFor(loadFuelCatalog)
 final loadFuelCatalogProvider = LoadFuelCatalogProvider._();
@@ -466,7 +466,7 @@ final class ExportDataProvider
   }
 }
 
-String _$exportDataHash() => r'fea5849c00f80adf7fb838638867340394e9982a';
+String _$exportDataHash() => r'd1dcf73278c64f2cc82fa97440b2e337de806b7c';
 
 @ProviderFor(importData)
 final importDataProvider = ImportDataProvider._();
@@ -507,7 +507,7 @@ final class ImportDataProvider
   }
 }
 
-String _$importDataHash() => r'3b5b974add27ab7e0ddd6a781dd757b3941262d6';
+String _$importDataHash() => r'7e8b5eda43928089dad6bc6a7e31b9c53c0cef16';
 
 @ProviderFor(syncDocumentReminders)
 final syncDocumentRemindersProvider = SyncDocumentRemindersProvider._();
@@ -556,3 +556,338 @@ final class SyncDocumentRemindersProvider
 
 String _$syncDocumentRemindersHash() =>
     r'a1c382486f2833431be496dd4a6d5b4ecbdefa69';
+
+@ProviderFor(syncServiceReminders)
+final syncServiceRemindersProvider = SyncServiceRemindersProvider._();
+
+final class SyncServiceRemindersProvider
+    extends
+        $FunctionalProvider<
+          SyncServiceReminders,
+          SyncServiceReminders,
+          SyncServiceReminders
+        >
+    with $Provider<SyncServiceReminders> {
+  SyncServiceRemindersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'syncServiceRemindersProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$syncServiceRemindersHash();
+
+  @$internal
+  @override
+  $ProviderElement<SyncServiceReminders> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SyncServiceReminders create(Ref ref) {
+    return syncServiceReminders(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SyncServiceReminders value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SyncServiceReminders>(value),
+    );
+  }
+}
+
+String _$syncServiceRemindersHash() =>
+    r'91d19ee7a4f52dc9f209e06c63f3f8ff34309fa9';
+
+@ProviderFor(logService)
+final logServiceProvider = LogServiceProvider._();
+
+final class LogServiceProvider
+    extends $FunctionalProvider<LogService, LogService, LogService>
+    with $Provider<LogService> {
+  LogServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'logServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$logServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<LogService> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  LogService create(Ref ref) {
+    return logService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LogService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LogService>(value),
+    );
+  }
+}
+
+String _$logServiceHash() => r'5d858b36efa603ce489d9e7b22eae21fe9ffc002';
+
+@ProviderFor(deleteService)
+final deleteServiceProvider = DeleteServiceProvider._();
+
+final class DeleteServiceProvider
+    extends $FunctionalProvider<DeleteService, DeleteService, DeleteService>
+    with $Provider<DeleteService> {
+  DeleteServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'deleteServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$deleteServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<DeleteService> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DeleteService create(Ref ref) {
+    return deleteService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DeleteService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DeleteService>(value),
+    );
+  }
+}
+
+String _$deleteServiceHash() => r'8d044be35acab01e8ca0f0ceb97296fb4659b952';
+
+@ProviderFor(getServiceLog)
+final getServiceLogProvider = GetServiceLogProvider._();
+
+final class GetServiceLogProvider
+    extends $FunctionalProvider<GetServiceLog, GetServiceLog, GetServiceLog>
+    with $Provider<GetServiceLog> {
+  GetServiceLogProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getServiceLogProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getServiceLogHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetServiceLog> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  GetServiceLog create(Ref ref) {
+    return getServiceLog(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetServiceLog value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetServiceLog>(value),
+    );
+  }
+}
+
+String _$getServiceLogHash() => r'6077beff421a68ca440b5de71fdd03dbc345c6e6';
+
+@ProviderFor(getServiceDue)
+final getServiceDueProvider = GetServiceDueProvider._();
+
+final class GetServiceDueProvider
+    extends $FunctionalProvider<GetServiceDue, GetServiceDue, GetServiceDue>
+    with $Provider<GetServiceDue> {
+  GetServiceDueProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getServiceDueProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getServiceDueHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetServiceDue> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  GetServiceDue create(Ref ref) {
+    return getServiceDue(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetServiceDue value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetServiceDue>(value),
+    );
+  }
+}
+
+String _$getServiceDueHash() => r'49fe1cee8c8eea53a15ff7902326435b300354fe';
+
+@ProviderFor(logExpense)
+final logExpenseProvider = LogExpenseProvider._();
+
+final class LogExpenseProvider
+    extends $FunctionalProvider<LogExpense, LogExpense, LogExpense>
+    with $Provider<LogExpense> {
+  LogExpenseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'logExpenseProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$logExpenseHash();
+
+  @$internal
+  @override
+  $ProviderElement<LogExpense> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  LogExpense create(Ref ref) {
+    return logExpense(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LogExpense value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LogExpense>(value),
+    );
+  }
+}
+
+String _$logExpenseHash() => r'd6d08797bea07977eb35e8ffecd49a416fa7671b';
+
+@ProviderFor(deleteExpense)
+final deleteExpenseProvider = DeleteExpenseProvider._();
+
+final class DeleteExpenseProvider
+    extends $FunctionalProvider<DeleteExpense, DeleteExpense, DeleteExpense>
+    with $Provider<DeleteExpense> {
+  DeleteExpenseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'deleteExpenseProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$deleteExpenseHash();
+
+  @$internal
+  @override
+  $ProviderElement<DeleteExpense> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DeleteExpense create(Ref ref) {
+    return deleteExpense(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DeleteExpense value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DeleteExpense>(value),
+    );
+  }
+}
+
+String _$deleteExpenseHash() => r'e1824161ae308c5c5d21cc9183d8f757b912e511';
+
+@ProviderFor(getExpenses)
+final getExpensesProvider = GetExpensesProvider._();
+
+final class GetExpensesProvider
+    extends $FunctionalProvider<GetExpenses, GetExpenses, GetExpenses>
+    with $Provider<GetExpenses> {
+  GetExpensesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getExpensesProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getExpensesHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetExpenses> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  GetExpenses create(Ref ref) {
+    return getExpenses(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetExpenses value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetExpenses>(value),
+    );
+  }
+}
+
+String _$getExpensesHash() => r'b2982661bf0e537c78f6148c47fb728400a5b505';

@@ -8,10 +8,12 @@ import '../domain/entities/vehicle.dart';
 import '../presentation/add_refuel/add_refuel_screen.dart';
 import '../presentation/add_refuel/refuel_args.dart';
 import '../presentation/entry_detail/entry_detail_screen.dart';
+import '../presentation/expenses/expenses_screen.dart';
 import '../presentation/history/history_screen.dart';
 import '../presentation/home/home_screen.dart';
 import '../presentation/onboarding/onboarding_screen.dart';
 import '../presentation/providers/app_providers.dart';
+import '../presentation/service/service_log_screen.dart';
 import '../presentation/settings/settings_screen.dart';
 import '../presentation/stats/stats_screen.dart';
 import '../presentation/vehicles/vehicle_form_screen.dart';
@@ -118,6 +120,16 @@ GoRouter router(Ref ref) {
         path: '/vehicles',
         parentNavigatorKey: _rootKey,
         builder: (context, state) => const VehiclesScreen(),
+      ),
+      GoRoute(
+        path: '/service-log',
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const ServiceLogScreen(),
+      ),
+      GoRoute(
+        path: '/expenses',
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const ExpensesScreen(),
       ),
       GoRoute(
         path: '/vehicles/new',

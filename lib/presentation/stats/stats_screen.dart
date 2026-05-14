@@ -163,6 +163,22 @@ class _LifetimeCard extends StatelessWidget {
           label: 'Projected range',
           value: formatDistance(stats.projectedRange!),
         ),
+      // Non-fuel spend (expenses plus logged service cost) only earns a slot
+      // once it exists, so a vehicle with no service or expense history reads
+      // exactly as it did before this figure existed: fuel only.
+      if (stats.nonFuelSpend > 0) ...[
+        StatTile(
+          label: 'Non-fuel spend',
+          value: formatMoney(stats.nonFuelSpend, currency),
+        ),
+        StatTile(
+          label: 'Total cost of ownership',
+          value: formatMoney(stats.totalCostOfOwnership, currency),
+          caption: stats.costPerKmOfOwnership == null
+              ? null
+              : '${formatMoneyPerKm(stats.costPerKmOfOwnership!, currency)} overall',
+        ),
+      ],
     ];
     return SectionCard(
       child: Column(

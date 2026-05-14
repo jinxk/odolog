@@ -9,7 +9,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/entry_builder.dart';
 import '../helpers/fake_catalog_repository.dart';
+import '../helpers/fake_expense_repository.dart';
 import '../helpers/fake_refuel_repository.dart';
+import '../helpers/fake_service_log_repository.dart';
 import '../helpers/fake_vehicle_repository.dart';
 
 const _vehicle = Vehicle(
@@ -41,6 +43,10 @@ Future<void> pumpHome(
         ),
         refuelRepositoryProvider.overrideWithValue(FakeRefuelRepository(seed)),
         catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
+        serviceLogRepositoryProvider.overrideWithValue(
+          FakeServiceLogRepository(),
+        ),
+        expenseRepositoryProvider.overrideWithValue(FakeExpenseRepository()),
       ],
       child: const MaterialApp(home: HomeScreen()),
     ),
