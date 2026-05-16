@@ -34,8 +34,13 @@ Present today (early development):
 - Log every refuel: quantity, amount paid, odometer reading.
 - Optional per refuel: fuel variant (XP95, Shell V-Power, and the rest), station, notes, and a full or partial tank flag.
 - Real mileage computed full tank to full tank (km/l, or km/kg for CNG).
-- Cost per kilometre, range per tank, and monthly spend.
-- India-first fuel presets: IOCL, BPCL, HPCL, Shell, Nayara, Jio-bp variants, CNG, and Auto LPG. Free text entry covers other countries.
+- Cost per kilometre, range per tank, monthly spend, and a mileage trend chart, one point per full tank window.
+- Company claimed mileage shown next to the real figure.
+- Document expiry reminders for insurance, PUC, RC, and fitness, delivered as local notifications at 30, 15, 7, and 1 days out.
+- Service log with due reminders: engine oil by distance, general service by date, whichever comes first.
+- Non-fuel expenses (service, tyres, repairs, insurance) folded into a total cost of ownership figure.
+- CSV export and import, plus a blank template. The export is your backup.
+- India-first fuel presets: IOCL, BPCL, HPCL, Shell, Nayara, Jio-bp variants, CNG, and Auto LPG. Free text entry and a currency picker cover other countries.
 - Material 3 interface with dark and light themes.
 
 Fuel variant is remembered per vehicle, so most refuels are just quantity, amount, odometer, save.
@@ -98,9 +103,9 @@ The domain layer has no Flutter imports, so the mileage math can be tested witho
 
 ## Roadmap
 
-- **v0.1** (current focus): vehicles, refuel log, and the core stats (mileage, cost per km, range per tank, monthly spend).
-- **v0.2**: charts, plus CSV and JSON export and import. The export is your backup.
-- **Later**: more locales and fuel presets beyond India, and an iOS release once it is properly tested.
+- **v0.1**: vehicles, refuel log, and the core stats (mileage, cost per km, range per tank, monthly spend). Done.
+- **v0.2** (current): visual overhaul, mileage trend, CSV backup and restore, claimed mileage comparison, document expiry reminders, service log with due reminders, and non-fuel expense tracking.
+- **Later**: more locales and fuel presets beyond India, a running-cost share card, and an iOS release once it is properly tested.
 
 ## Contributing
 
