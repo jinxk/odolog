@@ -12,11 +12,11 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../core/failures.dart';
 import '../../core/typedefs.dart';
+import '../../domain/backup/data_bundle.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/refuel_entry.dart';
 import '../../domain/entities/service_log_entry.dart';
 import '../../domain/entities/vehicle.dart';
-import '../../domain/usecases/export_data.dart';
 import 'csv_grammar.dart';
 
 /// The section names and column headers the writer and the reader both agree

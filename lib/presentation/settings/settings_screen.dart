@@ -7,9 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/spacing.dart';
+import '../../app/version.dart';
 import '../../core/failures.dart';
-import '../../data/csv/data_bundle_csv_codec.dart';
-import '../../domain/usecases/export_data.dart';
 import '../common/grouped_list.dart';
 import '../common/motion.dart';
 import '../common/section_header.dart';
@@ -25,7 +24,6 @@ class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   static const _sourceUrl = 'https://github.com/jinxk/odolog';
-  static const _version = '0.1.0';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -93,7 +91,7 @@ class SettingsScreen extends ConsumerWidget {
                   ListTile(
                     contentPadding: EdgeInsets.symmetric(horizontal: 16),
                     title: Text('OdoLog'),
-                    subtitle: Text('Version $_version, MIT licence'),
+                    subtitle: Text('Version $appVersion, MIT licence'),
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.symmetric(horizontal: 16),
@@ -258,17 +256,15 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     if (!mounted) return;
     await result.match(
       (failure) => _reportFailure('Could not export your data.', failure),
-      (bundle) => _shareCsv(
-        DataBundleCsvWriter.write(bundle),
-        _timestampedName('odolog_backup'),
-      ),
+      (csv) => _shareCsv(csv, _timestampedName('odolog_backup')),
     );
     if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _downloadTemplate() async {
     setState(() => _busy = true);
-    await _shareCsv(DataBundleCsvWriter.template(), 'odolog_template.csv');
+    final template = ref.read(getDataBundleTemplateProvider).execute();
+    await _shareCsv(template, 'odolog_template.csv');
     if (mounted) setState(() => _busy = false);
   }
 
@@ -284,21 +280,11 @@ class _DataSectionState extends ConsumerState<_DataSection> {
       return;
     }
     final content = await picked.readAsString();
-    final parsed = DataBundleCsvReader.read(content);
-    if (!mounted) return;
-    await parsed.match(
-      (failure) => _reportFailure('Could not read that file.', failure),
-      (bundle) => _importBundle(bundle),
-    );
-    if (mounted) setState(() => _busy = false);
-  }
-
-  Future<void> _importBundle(DataBundle bundle) async {
-    final result = await ref.read(importDataProvider).execute(bundle);
+    final result = await ref.read(importDataProvider).execute(content);
     if (!mounted) return;
     await result.match(
       (failure) => _reportFailure('Could not import your data.', failure),
-      (_) async {
+      (bundle) async {
         ref.invalidate(vehicleListProvider);
         _showMessage(
           'Imported ${bundle.vehicles.length} vehicles, '
@@ -307,6 +293,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
         );
       },
     );
+    if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _shareCsv(String content, String fileName) async {

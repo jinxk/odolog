@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../data/catalog/catalog_loader.dart';
+import '../../data/csv/data_bundle_codec_impl.dart';
 import '../../data/daos/expense_dao.dart';
 import '../../data/daos/refuel_dao.dart';
 import '../../data/daos/service_log_dao.dart';
@@ -12,6 +13,7 @@ import '../../data/repositories/expense_repository_impl.dart';
 import '../../data/repositories/refuel_repository_impl.dart';
 import '../../data/repositories/service_log_repository_impl.dart';
 import '../../data/repositories/vehicle_repository_impl.dart';
+import '../../domain/backup/data_bundle_codec.dart';
 import '../../domain/reminders/reminder_scheduler.dart';
 import '../../domain/repositories/catalog_repository.dart';
 import '../../domain/repositories/expense_repository.dart';
@@ -53,3 +55,9 @@ ExpenseRepository expenseRepository(Ref ref) =>
 /// no-op, though the real one already stands down off Android.
 @Riverpod(keepAlive: true)
 ReminderScheduler reminderScheduler(Ref ref) => LocalNotificationScheduler();
+
+/// The backup file format. Presentation never reaches the CSV writer and
+/// reader directly; it goes through this port via the export, import, and
+/// template use cases.
+@Riverpod(keepAlive: true)
+DataBundleCodec dataBundleCodec(Ref ref) => const DataBundleCodecImpl();

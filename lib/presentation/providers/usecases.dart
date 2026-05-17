@@ -8,6 +8,7 @@ import '../../domain/usecases/delete_vehicle.dart';
 import '../../domain/usecases/edit_refuel.dart';
 import '../../domain/usecases/edit_vehicle.dart';
 import '../../domain/usecases/export_data.dart';
+import '../../domain/usecases/get_data_bundle_template.dart';
 import '../../domain/usecases/get_expenses.dart';
 import '../../domain/usecases/get_service_due.dart';
 import '../../domain/usecases/get_service_log.dart';
@@ -74,6 +75,7 @@ ExportData exportData(Ref ref) => ExportData(
   ref.watch(refuelRepositoryProvider),
   ref.watch(serviceLogRepositoryProvider),
   ref.watch(expenseRepositoryProvider),
+  ref.watch(dataBundleCodecProvider),
 );
 
 @Riverpod(keepAlive: true)
@@ -82,7 +84,12 @@ ImportData importData(Ref ref) => ImportData(
   ref.watch(refuelRepositoryProvider),
   ref.watch(serviceLogRepositoryProvider),
   ref.watch(expenseRepositoryProvider),
+  ref.watch(dataBundleCodecProvider),
 );
+
+@Riverpod(keepAlive: true)
+GetDataBundleTemplate getDataBundleTemplate(Ref ref) =>
+    GetDataBundleTemplate(ref.watch(dataBundleCodecProvider));
 
 @Riverpod(keepAlive: true)
 SyncDocumentReminders syncDocumentReminders(Ref ref) =>

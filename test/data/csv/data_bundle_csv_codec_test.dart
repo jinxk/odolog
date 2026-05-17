@@ -2,11 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:odolog/core/failures.dart';
 import 'package:odolog/core/typedefs.dart';
 import 'package:odolog/data/csv/data_bundle_csv_codec.dart';
+import 'package:odolog/domain/backup/data_bundle.dart';
 import 'package:odolog/domain/entities/expense.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
-import 'package:odolog/domain/usecases/export_data.dart';
 
 ValidationFailure failureOf(Result<DataBundle> result) {
   return result.getLeft().toNullable()! as ValidationFailure;
@@ -475,6 +475,108 @@ void main() {
         '"odometerOverride"\n',
       );
       expect(failureOf(result).field, 'service_log');
+    });
+
+    test(
+      'a service log row with the wrong number of fields cites its line',
+      () {
+        final result = DataBundleCsvReader.read(
+          '"odolog","3"\n"vehicles"\n'
+          '"id","name","type","fuelCategory","registrationNo","tankCapacity",'
+          '"claimedMileage","insuranceExpiry","pucExpiry","rcExpiry",'
+          '"fitnessExpiry","engineOilIntervalKm","generalServiceIntervalDays"\n'
+          '"refuels"\n'
+          '"id","vehicleId","filledAt","odometer","quantity","pricePaid",'
+          '"fullTank","variantId","variantOther","stationName","notes",'
+          '"odometerOverride"\n'
+          '"service_log"\n'
+          '"id","vehicleId","template","performedAt","odometer","cost","note"\n'
+          '"1","1","engineOil"\n',
+        );
+        expect(failureOf(result).field, 'service_log');
+        expect(failureOf(result).reason, contains('Line 8'));
+        expect(
+          failureOf(result).reason,
+          contains('expected 7 fields, found 3'),
+        );
+      },
+    );
+
+    test('an unknown service template cites its line', () {
+      final result = DataBundleCsvReader.read(
+        '"odolog","3"\n"vehicles"\n'
+        '"id","name","type","fuelCategory","registrationNo","tankCapacity",'
+        '"claimedMileage","insuranceExpiry","pucExpiry","rcExpiry",'
+        '"fitnessExpiry","engineOilIntervalKm","generalServiceIntervalDays"\n'
+        '"refuels"\n'
+        '"id","vehicleId","filledAt","odometer","quantity","pricePaid",'
+        '"fullTank","variantId","variantOther","stationName","notes",'
+        '"odometerOverride"\n'
+        '"service_log"\n'
+        '"id","vehicleId","template","performedAt","odometer","cost","note"\n'
+        '"1","1","chainLube","2026-01-01T00:00:00.000","100","",""\n',
+      );
+      expect(failureOf(result).reason, contains('Line 8'));
+      expect(failureOf(result).reason, contains('chainLube'));
+    });
+
+    test('an expense row with the wrong number of fields cites its line', () {
+      final result = DataBundleCsvReader.read(
+        '"odolog","3"\n"vehicles"\n'
+        '"id","name","type","fuelCategory","registrationNo","tankCapacity",'
+        '"claimedMileage","insuranceExpiry","pucExpiry","rcExpiry",'
+        '"fitnessExpiry","engineOilIntervalKm","generalServiceIntervalDays"\n'
+        '"refuels"\n'
+        '"id","vehicleId","filledAt","odometer","quantity","pricePaid",'
+        '"fullTank","variantId","variantOther","stationName","notes",'
+        '"odometerOverride"\n'
+        '"service_log"\n'
+        '"id","vehicleId","template","performedAt","odometer","cost","note"\n'
+        '"expenses"\n'
+        '"id","vehicleId","amount","date","odometer","category"\n'
+        '"1","1","100"\n',
+      );
+      expect(failureOf(result).field, 'expenses');
+      expect(failureOf(result).reason, contains('Line 10'));
+      expect(failureOf(result).reason, contains('expected 6 fields, found 3'));
+    });
+
+    test('a non numeric expense amount cites its line', () {
+      final result = DataBundleCsvReader.read(
+        '"odolog","3"\n"vehicles"\n'
+        '"id","name","type","fuelCategory","registrationNo","tankCapacity",'
+        '"claimedMileage","insuranceExpiry","pucExpiry","rcExpiry",'
+        '"fitnessExpiry","engineOilIntervalKm","generalServiceIntervalDays"\n'
+        '"refuels"\n'
+        '"id","vehicleId","filledAt","odometer","quantity","pricePaid",'
+        '"fullTank","variantId","variantOther","stationName","notes",'
+        '"odometerOverride"\n'
+        '"service_log"\n'
+        '"id","vehicleId","template","performedAt","odometer","cost","note"\n'
+        '"expenses"\n'
+        '"id","vehicleId","amount","date","odometer","category"\n'
+        '"1","1","not a number","2026-01-01T00:00:00.000","","Repair"\n',
+      );
+      expect(failureOf(result).field, 'expenses');
+      expect(failureOf(result).reason, contains('Line 10'));
+      expect(failureOf(result).reason, contains('amount'));
+    });
+
+    test('a version 3 file missing the expenses section at end of file is '
+        'rejected', () {
+      final result = DataBundleCsvReader.read(
+        '"odolog","3"\n"vehicles"\n'
+        '"id","name","type","fuelCategory","registrationNo","tankCapacity",'
+        '"claimedMileage","insuranceExpiry","pucExpiry","rcExpiry",'
+        '"fitnessExpiry","engineOilIntervalKm","generalServiceIntervalDays"\n'
+        '"refuels"\n'
+        '"id","vehicleId","filledAt","odometer","quantity","pricePaid",'
+        '"fullTank","variantId","variantOther","stationName","notes",'
+        '"odometerOverride"\n'
+        '"service_log"\n'
+        '"id","vehicleId","template","performedAt","odometer","cost","note"\n',
+      );
+      expect(failureOf(result).field, 'expenses');
     });
   });
 }

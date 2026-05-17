@@ -349,3 +349,56 @@ final class ReminderSchedulerProvider
 }
 
 String _$reminderSchedulerHash() => r'be7571a0b5f5b383c0752ec8bf9d7a94d39bce9c';
+
+/// The backup file format. Presentation never reaches the CSV writer and
+/// reader directly; it goes through this port via the export, import, and
+/// template use cases.
+
+@ProviderFor(dataBundleCodec)
+final dataBundleCodecProvider = DataBundleCodecProvider._();
+
+/// The backup file format. Presentation never reaches the CSV writer and
+/// reader directly; it goes through this port via the export, import, and
+/// template use cases.
+
+final class DataBundleCodecProvider
+    extends
+        $FunctionalProvider<DataBundleCodec, DataBundleCodec, DataBundleCodec>
+    with $Provider<DataBundleCodec> {
+  /// The backup file format. Presentation never reaches the CSV writer and
+  /// reader directly; it goes through this port via the export, import, and
+  /// template use cases.
+  DataBundleCodecProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dataBundleCodecProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dataBundleCodecHash();
+
+  @$internal
+  @override
+  $ProviderElement<DataBundleCodec> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DataBundleCodec create(Ref ref) {
+    return dataBundleCodec(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DataBundleCodec value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DataBundleCodec>(value),
+    );
+  }
+}
+
+String _$dataBundleCodecHash() => r'402bab9c50822f609fd1936c5de22cd4d0f0bda1';
