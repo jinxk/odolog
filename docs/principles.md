@@ -32,4 +32,4 @@ OdoLog is free and MIT licensed. No ads, no paid tier, no "pro" version with the
 
 ## Scope
 
-OdoLog started as a fuel log and is widening, slowly, into a record of what a vehicle costs to run and to keep road legal. Document expiry reminders (insurance, PUC, RC, fitness) are in, and a simple service log is next. It does not track routes, GPS, parking, or traffic, and it never sends data anywhere. Requests that move it toward a general vehicle manager will usually be declined.
+OdoLog records what a vehicle costs to run and to keep road legal: fuel, mileage, service, non-fuel expenses, and document expiry dates (insurance, PUC, RC, fitness). It does not track routes, GPS, parking, or traffic, and it never sends data anywhere. Requests that move it toward a general vehicle manager will usually be declined.
