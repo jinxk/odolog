@@ -360,7 +360,9 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
   }
 
   /// Opens a bottom sheet picker for the fuel variant, consistent with the
-  /// vehicle switcher sheet on the dashboard, in place of a raw dropdown.
+  /// currency picker in settings, in place of a raw dropdown. A sheet, not an
+  /// anchored menu, because the trigger row sits low on the screen and the
+  /// list is long enough to need the room.
   Future<void> _pickVariant(
     List<FuelVariant> variants,
     RefuelFormState state,
@@ -368,8 +370,11 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     final selected = await showModalBottomSheet<String>(
       context: context,
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        // A scrolling list, not a Column: a petrol vehicle has enough catalog
+        // variants that a fixed Column clips everything past the sheet's
+        // height, silently hiding half the choices.
+        child: ListView(
+          shrinkWrap: true,
           children: [
             ListTile(
               title: const Text('None'),

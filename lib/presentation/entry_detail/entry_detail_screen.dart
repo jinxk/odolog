@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/entities/fuel_variant.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
 import '../../domain/value_objects/window_mileage.dart';
@@ -31,6 +32,9 @@ class EntryDetailScreen extends ConsumerWidget {
         ref.watch(vehicleWindowsProvider(vehicle.id)).value ??
         const <WindowMileage>[];
     final currency = ref.watch(settingsProvider).value?.currencySymbol ?? 'Rs';
+    final variants =
+        ref.watch(catalogProvider(vehicle.fuelCategory)).value ??
+        const <FuelVariant>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -61,6 +65,7 @@ class EntryDetailScreen extends ConsumerWidget {
             item: match,
             window: window,
             currency: currency,
+            variants: variants,
           );
         },
       ),
@@ -116,12 +121,24 @@ class _Detail extends StatelessWidget {
     required this.item,
     required this.window,
     required this.currency,
+    required this.variants,
   });
 
   final Vehicle vehicle;
   final HistoryItem item;
   final WindowMileage? window;
   final String currency;
+  final List<FuelVariant> variants;
+
+  /// The catalog display name for a stored variant id. The raw id is the
+  /// fallback for an entry whose variant has left the catalog, so the record
+  /// still says something rather than nothing.
+  String _variantName(String id) {
+    for (final variant in variants) {
+      if (variant.id == id) return '${variant.brandName} ${variant.name}';
+    }
+    return id;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +154,7 @@ class _Detail extends StatelessWidget {
       if (entry.variantOther != null && entry.variantOther!.isNotEmpty)
         ('Fuel', entry.variantOther!)
       else if (entry.variantId != null)
-        ('Fuel', entry.variantId!),
+        ('Fuel', _variantName(entry.variantId!)),
       if (entry.stationName != null) ('Station', entry.stationName!),
       if (entry.notes != null) ('Notes', entry.notes!),
       if (entry.odometerOverride)

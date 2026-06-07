@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme/spacing.dart';
 import '../../app/version.dart';
@@ -87,16 +88,27 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.betweenSections),
               const SectionHeader('About'),
               GroupedList(
-                rows: const [
+                rows: [
                   ListTile(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                    title: Text('OdoLog'),
-                    subtitle: Text('Version $appVersion, MIT licence'),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    title: const Text('OdoLog'),
+                    subtitle: const Text('Version $appVersion, MIT licence'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => showLicensePage(
+                      context: context,
+                      applicationName: 'OdoLog',
+                      applicationVersion: appVersion,
+                    ),
                   ),
                   ListTile(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                    title: Text('Source'),
-                    subtitle: SelectableText(_sourceUrl),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    title: const Text('Source'),
+                    subtitle: const Text(_sourceUrl),
+                    trailing: const Icon(Icons.open_in_new),
+                    onTap: () => launchUrl(
+                      Uri.parse(_sourceUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
                   ),
                 ],
               ),
