@@ -217,9 +217,10 @@ class _CurrencyRow extends ConsumerWidget {
 }
 
 /// Export, import, and the blank template. Export and the template both write
-/// a CSV to a temporary file and hand it to the Android share sheet; import
-/// reads a CSV picked from the file system. All three are disabled while one
-/// is running so a second tap cannot race the first.
+/// a JSON file to a temporary path and hand it to the Android share sheet;
+/// import reads a file picked from the file system (JSON, or a CSV backup
+/// from an older version). All three are disabled while one is running so a
+/// second tap cannot race the first.
 class _DataSection extends ConsumerStatefulWidget {
   const _DataSection();
 
@@ -238,7 +239,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           leading: const Icon(Icons.file_upload_outlined),
           title: const Text('Export data'),
-          subtitle: const Text('Save everything to one CSV file'),
+          subtitle: const Text('Save everything to one JSON file'),
           enabled: !_busy,
           onTap: _exportData,
         ),
@@ -246,7 +247,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           leading: const Icon(Icons.file_download_outlined),
           title: const Text('Import data'),
-          subtitle: const Text('Load everything from a CSV file'),
+          subtitle: const Text('Load everything from a JSON file'),
           enabled: !_busy,
           onTap: _importData,
         ),
@@ -254,7 +255,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           leading: const Icon(Icons.description_outlined),
           title: const Text('Download template'),
-          subtitle: const Text('Get a blank CSV with the right columns'),
+          subtitle: const Text('Get a blank JSON file with the right fields'),
           enabled: !_busy,
           onTap: _downloadTemplate,
         ),
@@ -268,7 +269,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     if (!mounted) return;
     await result.match(
       (failure) => _reportFailure('Could not export your data.', failure),
-      (csv) => _shareCsv(csv, _timestampedName('odolog_backup')),
+      (encoded) => _shareFile(encoded, _timestampedName('odolog_backup')),
     );
     if (mounted) setState(() => _busy = false);
   }
@@ -276,15 +277,17 @@ class _DataSectionState extends ConsumerState<_DataSection> {
   Future<void> _downloadTemplate() async {
     setState(() => _busy = true);
     final template = ref.read(getDataBundleTemplateProvider).execute();
-    await _shareCsv(template, 'odolog_template.csv');
+    await _shareFile(template, 'odolog_template.json');
     if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _importData() async {
     setState(() => _busy = true);
+    // CSV stays accepted so a backup exported before the JSON format still
+    // restores; the codec sniffs the content and picks the right reader.
     final picked = await openFile(
       acceptedTypeGroups: const [
-        XTypeGroup(label: 'CSV', extensions: ['csv']),
+        XTypeGroup(label: 'OdoLog backup', extensions: ['json', 'csv']),
       ],
     );
     if (picked == null) {
@@ -308,7 +311,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     if (mounted) setState(() => _busy = false);
   }
 
-  Future<void> _shareCsv(String content, String fileName) async {
+  Future<void> _shareFile(String content, String fileName) async {
     final file = File('${Directory.systemTemp.path}/$fileName');
     await file.writeAsString(content);
     await SharePlus.instance.share(
@@ -321,7 +324,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     final stamp =
         '${now.year}${_pad(now.month)}${_pad(now.day)}-'
         '${_pad(now.hour)}${_pad(now.minute)}';
-    return '${prefix}_$stamp.csv';
+    return '${prefix}_$stamp.json';
   }
 
   String _pad(int value) => value.toString().padLeft(2, '0');
