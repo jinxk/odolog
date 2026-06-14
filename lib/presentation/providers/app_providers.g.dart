@@ -74,6 +74,76 @@ abstract class _$ActiveVehicleId extends $Notifier<int?> {
   }
 }
 
+/// Which history segment is showing. Session scoped and kept alive, like the
+/// vehicle selection, so leaving the tab and coming back does not lose the
+/// segment; the shell also reads it to decide which add button to float, and
+/// the dashboard's service glance sets it before jumping to the tab.
+
+@ProviderFor(HistoryTab)
+final historyTabProvider = HistoryTabProvider._();
+
+/// Which history segment is showing. Session scoped and kept alive, like the
+/// vehicle selection, so leaving the tab and coming back does not lose the
+/// segment; the shell also reads it to decide which add button to float, and
+/// the dashboard's service glance sets it before jumping to the tab.
+final class HistoryTabProvider
+    extends $NotifierProvider<HistoryTab, HistorySegment> {
+  /// Which history segment is showing. Session scoped and kept alive, like the
+  /// vehicle selection, so leaving the tab and coming back does not lose the
+  /// segment; the shell also reads it to decide which add button to float, and
+  /// the dashboard's service glance sets it before jumping to the tab.
+  HistoryTabProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'historyTabProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$historyTabHash();
+
+  @$internal
+  @override
+  HistoryTab create() => HistoryTab();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(HistorySegment value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<HistorySegment>(value),
+    );
+  }
+}
+
+String _$historyTabHash() => r'a8485422f25bbdb1c8da7be1b1bd9d070b9c056b';
+
+/// Which history segment is showing. Session scoped and kept alive, like the
+/// vehicle selection, so leaving the tab and coming back does not lose the
+/// segment; the shell also reads it to decide which add button to float, and
+/// the dashboard's service glance sets it before jumping to the tab.
+
+abstract class _$HistoryTab extends $Notifier<HistorySegment> {
+  HistorySegment build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<HistorySegment, HistorySegment>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<HistorySegment, HistorySegment>,
+              HistorySegment,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(vehicleList)
 final vehicleListProvider = VehicleListProvider._();
 

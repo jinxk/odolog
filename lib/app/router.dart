@@ -8,12 +8,10 @@ import '../domain/entities/vehicle.dart';
 import '../presentation/add_refuel/add_refuel_screen.dart';
 import '../presentation/add_refuel/refuel_args.dart';
 import '../presentation/entry_detail/entry_detail_screen.dart';
-import '../presentation/expenses/expenses_screen.dart';
 import '../presentation/history/history_screen.dart';
 import '../presentation/home/home_screen.dart';
 import '../presentation/onboarding/onboarding_screen.dart';
 import '../presentation/providers/app_providers.dart';
-import '../presentation/service/service_log_screen.dart';
 import '../presentation/settings/settings_screen.dart';
 import '../presentation/stats/stats_screen.dart';
 import '../presentation/vehicles/vehicle_form_screen.dart';
@@ -122,16 +120,6 @@ GoRouter router(Ref ref) {
         builder: (context, state) => const VehiclesScreen(),
       ),
       GoRoute(
-        path: '/service-log',
-        parentNavigatorKey: _rootKey,
-        builder: (context, state) => const ServiceLogScreen(),
-      ),
-      GoRoute(
-        path: '/expenses',
-        parentNavigatorKey: _rootKey,
-        builder: (context, state) => const ExpensesScreen(),
-      ),
-      GoRoute(
         path: '/vehicles/new',
         parentNavigatorKey: _rootKey,
         builder: (context, state) => const VehicleFormScreen(),
@@ -151,9 +139,10 @@ GoRouter router(Ref ref) {
 /// `NavigationBar` destination here because `/add` is a modal push over the
 /// root navigator rather than a fifth branch of the indexed stack, and a FAB
 /// keeps that distinction visible instead of pretending it is another tab.
-/// The FAB only shows on the History and Stats tabs, the two data views where
-/// a one-thumb add-refuel shortcut earns its place; Home already has its own
-/// primary button and Settings has no logging context, so both go without.
+/// The FAB only shows on Stats and on the History tab's fuel segment, the
+/// data views where a one-thumb add-refuel shortcut earns its place; Home
+/// already has its own primary button, Settings has no logging context, and
+/// the service and expenses segments float their own log buttons instead.
 /// Centered above the bar it sits in the thumb's easy reach zone.
 class _ShellScaffold extends ConsumerWidget {
   const _ShellScaffold({required this.navigationShell});
@@ -163,10 +152,12 @@ class _ShellScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vehicle = ref.watch(currentVehicleProvider).value;
+    final segment = ref.watch(historyTabProvider);
     final showFab =
         vehicle != null &&
-        (navigationShell.currentIndex == 1 ||
-            navigationShell.currentIndex == 2);
+        (navigationShell.currentIndex == 2 ||
+            (navigationShell.currentIndex == 1 &&
+                segment == HistorySegment.fuel));
     return Scaffold(
       body: navigationShell,
       floatingActionButton: showFab

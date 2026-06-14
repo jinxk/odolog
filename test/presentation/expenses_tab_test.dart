@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
-import 'package:odolog/presentation/expenses/expenses_screen.dart';
+import 'package:odolog/presentation/expenses/expenses_tab.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,7 +26,7 @@ Future<FakeExpenseRepository> pumpScreen(WidgetTester tester) async {
         ),
         expenseRepositoryProvider.overrideWithValue(expenseRepo),
       ],
-      child: const MaterialApp(home: ExpensesScreen()),
+      child: const MaterialApp(home: ExpensesTab()),
     ),
   );
   await tester.pumpAndSettle();

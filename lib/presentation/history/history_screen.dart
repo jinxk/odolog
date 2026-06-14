@@ -10,33 +10,97 @@ import '../../domain/value_objects/window_mileage.dart';
 import '../common/empty_state.dart';
 import '../common/formatting.dart';
 import '../common/motion.dart';
+import '../expenses/expenses_tab.dart';
 import '../providers/app_providers.dart';
 import '../providers/settings_provider.dart';
+import '../service/service_log_tab.dart';
 
-/// A reverse chronological timeline of fills for the active vehicle, grouped
-/// under month headers. Partial fills are marked, since they do not close a
-/// mileage window on their own, and the per window mileage is shown against the
-/// fill that closed the window.
+/// Every log the app keeps, in one place, split by a segment control: the
+/// refuel timeline, the service log, and the non-fuel expenses. The refuel
+/// timeline is reverse chronological, grouped under month headers; partial
+/// fills are marked, since they do not close a mileage window on their own,
+/// and the per window mileage is shown against the fill that closed the
+/// window. The segment lives in [historyTabProvider] rather than local state
+/// so the shell can float the matching add button and the dashboard's service
+/// glance can land here on the right segment.
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vehicle = ref.watch(currentVehicleProvider);
+    final segment = ref.watch(historyTabProvider);
     return Scaffold(
       body: SafeArea(
-        child: vehicle.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('$error')),
-          data: (vehicle) => vehicle == null
-              ? const EmptyState(
-                  icon: Icons.history,
-                  title: 'No history yet',
-                  message: 'Add a vehicle and log a fill to see it here.',
-                )
-              : _HistoryList(vehicle: vehicle),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+              child: EntranceFade(child: _ScreenTitle('History')),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenH,
+                8,
+                AppSpacing.screenH,
+                4,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<HistorySegment>(
+                  segments: const [
+                    ButtonSegment(
+                      value: HistorySegment.fuel,
+                      label: Text('Fuel'),
+                    ),
+                    ButtonSegment(
+                      value: HistorySegment.service,
+                      label: Text('Service'),
+                    ),
+                    ButtonSegment(
+                      value: HistorySegment.expenses,
+                      label: Text('Expenses'),
+                    ),
+                  ],
+                  selected: {segment},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (selection) => ref
+                      .read(historyTabProvider.notifier)
+                      .select(selection.first),
+                ),
+              ),
+            ),
+            Expanded(
+              child: switch (segment) {
+                HistorySegment.fuel => const _FuelHistory(),
+                HistorySegment.service => const ServiceLogTab(),
+                HistorySegment.expenses => const ExpensesTab(),
+              },
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+/// The fuel segment: the refuel timeline for the active vehicle.
+class _FuelHistory extends ConsumerWidget {
+  const _FuelHistory();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vehicle = ref.watch(currentVehicleProvider);
+    return vehicle.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(child: Text('$error')),
+      data: (vehicle) => vehicle == null
+          ? const EmptyState(
+              icon: Icons.history,
+              title: 'No history yet',
+              message: 'Add a vehicle and log a fill to see it here.',
+            )
+          : _HistoryList(vehicle: vehicle),
     );
   }
 }
@@ -73,9 +137,7 @@ class _HistoryList extends ConsumerWidget {
         final reversed = items.reversed.toList();
         // Rows carry their own month header when the month changes, so one flat
         // list stays lazy instead of building every group up front.
-        final children = <Widget>[
-          const EntranceFade(child: _ScreenTitle('History')),
-        ];
+        final children = <Widget>[];
         DateTime? runningMonth;
         for (var i = 0; i < reversed.length; i++) {
           final item = reversed[i];
@@ -89,7 +151,7 @@ class _HistoryList extends ConsumerWidget {
             children.add(
               Padding(
                 padding: EdgeInsets.only(
-                  top: children.length == 1 ? 8 : AppSpacing.betweenSections,
+                  top: children.isEmpty ? 8 : AppSpacing.betweenSections,
                   bottom: 4,
                 ),
                 child: Text(

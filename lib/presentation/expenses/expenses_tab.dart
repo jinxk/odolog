@@ -22,17 +22,18 @@ const _categorySuggestions = [
   'Other',
 ];
 
-/// The active vehicle's non-fuel spend: a flat list, most recent first. Kept
-/// deliberately narrow, matching [Expense]'s own scope: amount, date, an
+/// The expenses segment of the history tab: the active vehicle's non-fuel
+/// spend as a flat list, most recent first. A nested Scaffold, so the segment
+/// carries its own log action instead of borrowing the shell's refuel button.
+/// Kept deliberately narrow, matching [Expense]'s own scope: amount, date, an
 /// optional odometer, and one free text category.
-class ExpensesScreen extends ConsumerWidget {
-  const ExpensesScreen({super.key});
+class ExpensesTab extends ConsumerWidget {
+  const ExpensesTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vehicle = ref.watch(currentVehicleProvider).value;
     return Scaffold(
-      appBar: AppBar(title: const Text('Expenses')),
       body: vehicle == null
           ? const EmptyState(
               icon: Icons.receipt_long_outlined,

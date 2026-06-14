@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
-import 'package:odolog/presentation/service/service_log_screen.dart';
+import 'package:odolog/presentation/service/service_log_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/entry_builder.dart';
@@ -33,7 +33,7 @@ Future<FakeServiceLogRepository> pumpScreen(WidgetTester tester) async {
         ),
         serviceLogRepositoryProvider.overrideWithValue(serviceLogRepo),
       ],
-      child: const MaterialApp(home: ServiceLogScreen()),
+      child: const MaterialApp(home: ServiceLogTab()),
     ),
   );
   await tester.pumpAndSettle();
