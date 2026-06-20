@@ -39,7 +39,7 @@ Present today (early development):
 - Document expiry reminders for insurance, PUC, RC, and fitness, delivered as local notifications at 30, 15, 7, and 1 days out.
 - Service log with due reminders: engine oil by distance, general service by date, whichever comes first.
 - Non-fuel expenses (service, tyres, repairs, insurance) folded into a total cost of ownership figure.
-- CSV export and import, plus a blank template. The export is your backup.
+- JSON export and import, plus a blank template to fill in and import back. The export is your backup. CSV backups from 1.0 still restore.
 - India-first fuel presets: IOCL, BPCL, HPCL, Shell, Nayara, Jio-bp variants, CNG, and Auto LPG. Free text entry and a currency picker cover other countries.
 - Material 3 interface with dark and light themes.
 
@@ -104,7 +104,8 @@ The domain layer has no Flutter imports, so the mileage math can be tested witho
 ## Roadmap
 
 - **v0.1**: vehicles, refuel log, and the core stats (mileage, cost per km, range per tank, monthly spend). Done.
-- **v1.0** (current): visual overhaul, mileage trend, CSV backup and restore, claimed mileage comparison, document expiry reminders, service log with due reminders, and non-fuel expense tracking.
+- **v1.0**: visual overhaul, mileage trend, CSV backup and restore, claimed mileage comparison, document expiry reminders, service log with due reminders, and non-fuel expense tracking.
+- **v1.1** (current): history tab that folds in the service log and expenses, JSON backup format (CSV backups still restore), and a round of fixes from on-phone use.
 - **Later**: more locales and fuel presets beyond India, a running-cost share card, and an iOS release once it is properly tested.
 
 ## Contributing

@@ -15,7 +15,7 @@ Concrete goals for the first release:
 - Add and manage multiple vehicles of different fuel categories.
 - Log a full or partial refuel in under 15 seconds for the common case.
 - Show latest mileage, cost per kilometre, last-fill range, and monthly and lifetime aggregates per vehicle.
-- Export and import everything as CSV, so the user is never trapped.
+- Export and import everything as JSON, so the user is never trapped.
 - Ship with a fuel variant catalog covering the major Indian oil companies, editable without a code change.
 
 ## Non-goals
@@ -90,9 +90,9 @@ List of vehicles with add, edit, and delete. Deleting a vehicle warns that its r
 
 - **Theme:** system, light, or dark.
 - **Units display:** the fuel unit follows the vehicle's category automatically (litres vs kg); currency is rupees by default with a symbol setting for users elsewhere.
-- **Export data:** writes every vehicle, refuel, service log entry, and expense to one CSV file, for spreadsheets, archiving, or a full backup.
-- **Import data:** reads that CSV back, with a validation pass so a malformed row does not silently corrupt the log.
-- **Download template:** a blank CSV with the right columns and one example row per section, to fill in externally and import back.
+- **Export data:** writes every vehicle, refuel, service log entry, and expense to one JSON file, pretty printed so it stays readable and editable by hand.
+- **Import data:** reads that JSON back, with a validation pass so a malformed item does not silently corrupt the log. Backups written by the CSV format that 1.0 used still restore.
+- **Download template:** a blank JSON file with every section and one example item each, to fill in externally and import back.
 - **About:** version, licence (MIT), and a link to the source.
 
 ## Calculations
