@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,6 +13,7 @@ import '../common/formatting.dart';
 import '../common/grouped_list.dart';
 import '../common/single_decimal_formatter.dart';
 import '../providers/app_providers.dart';
+import '../providers/auto_backup_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 
@@ -64,6 +67,7 @@ class ExpensesTab extends ConsumerWidget {
     if (saved != true) return;
     ref.invalidate(expensesProvider(vehicle.id));
     ref.invalidate(vehicleStatsProvider(vehicle.id));
+    unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
   }
 }
 
@@ -172,6 +176,7 @@ class _ExpenseRow extends ConsumerWidget {
     await ref.read(deleteExpenseProvider).execute(expense.id);
     ref.invalidate(expensesProvider(vehicle.id));
     ref.invalidate(vehicleStatsProvider(vehicle.id));
+    unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
   }
 }
 

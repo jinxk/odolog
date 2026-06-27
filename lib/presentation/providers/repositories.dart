@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../data/backup/media_store_auto_backup_writer.dart';
 import '../../data/catalog/catalog_loader.dart';
 import '../../data/daos/expense_dao.dart';
 import '../../data/daos/refuel_dao.dart';
@@ -13,6 +14,7 @@ import '../../data/repositories/expense_repository_impl.dart';
 import '../../data/repositories/refuel_repository_impl.dart';
 import '../../data/repositories/service_log_repository_impl.dart';
 import '../../data/repositories/vehicle_repository_impl.dart';
+import '../../domain/backup/auto_backup_writer.dart';
 import '../../domain/backup/data_bundle_codec.dart';
 import '../../domain/reminders/reminder_scheduler.dart';
 import '../../domain/repositories/catalog_repository.dart';
@@ -61,3 +63,10 @@ ReminderScheduler reminderScheduler(Ref ref) => LocalNotificationScheduler();
 /// template use cases.
 @Riverpod(keepAlive: true)
 DataBundleCodec dataBundleCodec(Ref ref) => const DataBundleJsonCodec();
+
+/// The uninstall surviving backup writer. Android writes to the shared
+/// Downloads collection through a MethodChannel; off Android, and below
+/// Android 10, it reports itself unavailable and the feature stands down.
+@Riverpod(keepAlive: true)
+AutoBackupWriter autoBackupWriter(Ref ref) =>
+    const MediaStoreAutoBackupWriter();

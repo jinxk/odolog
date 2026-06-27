@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/failures.dart';
 import '../../domain/entities/refuel_entry.dart';
+import 'auto_backup_provider.dart';
 import 'usecases.dart';
 
 part 'refuel_form_provider.g.dart';
@@ -189,10 +192,16 @@ class RefuelForm extends _$RefuelForm {
         ? await ref.read(editRefuelProvider).execute(entry)
         : await ref.read(logRefuelProvider).execute(entry);
 
-    return result.match((failure) {
-      _applyFailure(failure);
-      return null;
-    }, (saved) => saved);
+    return result.match(
+      (failure) {
+        _applyFailure(failure);
+        return null;
+      },
+      (saved) {
+        unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
+        return saved;
+      },
+    );
   }
 
   void _applyFailure(Failure failure) {

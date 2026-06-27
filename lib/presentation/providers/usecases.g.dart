@@ -557,6 +557,47 @@ final class GetDataBundleTemplateProvider
 String _$getDataBundleTemplateHash() =>
     r'd7f74409beb67d21c6020eeb4c0cf3ff53688db3';
 
+@ProviderFor(runAutoBackup)
+final runAutoBackupProvider = RunAutoBackupProvider._();
+
+final class RunAutoBackupProvider
+    extends $FunctionalProvider<RunAutoBackup, RunAutoBackup, RunAutoBackup>
+    with $Provider<RunAutoBackup> {
+  RunAutoBackupProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'runAutoBackupProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$runAutoBackupHash();
+
+  @$internal
+  @override
+  $ProviderElement<RunAutoBackup> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  RunAutoBackup create(Ref ref) {
+    return runAutoBackup(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RunAutoBackup value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RunAutoBackup>(value),
+    );
+  }
+}
+
+String _$runAutoBackupHash() => r'8a3db7eb37d244e680e8108d13730a050e1c6c41';
+
 @ProviderFor(syncDocumentReminders)
 final syncDocumentRemindersProvider = SyncDocumentRemindersProvider._();
 

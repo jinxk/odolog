@@ -12,6 +12,7 @@ import '../presentation/history/history_screen.dart';
 import '../presentation/home/home_screen.dart';
 import '../presentation/onboarding/onboarding_screen.dart';
 import '../presentation/providers/app_providers.dart';
+import '../presentation/providers/auto_backup_provider.dart';
 import '../presentation/settings/settings_screen.dart';
 import '../presentation/stats/stats_screen.dart';
 import '../presentation/vehicles/vehicle_form_screen.dart';
@@ -144,15 +145,25 @@ GoRouter router(Ref ref) {
 /// already has its own primary button, Settings has no logging context, and
 /// the service and expenses segments float their own log buttons instead.
 /// Centered above the bar it sits in the thumb's easy reach zone.
-class _ShellScaffold extends ConsumerWidget {
+class _ShellScaffold extends ConsumerStatefulWidget {
   const _ShellScaffold({required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ShellScaffold> createState() => _ShellScaffoldState();
+}
+
+class _ShellScaffoldState extends ConsumerState<_ShellScaffold> {
+  bool _consentPromptScheduled = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final navigationShell = widget.navigationShell;
     final vehicle = ref.watch(currentVehicleProvider).value;
+    final backup = ref.watch(autoBackupProvider).value;
     final segment = ref.watch(historyTabProvider);
+    _maybePromptForConsent(hasVehicle: vehicle != null, backup: backup);
     final showFab =
         vehicle != null &&
         (navigationShell.currentIndex == 2 ||
@@ -207,5 +218,53 @@ class _ShellScaffold extends ConsumerWidget {
         context,
       ).showSnackBar(const SnackBar(content: Text('Refuel saved')));
     }
+  }
+
+  /// Shows the one time automatic backup consent, once, the first time the
+  /// shell is reached with a vehicle on record and the platform supports the
+  /// feature. Waiting for a vehicle keeps it out of a fresh install's
+  /// onboarding, so the prompt lands when there is data actually worth
+  /// protecting.
+  void _maybePromptForConsent({
+    required bool hasVehicle,
+    required AutoBackupState? backup,
+  }) {
+    if (_consentPromptScheduled || !hasVehicle || backup == null) return;
+    if (!backup.available || backup.consentAsked) return;
+    _consentPromptScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showConsentDialog();
+    });
+  }
+
+  Future<void> _showConsentDialog() async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Keep a backup outside the app?'),
+        content: const Text(
+          'OdoLog can save a copy of your data to the Downloads folder on your '
+          'phone, in Downloads/OdoLog, once a day. That copy stays even if you '
+          'uninstall or reinstall the app, so a bad update cannot take your '
+          'fuel history with it. It never leaves your phone. You can change '
+          'this any time under Settings, Data.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Turn on'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    await ref
+        .read(autoBackupProvider.notifier)
+        .recordConsent(accepted: accepted ?? false);
   }
 }
