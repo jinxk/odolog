@@ -146,6 +146,7 @@ class _ExpenseRow extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           IconButton(
+            tooltip: 'Delete ${expense.category}',
             icon: const Icon(Icons.delete_outline),
             onPressed: () => _confirmDelete(context, ref),
           ),

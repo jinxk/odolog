@@ -160,7 +160,11 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEdit ? 'Edit refuel' : 'Add refuel'),
-        leading: IconButton(icon: const Icon(Icons.close), onPressed: _cancel),
+        leading: IconButton(
+          tooltip: 'Close',
+          icon: const Icon(Icons.close),
+          onPressed: _cancel,
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

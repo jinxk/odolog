@@ -69,6 +69,23 @@ void main() {
     expect(find.text('No services logged yet.'), findsNothing);
   });
 
+  testWidgets('a logged service row carries a labelled delete control', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+
+    await tester.tap(find.text('Log service'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('serviceOdometerField')),
+      '10500',
+    );
+    await tester.tap(find.byKey(const Key('saveServiceButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Delete Engine oil'), findsOneWidget);
+  });
+
   testWidgets('a zero odometer is rejected inline', (tester) async {
     await pumpScreen(tester);
 

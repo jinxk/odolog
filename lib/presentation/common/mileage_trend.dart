@@ -13,10 +13,19 @@ import '../../domain/value_objects/window_mileage.dart';
 /// data, so the chart shows relative movement rather than absolute distance from
 /// zero.
 class MileageTrend extends StatefulWidget {
-  const MileageTrend({super.key, required this.windows, this.height = 132});
+  const MileageTrend({
+    super.key,
+    required this.windows,
+    this.height = 132,
+    this.unit = 'km/l',
+  });
 
   final List<WindowMileage> windows;
   final double height;
+
+  /// The mileage unit spoken in the chart's screen reader summary, so a CNG
+  /// vehicle reads km/kg. Only reaches the semantics, never the drawing.
+  final String unit;
 
   @override
   State<MileageTrend> createState() => _MileageTrendState();
@@ -56,24 +65,37 @@ class _MileageTrendState extends State<MileageTrend>
         ? AppColors.tealBright
         : theme.colorScheme.secondary;
     final values = [for (final window in widget.windows) window.mileage];
-    return SizedBox(
-      height: widget.height,
-      child: AnimatedBuilder(
-        animation: _draw,
-        builder: (context, _) => CustomPaint(
-          size: Size.infinite,
-          painter: _TrendPainter(
-            values: values,
-            lineColor: lineColor,
-            bestColor: AppColors.amber,
-            labelColor: theme.colorScheme.onSurface.withValues(
-              alpha: AppColors.textTertiaryAlpha,
+    return Semantics(
+      label: _summary(values, widget.unit),
+      child: SizedBox(
+        height: widget.height,
+        child: AnimatedBuilder(
+          animation: _draw,
+          builder: (context, _) => CustomPaint(
+            size: Size.infinite,
+            painter: _TrendPainter(
+              values: values,
+              lineColor: lineColor,
+              bestColor: AppColors.amber,
+              labelColor: theme.colorScheme.onSurface.withValues(
+                alpha: AppColors.textTertiaryAlpha,
+              ),
+              progress: _draw.value,
             ),
-            progress: _draw.value,
           ),
         ),
       ),
     );
+  }
+
+  /// A spoken summary of the drawn line: the latest window and the best one, so
+  /// a screen reader gets the figures the chart shows without the picture.
+  String _summary(List<double> values, String unit) {
+    if (values.isEmpty) return 'Mileage trend';
+    final latest = values.last;
+    final best = values.reduce((a, b) => a > b ? a : b);
+    return 'Mileage trend, latest ${latest.toStringAsFixed(1)} $unit, '
+        'best ${best.toStringAsFixed(1)} $unit';
   }
 }
 

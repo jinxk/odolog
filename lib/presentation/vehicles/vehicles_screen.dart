@@ -53,6 +53,7 @@ class VehiclesScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
+                      tooltip: 'Edit ${vehicle.name}',
                       icon: const Icon(Icons.edit_outlined),
                       onPressed: () => context.push(
                         '/vehicles/${vehicle.id}/edit',
@@ -60,6 +61,7 @@ class VehiclesScreen extends ConsumerWidget {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Delete ${vehicle.name}',
                       icon: const Icon(Icons.delete_outline),
                       onPressed: () => _confirmDelete(context, ref, vehicle),
                     ),

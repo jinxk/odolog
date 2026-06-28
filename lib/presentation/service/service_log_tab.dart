@@ -182,6 +182,7 @@ class _ServiceLogRow extends ConsumerWidget {
       ),
       isThreeLine: entry.note != null,
       trailing: IconButton(
+        tooltip: 'Delete ${serviceTemplateLabel(entry.template)}',
         icon: const Icon(Icons.delete_outline),
         onPressed: () => _confirmDelete(context, ref),
       ),
