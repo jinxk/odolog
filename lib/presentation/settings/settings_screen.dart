@@ -285,7 +285,17 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     await result.match(
       (failure) => _reportFailure('Could not import your data.', failure),
       (bundle) async {
+        // Whole families, not single ids: the import can touch any vehicle,
+        // including one whose id a provider already cached against the
+        // pre-import database.
         ref.invalidate(vehicleListProvider);
+        ref.invalidate(vehicleStatsProvider);
+        ref.invalidate(vehicleWindowsProvider);
+        ref.invalidate(vehicleMonthlyProvider);
+        ref.invalidate(historyProvider);
+        ref.invalidate(expensesProvider);
+        ref.invalidate(serviceLogProvider);
+        ref.invalidate(serviceDueProvider);
         unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
         _showMessage(
           'Imported ${bundle.vehicles.length} vehicles, '
