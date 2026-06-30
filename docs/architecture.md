@@ -81,6 +81,8 @@ lib/
     backup/
       data_bundle.dart                // the DataBundle typedef
       data_bundle_codec.dart          // port the backup format codec implements
+      auto_backup_writer.dart         // port for uninstall-surviving storage
+      auto_backup_policy.dart         // naming, once-a-day debounce, retention
     calculators/
       mileage_calculator.dart      // pure full-tank window math
       aggregate_calculator.dart    // lifetime and monthly rollups
@@ -107,6 +109,7 @@ lib/
       export_data.dart
       import_data.dart
       get_data_bundle_template.dart
+      run_auto_backup.dart
   data/
     db/
       app_database.dart      // sqflite open, onCreate, onUpgrade
@@ -136,6 +139,8 @@ lib/
     csv/
       data_bundle_csv_codec.dart   // legacy CSV reader, keeps pre-1.1 backups restoring
       csv_grammar.dart
+    backup/
+      media_store_auto_backup_writer.dart  // AutoBackupWriter over a MethodChannel
       data_bundle_codec_impl.dart  // DataBundleCodec fronting the writer and reader
   presentation/
     home/
@@ -396,6 +401,7 @@ Each use case is a thin, single-responsibility class that orchestrates repositor
 - **ExportData** assembles every vehicle and everything logged against it, then hands the bundle to the `DataBundleCodec` port to produce the backup file content.
 - **ImportData** decodes a backup file through `DataBundleCodec` and writes it into the repositories, returning the imported bundle so the caller can report what came in.
 - **GetDataBundleTemplate** returns a blank backup file from the same port, for a user to fill in externally and import back.
+- **RunAutoBackup** reuses `ExportData` for the bundle, writes it under today's dated name through the `AutoBackupWriter` port, then prunes the folder to the newest seven. The once-a-day debounce and the consent gate live in the presentation coordinator that calls it, not here.
 
 ## SQLite schema
 
