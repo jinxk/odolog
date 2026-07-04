@@ -4,6 +4,7 @@ import '../../core/failures.dart';
 import '../../core/typedefs.dart';
 import '../entities/refuel_entry.dart';
 import '../repositories/refuel_repository.dart';
+import '../validators/odometer_sequence_validator.dart';
 import '../validators/text_input_validator.dart';
 
 class LogRefuel {
@@ -59,15 +60,9 @@ class LogRefuel {
     return existing.match(
       (failure) => Future<Result<RefuelEntry>>.value(left(failure)),
       (entries) {
-        if (entries.isNotEmpty && entry.odometer <= entries.last.odometer) {
-          return Future<Result<RefuelEntry>>.value(
-            left(
-              const ValidationFailure(
-                field: 'odometer',
-                reason: 'Odometer must be greater than the previous reading.',
-              ),
-            ),
-          );
+        final issue = OdometerSequenceValidator.check(entry, entries);
+        if (issue != null) {
+          return Future<Result<RefuelEntry>>.value(left(issue));
         }
         return _repository.add(entry);
       },

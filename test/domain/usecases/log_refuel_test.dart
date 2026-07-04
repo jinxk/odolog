@@ -28,11 +28,72 @@ void main() {
     final repo = FakeRefuelRepository([
       entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
     ]);
-    final result = await LogRefuel(
-      repo,
-    ).execute(entry(id: 0, odometer: 900, quantity: 20, pricePaid: 2000));
+    final result = await LogRefuel(repo).execute(
+      entry(
+        id: 0,
+        odometer: 900,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: DateTime.utc(2020, 1, 2),
+      ),
+    );
 
     expect(validationOf(result).field, 'odometer');
+  });
+
+  test('a backdated fill with an in-between odometer is accepted', () async {
+    final repo = FakeRefuelRepository([
+      entry(
+        id: 1,
+        odometer: 1000,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: DateTime.utc(2020, 1, 1),
+      ),
+      entry(
+        id: 2,
+        odometer: 2000,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: DateTime.utc(2020, 1, 20),
+      ),
+    ]);
+    final result = await LogRefuel(repo).execute(
+      entry(
+        id: 0,
+        odometer: 1500,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: DateTime.utc(2020, 1, 10),
+      ),
+    );
+
+    expect(result.isRight(), isTrue);
+    expect(repo.entries, hasLength(3));
+  });
+
+  test('a backdated fill reading past a later fill is rejected', () async {
+    final repo = FakeRefuelRepository([
+      entry(
+        id: 1,
+        odometer: 1000,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: DateTime.utc(2020, 1, 20),
+      ),
+    ]);
+    final result = await LogRefuel(repo).execute(
+      entry(
+        id: 0,
+        odometer: 1200,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: DateTime.utc(2020, 1, 10),
+      ),
+    );
+
+    expect(validationOf(result).field, 'odometer');
+    expect(repo.entries, hasLength(1));
   });
 
   test('zero quantity is rejected', () async {
