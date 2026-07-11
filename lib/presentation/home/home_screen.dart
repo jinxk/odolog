@@ -159,12 +159,21 @@ class _HeroCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(vehicleStatsProvider(vehicle.id));
+    // The hero keeps its dark ink fill in the light theme, where it floats
+    // against the near white surface. On the true black dark scaffold that same
+    // ink separates at only 1.14:1 and the card boundary disappears, so there
+    // the fill lifts to surfaceDark with an amber tinted hairline to read as a
+    // card without recolouring the numerals.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.ink,
+        color: isDark ? AppColors.surfaceDark : AppColors.ink,
         borderRadius: BorderRadius.circular(24),
+        border: isDark
+            ? Border.all(color: AppColors.amber.withValues(alpha: 0.24))
+            : null,
       ),
       child: stats.when(
         loading: () => const SizedBox(
@@ -244,7 +253,16 @@ class _HeroFigure extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(value, style: heroNumberStyle.copyWith(color: valueColor)),
+        // The 56px numeral must never overflow the narrow half of the row on a
+        // 360 to 412dp phone, so it scales down to fit rather than clipping.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.bottomLeft,
+          child: Text(
+            value,
+            style: heroNumberStyle.copyWith(color: valueColor),
+          ),
+        ),
         const SizedBox(height: 2),
         Text(
           unit,
