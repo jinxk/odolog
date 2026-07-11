@@ -426,3 +426,85 @@ final class LoadFuelCatalogProvider
 }
 
 String _$loadFuelCatalogHash() => r'6aaa5439af22ba1f7b041b24a7757f5286f1d8a0';
+
+@ProviderFor(exportData)
+final exportDataProvider = ExportDataProvider._();
+
+final class ExportDataProvider
+    extends $FunctionalProvider<ExportData, ExportData, ExportData>
+    with $Provider<ExportData> {
+  ExportDataProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'exportDataProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$exportDataHash();
+
+  @$internal
+  @override
+  $ProviderElement<ExportData> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ExportData create(Ref ref) {
+    return exportData(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ExportData value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ExportData>(value),
+    );
+  }
+}
+
+String _$exportDataHash() => r'fea5849c00f80adf7fb838638867340394e9982a';
+
+@ProviderFor(importData)
+final importDataProvider = ImportDataProvider._();
+
+final class ImportDataProvider
+    extends $FunctionalProvider<ImportData, ImportData, ImportData>
+    with $Provider<ImportData> {
+  ImportDataProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'importDataProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$importDataHash();
+
+  @$internal
+  @override
+  $ProviderElement<ImportData> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ImportData create(Ref ref) {
+    return importData(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ImportData value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ImportData>(value),
+    );
+  }
+}
+
+String _$importDataHash() => r'3b5b974add27ab7e0ddd6a781dd757b3941262d6';

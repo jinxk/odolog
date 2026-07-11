@@ -72,6 +72,18 @@ void main() {
     expect(repo.vehicles, hasLength(1));
   });
 
+  testWidgets('a double quote typed into the name field does not appear', (
+    tester,
+  ) async {
+    await pumpVehicleForm(tester);
+
+    await tester.enterText(find.byType(TextField).first, 'My "Activa"');
+    await tester.pump();
+
+    final field = tester.widget<TextField>(find.byType(TextField).first);
+    expect(field.controller!.text, 'My Activa');
+  });
+
   testWidgets('the fuel category drives the tank capacity unit label', (
     tester,
   ) async {

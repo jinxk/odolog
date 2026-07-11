@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/failures.dart';
 import '../../domain/entities/vehicle.dart';
+import '../common/csv_safe_text_formatter.dart';
 import '../common/formatting.dart';
 import '../providers/app_providers.dart';
 import '../providers/usecases.dart';
@@ -108,6 +109,7 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
         TextField(
           controller: _name,
           textCapitalization: TextCapitalization.words,
+          inputFormatters: [csvSafeTextFormatter],
           decoration: InputDecoration(
             labelText: 'Name',
             hintText: 'Activa, Swift',
@@ -152,6 +154,7 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
           TextField(
             controller: _registration,
             textCapitalization: TextCapitalization.characters,
+            inputFormatters: [csvSafeTextFormatter],
             decoration: const InputDecoration(
               labelText: 'Registration number',
               hintText: 'Optional',

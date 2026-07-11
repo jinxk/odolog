@@ -4,6 +4,7 @@ import '../../core/failures.dart';
 import '../../core/typedefs.dart';
 import '../entities/vehicle.dart';
 import '../repositories/vehicle_repository.dart';
+import '../validators/text_input_validator.dart';
 
 class AddVehicle {
   const AddVehicle(this._repository);
@@ -17,6 +18,26 @@ class AddVehicle {
           const ValidationFailure(field: 'name', reason: 'Name is required.'),
         ),
       );
+    }
+    final nameIssue = TextInputValidator.check(vehicle.name);
+    if (nameIssue != null) {
+      return Future.value(
+        left(ValidationFailure(field: 'name', reason: nameIssue)),
+      );
+    }
+    final registration = vehicle.registrationNo;
+    if (registration != null) {
+      final registrationIssue = TextInputValidator.check(registration);
+      if (registrationIssue != null) {
+        return Future.value(
+          left(
+            ValidationFailure(
+              field: 'registrationNo',
+              reason: registrationIssue,
+            ),
+          ),
+        );
+      }
     }
     return _repository.add(vehicle);
   }

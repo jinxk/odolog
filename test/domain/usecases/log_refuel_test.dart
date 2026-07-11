@@ -81,6 +81,19 @@ void main() {
     expect(validationOf(result).field, 'filledAt');
   });
 
+  test('notes containing a quote mark are rejected', () async {
+    final result = await LogRefuel(FakeRefuelRepository()).execute(
+      entry(
+        id: 0,
+        odometer: 1000,
+        quantity: 20,
+        pricePaid: 2000,
+      ).copyWith(notes: 'a "quoted" note'),
+    );
+
+    expect(validationOf(result).field, 'notes');
+  });
+
   test('the override path allows a lower odometer', () async {
     final repo = FakeRefuelRepository([
       entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
