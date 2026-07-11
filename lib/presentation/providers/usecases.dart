@@ -81,10 +81,10 @@ ExportData exportData(Ref ref) => ExportData(
 
 @Riverpod(keepAlive: true)
 ImportData importData(Ref ref) => ImportData(
-  ref.watch(vehicleRepositoryProvider),
-  ref.watch(refuelRepositoryProvider),
-  ref.watch(serviceLogRepositoryProvider),
-  ref.watch(expenseRepositoryProvider),
+  ref.watch(addVehicleProvider),
+  ref.watch(logRefuelProvider),
+  ref.watch(logServiceProvider),
+  ref.watch(logExpenseProvider),
   ref.watch(dataBundleCodecProvider),
 );
 
