@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
-  runApp(const ProviderScope(child: OdoLogApp()));
-}
+import 'app/app.dart';
+import 'data/db/app_database.dart';
+import 'presentation/providers/repositories.dart';
 
-class OdoLogApp extends StatelessWidget {
-  const OdoLogApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'OdoLog',
-      home: Scaffold(
-        appBar: AppBar(title: const Text('OdoLog')),
-        body: const Center(child: Text('OdoLog')),
-      ),
-    );
-  }
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final database = await AppDatabase.open();
+  runApp(
+    ProviderScope(
+      overrides: [databaseProvider.overrideWithValue(database)],
+      child: const OdoLogApp(),
+    ),
+  );
 }
