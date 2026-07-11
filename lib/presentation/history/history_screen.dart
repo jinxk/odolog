@@ -113,7 +113,11 @@ class _HistoryList extends ConsumerWidget {
           );
         }
         return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+          padding: const EdgeInsets.only(
+            left: AppSpacing.screenH,
+            right: AppSpacing.screenH,
+            bottom: 88,
+          ),
           children: children,
         );
       },

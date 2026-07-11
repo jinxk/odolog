@@ -16,6 +16,7 @@ import '../presentation/settings/settings_screen.dart';
 import '../presentation/stats/stats_screen.dart';
 import '../presentation/vehicles/vehicle_form_screen.dart';
 import '../presentation/vehicles/vehicles_screen.dart';
+import 'theme/colors.dart';
 
 part 'router.g.dart';
 
@@ -138,8 +139,10 @@ GoRouter router(Ref ref) {
 /// `NavigationBar` destination here because `/add` is a modal push over the
 /// root navigator rather than a fifth branch of the indexed stack, and a FAB
 /// keeps that distinction visible instead of pretending it is another tab.
-/// Centered above the bar it sits in the thumb's easy reach zone from any
-/// screen in the shell.
+/// The FAB only shows on the History and Stats tabs, the two data views where
+/// a one-thumb add-refuel shortcut earns its place; Home already has its own
+/// primary button and Settings has no logging context, so both go without.
+/// Centered above the bar it sits in the thumb's easy reach zone.
 class _ShellScaffold extends ConsumerWidget {
   const _ShellScaffold({required this.navigationShell});
 
@@ -148,15 +151,21 @@ class _ShellScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vehicle = ref.watch(currentVehicleProvider).value;
+    final showFab =
+        vehicle != null &&
+        (navigationShell.currentIndex == 1 ||
+            navigationShell.currentIndex == 2);
     return Scaffold(
       body: navigationShell,
-      floatingActionButton: vehicle == null
-          ? null
-          : FloatingActionButton(
+      floatingActionButton: showFab
+          ? FloatingActionButton(
               key: const Key('addRefuelFab'),
+              backgroundColor: AppColors.amber,
+              foregroundColor: AppColors.ink,
               onPressed: () => _openAddRefuel(context, vehicle),
               child: const Icon(Icons.add),
-            ),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,

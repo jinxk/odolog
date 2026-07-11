@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/spacing.dart';
@@ -17,9 +18,9 @@ import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 import 'currency_catalog.dart';
 
-/// Settings: appearance, currency, the data tools (export, import, a blank
-/// template to fill in externally), and an about section. The fuel unit is
-/// not set here: it follows each vehicle's category automatically.
+/// Settings: appearance, currency, the vehicle list, the data tools (export,
+/// import, a blank template to fill in externally), and an about section. The
+/// fuel unit is not set here: it follows each vehicle's category automatically.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -48,6 +49,19 @@ class SettingsScreen extends ConsumerWidget {
               const SectionHeader('Currency'),
               GroupedList(
                 rows: [_CurrencyRow(symbol: settings.currencySymbol)],
+              ),
+              const SizedBox(height: AppSpacing.betweenSections),
+              const SectionHeader('Vehicles'),
+              GroupedList(
+                rows: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: const Icon(Icons.directions_car_outlined),
+                    title: const Text('Vehicles'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/vehicles'),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.betweenSections),
               const SectionHeader('Data'),
