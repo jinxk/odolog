@@ -46,7 +46,7 @@ Once saved, the app lands on the home dashboard for that vehicle, showing an emp
 This is the screen the user sees most, so it earns the most care. Top to bottom:
 
 - **Greeting header.** A light rounded bar with a small wordmark, a friendly greeting, and the active vehicle selector. Tapping the vehicle name opens a quick switcher if more than one vehicle exists.
-- **Hero stat card.** A rounded card with a deep green to amber gradient. It shows the two headline numbers: latest mileage (km/l or km/kg) and cost per kilometre. A small caption notes which fills the mileage came from (for example "over your last full-tank window"). Before there is enough data, this card shows a calm empty state instead of zeros.
+- **Hero stat card.** A rounded card in the ink base with the amber accent (see Theme and palette). It shows the two headline numbers: latest mileage (km/l or km/kg) and cost per kilometre. A small caption notes which fills the mileage came from (for example "over your last full-tank window"). Before there is enough data, this card shows a calm empty state instead of zeros.
 - **Quick actions row.** Four small tiles: Add refuel, Vehicles, History, Stats.
 - **Card sections below.** Last fill summary (date, quantity, price, price per unit, distance since previous), this month's spend and distance, and a small mileage trend once several full-tank windows exist.
 
@@ -244,10 +244,22 @@ The dropdown filters products to match the active vehicle's fuel category, so a 
 - **CNG kg units.** When the vehicle's category is CNG, the quantity field label, the derived price per unit, and the mileage unit all switch to kg and km/kg. This follows from the vehicle, so the user never sets a unit by hand.
 - **Editing or deleting a mid-history entry.** Because windows depend on neighbouring full fills, changing one entry can shift up to two mileage numbers. The recompute is automatic on save or delete.
 
+## Theme and palette
+
+This app gets used outdoors: full sun bouncing off a forecourt, a dim pump at night, rain on the screen. The palette is picked for those conditions first and for looks second.
+
+- **Ink base.** Near-black ink (`#101418`) on a near-white surface (`#FAFAF7`) in the light theme. Maximum text contrast is what survives direct sunlight, so body text never drops to a soft grey.
+- **True-black dark theme.** The dark theme uses a true black background (`#000000`) with off-white text. On OLED screens this reads cleanly at night without glare and saves a little battery.
+- **Amber accent.** The single accent colour is a vivid amber (`#FFB300`), the same family as high-visibility safety gear, used for the hero numbers, the add refuel action, and selection states. It stays legible against both the ink base and true black, and it reads through a wet screen better than cool colours do.
+- **Teal support.** A deep teal (`#00695C`) carries secondary structure (chips, links, the trend line) so amber keeps its meaning as "the number and the action".
+- **Signal colours.** Errors use a saturated red, warnings the amber itself. Nothing meaningful is ever pale.
+
+Rules that follow from the conditions: headline numbers are large and bold (they are read at arm's length in glare), every accent-on-base pairing must clear WCAG AA at its used size and the hero numbers aim for AAA, and no information is carried by a colour difference alone. Token names and exact values live in `lib/app/theme/colors.dart` and must match this section.
+
 ## Accessibility
 
 - Touch targets on the add form and quick actions are at least 48 by 48 density-independent pixels, comfortably above the pump-side fumbling threshold.
 - Every input has a real text label, not just a placeholder, so a screen reader announces the field and the label does not vanish once the user starts typing.
-- The gradient hero card keeps text contrast within WCAG AA against both ends of the gradient; the headline numbers do not rely on colour alone (they carry their unit as text).
+- The hero card keeps text contrast within WCAG AA (AAA for the headline numbers); the numbers do not rely on colour alone (they carry their unit as text).
 - Dark and light themes are both first-class, following the system setting by default.
 - Numeric fields open the number keypad and respect the device's font scaling without clipping.

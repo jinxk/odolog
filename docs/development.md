@@ -13,7 +13,7 @@ Run `flutter doctor` and clear any red marks before you start. Half the "it does
 ## Getting started
 
 ```bash
-git clone https://github.com/<you>/odolog.git
+git clone https://github.com/jinxk/odolog.git
 cd odolog
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
