@@ -13,17 +13,18 @@ It is 100% offline. No account, no cloud, no ads, no analytics. Your data lives 
 
 ## Screenshots
 
-Screenshots coming with the first release. The layout below is where they will go.
-
-<!--
 <table>
   <tr>
-    <td><img src="docs/screenshots/vehicles.png" width="220" alt="Vehicle list" /></td>
+    <td><img src="docs/screenshots/home.png" width="220" alt="Home dashboard with mileage and cost per km" /></td>
+    <td><img src="docs/screenshots/history.png" width="220" alt="Refuel history timeline" /></td>
+    <td><img src="docs/screenshots/stats.png" width="220" alt="Lifetime and monthly stats" /></td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/refuel.png" width="220" alt="Log a refuel" /></td>
-    <td><img src="docs/screenshots/stats.png" width="220" alt="Mileage and cost stats" /></td>
+    <td><img src="docs/screenshots/vehicles.png" width="220" alt="Vehicle list" /></td>
+    <td><img src="docs/screenshots/home_dark.png" width="220" alt="Home dashboard in dark theme" /></td>
   </tr>
 </table>
--->
 
 ## Features
 
