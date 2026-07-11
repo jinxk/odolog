@@ -1,1 +1,72 @@
-{"version": 1, "brands": []}
+{
+  "version": 1,
+  "brands": [
+    {
+      "id": "iocl",
+      "name": "IndianOil",
+      "products": [
+        { "id": "iocl_petrol", "name": "Petrol", "category": "petrol", "tier": "regular" },
+        { "id": "iocl_xp95", "name": "XP95", "category": "petrol", "tier": "premium" },
+        { "id": "iocl_xp100", "name": "XP100", "category": "petrol", "tier": "ultra" },
+        { "id": "iocl_diesel", "name": "Diesel", "category": "diesel", "tier": "regular" },
+        { "id": "iocl_xtragreen", "name": "XtraGreen", "category": "diesel", "tier": "premium" }
+      ]
+    },
+    {
+      "id": "bpcl",
+      "name": "Bharat Petroleum",
+      "products": [
+        { "id": "bpcl_petrol", "name": "Petrol", "category": "petrol", "tier": "regular" },
+        { "id": "bpcl_speed", "name": "Speed", "category": "petrol", "tier": "premium" },
+        { "id": "bpcl_speed97", "name": "Speed 97", "category": "petrol", "tier": "premium" },
+        { "id": "bpcl_diesel", "name": "Diesel", "category": "diesel", "tier": "regular" }
+      ]
+    },
+    {
+      "id": "hpcl",
+      "name": "Hindustan Petroleum",
+      "products": [
+        { "id": "hpcl_petrol", "name": "Petrol", "category": "petrol", "tier": "regular" },
+        { "id": "hpcl_power95", "name": "poWer95", "category": "petrol", "tier": "premium" },
+        { "id": "hpcl_power99", "name": "poWer99", "category": "petrol", "tier": "premium" },
+        { "id": "hpcl_power100", "name": "poWer100", "category": "petrol", "tier": "ultra" },
+        { "id": "hpcl_diesel", "name": "Diesel", "category": "diesel", "tier": "regular" },
+        { "id": "hpcl_turbojet", "name": "TurboJet", "category": "diesel", "tier": "premium" }
+      ]
+    },
+    {
+      "id": "shell",
+      "name": "Shell",
+      "products": [
+        { "id": "shell_petrol", "name": "Petrol", "category": "petrol", "tier": "regular" },
+        { "id": "shell_vpower", "name": "V-Power", "category": "petrol", "tier": "premium" },
+        { "id": "shell_diesel", "name": "Diesel", "category": "diesel", "tier": "regular" },
+        { "id": "shell_vpower_diesel", "name": "V-Power Diesel", "category": "diesel", "tier": "premium" }
+      ]
+    },
+    {
+      "id": "nayara",
+      "name": "Nayara Energy",
+      "products": [
+        { "id": "nayara_petrol", "name": "Petrol", "category": "petrol", "tier": "regular" },
+        { "id": "nayara_diesel", "name": "Diesel", "category": "diesel", "tier": "regular" }
+      ]
+    },
+    {
+      "id": "jiobp",
+      "name": "Jio-bp",
+      "products": [
+        { "id": "jiobp_petrol", "name": "Petrol", "category": "petrol", "tier": "regular" },
+        { "id": "jiobp_diesel", "name": "Diesel", "category": "diesel", "tier": "regular" }
+      ]
+    },
+    {
+      "id": "generic",
+      "name": "Generic",
+      "products": [
+        { "id": "cng", "name": "CNG", "category": "cng", "unit": "kg" },
+        { "id": "autolpg", "name": "Auto LPG", "category": "lpg", "unit": "litre" }
+      ]
+    }
+  ]
+}

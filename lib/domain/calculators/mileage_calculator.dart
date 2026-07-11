@@ -54,6 +54,20 @@ class MileageCalculator {
       if (entry.fullTank) {
         final opening = entries[openingIndex];
         final distance = entry.odometer - opening.odometer;
+
+        if (distance <= 0) {
+          // A non-increasing odometer, reachable through the override, would
+          // give an infinite or negative mileage, so this window is dropped.
+          // The fill still opens the next window, so its own fuel and cost are
+          // backed out of the running totals (they belong to the opening, not
+          // to the window it opens). What was burned since the previous opening
+          // stays accumulated and rolls into the next window.
+          fuelConsumed -= entry.quantity;
+          costInWindow -= entry.pricePaid;
+          openingIndex = i;
+          continue;
+        }
+
         result.add(
           WindowMileage(
             openingEntryId: opening.id,
