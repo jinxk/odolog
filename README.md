@@ -2,6 +2,7 @@
 
 A fuel log for your vehicles. Log every refuel, get mileage and running costs you can trust.
 
+[![ci](https://github.com/jinxk/odolog/actions/workflows/ci.yml/badge.svg)](https://github.com/jinxk/odolog/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-stable-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white)](#)
