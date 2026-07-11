@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../domain/entities/refuel_entry.dart';
 import '../domain/entities/vehicle.dart';
 import '../presentation/add_refuel/add_refuel_screen.dart';
 import '../presentation/add_refuel/refuel_args.dart';
@@ -131,15 +133,31 @@ GoRouter router(Ref ref) {
   );
 }
 
-class _ShellScaffold extends StatelessWidget {
+/// The shell scaffold behind the bottom navigation bar. Also owns the
+/// persistent add refuel entry point: a floating action button beats a center
+/// `NavigationBar` destination here because `/add` is a modal push over the
+/// root navigator rather than a fifth branch of the indexed stack, and a FAB
+/// keeps that distinction visible instead of pretending it is another tab.
+/// Centered above the bar it sits in the thumb's easy reach zone from any
+/// screen in the shell.
+class _ShellScaffold extends ConsumerWidget {
   const _ShellScaffold({required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vehicle = ref.watch(currentVehicleProvider).value;
     return Scaffold(
       body: navigationShell,
+      floatingActionButton: vehicle == null
+          ? null
+          : FloatingActionButton(
+              key: const Key('addRefuelFab'),
+              onPressed: () => _openAddRefuel(context, vehicle),
+              child: const Icon(Icons.add),
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) => navigationShell.goBranch(
@@ -160,5 +178,22 @@ class _ShellScaffold extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Pushes the add refuel form for [vehicle] and, once it reports a saved
+  /// entry, confirms the write with a brief snack bar here on the shell. In
+  /// glare the rider cannot always read fine print, so the haptic fired on
+  /// save and this snack bar are the two forms of confirmation that survive
+  /// sunlight.
+  Future<void> _openAddRefuel(BuildContext context, Vehicle vehicle) async {
+    final saved = await context.push<RefuelEntry?>(
+      '/add',
+      extra: RefuelArgs(vehicle: vehicle),
+    );
+    if (saved != null && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Refuel saved')));
+    }
   }
 }

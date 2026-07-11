@@ -101,19 +101,32 @@ void main() {
     await pumpForm(tester);
 
     expect(find.text('Optional details'), findsOneWidget);
-    expect(find.byKey(const Key('fullTankToggle')), findsNothing);
+    expect(find.text('Station'), findsNothing);
   });
 
-  testWidgets('the full tank toggle defaults on', (tester) async {
+  testWidgets('the full tank toggle is always visible and defaults on', (
+    tester,
+  ) async {
     await pumpForm(tester);
 
-    await tester.tap(find.text('Optional details'));
-    await tester.pumpAndSettle();
-
-    final toggle = tester.widget<SwitchListTile>(
+    final toggle = tester.widget<SegmentedButton<bool>>(
       find.byKey(const Key('fullTankToggle')),
     );
-    expect(toggle.value, isTrue);
+    expect(toggle.selected, {true});
+  });
+
+  testWidgets('a second decimal point cannot be entered in a numeric field', (
+    tester,
+  ) async {
+    await pumpForm(tester);
+
+    await tester.enterText(find.byKey(const Key('odometerField')), '3.4.5');
+    await tester.pump();
+
+    final field = tester.widget<TextField>(
+      find.byKey(const Key('odometerField')),
+    );
+    expect(field.controller!.text, isNot('3.4.5'));
   });
 
   testWidgets('a zero quantity is rejected on the quantity field', (
@@ -142,6 +155,14 @@ void main() {
 
     await tester.tap(find.text('Save refuel'));
     await tester.pumpAndSettle();
+
+    // The taller fast path fields push this message below the fold, so the
+    // lazy list has not built it yet; scroll it into view first.
+    await tester.scrollUntilVisible(
+      find.text('Date cannot be in the future.'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
 
     expect(find.text('Date cannot be in the future.'), findsOneWidget);
   });
