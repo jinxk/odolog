@@ -100,6 +100,14 @@ void main() {
   testWidgets('the optional section is collapsed by default', (tester) async {
     await pumpForm(tester);
 
+    // The taller fast path fields push this divider below the fold, so the
+    // lazy list has not built it yet; scroll it into view first.
+    await tester.scrollUntilVisible(
+      find.text('Optional details'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+
     expect(find.text('Optional details'), findsOneWidget);
     expect(find.text('Station'), findsNothing);
   });
