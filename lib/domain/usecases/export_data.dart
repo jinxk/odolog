@@ -2,42 +2,37 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../core/failures.dart';
 import '../../core/typedefs.dart';
+import '../backup/data_bundle_codec.dart';
 import '../entities/expense.dart';
 import '../entities/refuel_entry.dart';
 import '../entities/service_log_entry.dart';
-import '../entities/vehicle.dart';
 import '../repositories/expense_repository.dart';
 import '../repositories/refuel_repository.dart';
 import '../repositories/service_log_repository.dart';
 import '../repositories/vehicle_repository.dart';
 
-/// The full set of vehicles and everything logged against them. Encoding this
-/// bundle to CSV or a JSON backup file is the data layer's job; the use case
-/// only assembles it.
-typedef DataBundle = ({
-  List<Vehicle> vehicles,
-  List<RefuelEntry> entries,
-  List<ServiceLogEntry> serviceLog,
-  List<Expense> expenses,
-});
-
+/// Assembles every vehicle and everything logged against it, then hands the
+/// bundle to [DataBundleCodec] to produce the backup file content, ready to
+/// write to disk or hand to a share sheet.
 class ExportData {
   const ExportData(
     this._vehicleRepository,
     this._refuelRepository,
     this._serviceLogRepository,
     this._expenseRepository,
+    this._codec,
   );
 
   final VehicleRepository _vehicleRepository;
   final RefuelRepository _refuelRepository;
   final ServiceLogRepository _serviceLogRepository;
   final ExpenseRepository _expenseRepository;
+  final DataBundleCodec _codec;
 
-  Future<Result<DataBundle>> execute() async {
+  Future<Result<String>> execute() async {
     final vehiclesResult = await _vehicleRepository.getAll();
     return vehiclesResult.match(
-      (failure) => Future<Result<DataBundle>>.value(left(failure)),
+      (failure) => Future<Result<String>>.value(left(failure)),
       (vehicles) async {
         final entries = <RefuelEntry>[];
         final serviceLog = <ServiceLogEntry>[];
@@ -76,12 +71,14 @@ class ExportData {
           });
           if (expensesFailure != null) return left(expensesFailure);
         }
-        return right((
-          vehicles: vehicles,
-          entries: entries,
-          serviceLog: serviceLog,
-          expenses: expenses,
-        ));
+        return right(
+          _codec.encode((
+            vehicles: vehicles,
+            entries: entries,
+            serviceLog: serviceLog,
+            expenses: expenses,
+          )),
+        );
       },
     );
   }

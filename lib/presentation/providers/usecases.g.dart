@@ -466,7 +466,7 @@ final class ExportDataProvider
   }
 }
 
-String _$exportDataHash() => r'd1dcf73278c64f2cc82fa97440b2e337de806b7c';
+String _$exportDataHash() => r'c6746822f23c9e7fd607279a51bb6fe1e4febaee';
 
 @ProviderFor(importData)
 final importDataProvider = ImportDataProvider._();
@@ -507,7 +507,55 @@ final class ImportDataProvider
   }
 }
 
-String _$importDataHash() => r'7e8b5eda43928089dad6bc6a7e31b9c53c0cef16';
+String _$importDataHash() => r'0eb910aba85512ee758943787867ced1c1b6465b';
+
+@ProviderFor(getDataBundleTemplate)
+final getDataBundleTemplateProvider = GetDataBundleTemplateProvider._();
+
+final class GetDataBundleTemplateProvider
+    extends
+        $FunctionalProvider<
+          GetDataBundleTemplate,
+          GetDataBundleTemplate,
+          GetDataBundleTemplate
+        >
+    with $Provider<GetDataBundleTemplate> {
+  GetDataBundleTemplateProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getDataBundleTemplateProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getDataBundleTemplateHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetDataBundleTemplate> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetDataBundleTemplate create(Ref ref) {
+    return getDataBundleTemplate(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetDataBundleTemplate value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetDataBundleTemplate>(value),
+    );
+  }
+}
+
+String _$getDataBundleTemplateHash() =>
+    r'd7f74409beb67d21c6020eeb4c0cf3ff53688db3';
 
 @ProviderFor(syncDocumentReminders)
 final syncDocumentRemindersProvider = SyncDocumentRemindersProvider._();
