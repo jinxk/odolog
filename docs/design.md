@@ -15,7 +15,7 @@ Concrete goals for the first release:
 - Add and manage multiple vehicles of different fuel categories.
 - Log a full or partial refuel in under 15 seconds for the common case.
 - Show latest mileage, cost per kilometre, last-fill range, and monthly and lifetime aggregates per vehicle.
-- Export and import data as CSV, and back up and restore the whole database as JSON, so the user is never trapped.
+- Export and import everything as CSV, so the user is never trapped.
 - Ship with a fuel variant catalog covering the major Indian oil companies, editable without a code change.
 
 ## Non-goals
@@ -25,7 +25,7 @@ These are deliberately out of scope for v1. They are listed so the scope stays h
 - **No cloud sync and no accounts.** Data lives in local SQLite. No login, no server.
 - **No telemetry.** The app does not phone home. No analytics SDK, no crash reporting that ships data off device.
 - **No social or sharing features.** No leaderboards, no friends, no comparing your mileage with strangers.
-- **Running costs and paperwork are growing in, carefully.** Document expiry reminders (insurance, PUC, RC, fitness) landed in v0.2, and a basic service log is planned next. Full workshop management (parts, labour, a per-component service history) stays out, and so do driving routes, GPS, and anything that leaves the device.
+- **Running costs and paperwork are growing in, carefully.** Document expiry reminders (insurance, PUC, RC, fitness), a basic service log with due reminders, and non-fuel expense tracking have all landed. Full workshop management (parts, labour, a per-component service history) stays out, and so do driving routes, GPS, and anything that leaves the device.
 - **No live fuel price feeds.** Prices are whatever the user typed. The app does not fetch pump rates.
 - **No cost splitting, no trip logging, no GPS.** OdoLog records fills, not journeys.
 
@@ -90,10 +90,9 @@ List of vehicles with add, edit, and delete. Deleting a vehicle warns that its r
 
 - **Theme:** system, light, or dark.
 - **Units display:** the fuel unit follows the vehicle's category automatically (litres vs kg); currency is rupees by default with a symbol setting for users elsewhere.
-- **Export CSV:** writes refuel entries (and a vehicles file) to a location the user picks, for spreadsheets or archiving.
-- **Import CSV:** reads entries back, with a preview and a validation pass so a malformed row does not silently corrupt the log.
-- **Backup JSON:** a single file containing all vehicles and entries, for full restore.
-- **Restore JSON:** replaces or merges from a backup file, with a clear warning before it overwrites.
+- **Export data:** writes every vehicle, refuel, service log entry, and expense to one CSV file, for spreadsheets, archiving, or a full backup.
+- **Import data:** reads that CSV back, with a validation pass so a malformed row does not silently corrupt the log.
+- **Download template:** a blank CSV with the right columns and one example row per section, to fill in externally and import back.
 - **About:** version, licence (MIT), and a link to the source.
 
 ## Calculations

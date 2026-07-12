@@ -64,14 +64,23 @@ lib/
       vehicle.dart
       refuel_entry.dart
       fuel_variant.dart
+      service_log_entry.dart
+      expense.dart
     value_objects/
       window_mileage.dart
       vehicle_stats.dart
       entry_derived.dart
     repositories/
-      vehicle_repository.dart      // interface
-      refuel_repository.dart       // interface
-      catalog_repository.dart      // interface
+      vehicle_repository.dart        // interface
+      refuel_repository.dart         // interface
+      catalog_repository.dart        // interface
+      service_log_repository.dart    // interface
+      expense_repository.dart        // interface
+    reminders/
+      reminder_scheduler.dart        // port, see Reminder scheduler port
+    backup/
+      data_bundle.dart                // the DataBundle typedef
+      data_bundle_codec.dart          // port fronting the CSV writer and reader
     calculators/
       mileage_calculator.dart      // pure full-tank window math
       aggregate_calculator.dart    // lifetime and monthly rollups
@@ -86,8 +95,18 @@ lib/
       get_vehicle_history.dart
       get_vehicle_stats.dart
       load_fuel_catalog.dart
+      sync_document_reminders.dart
+      log_service.dart
+      get_service_log.dart
+      get_service_due.dart
+      delete_service.dart
+      sync_service_reminders.dart
+      log_expense.dart
+      get_expenses.dart
+      delete_expense.dart
       export_data.dart
       import_data.dart
+      get_data_bundle_template.dart
   data/
     db/
       app_database.dart      // sqflite open, onCreate, onUpgrade
@@ -95,15 +114,26 @@ lib/
     daos/
       vehicle_dao.dart
       refuel_dao.dart
+      service_log_dao.dart
+      expense_dao.dart
     models/
       vehicle_row.dart       // db row <-> entity mapping
       refuel_row.dart
+      service_log_row.dart
+      expense_row.dart
     repositories/
       vehicle_repository_impl.dart
       refuel_repository_impl.dart
       catalog_repository_impl.dart
+      service_log_repository_impl.dart
+      expense_repository_impl.dart
     catalog/
       catalog_loader.dart    // reads assets/fuel_catalog.json
+    reminders/
+      local_notification_scheduler.dart  // ReminderScheduler over flutter_local_notifications
+    csv/
+      data_bundle_csv_codec.dart   // the CSV writer, reader, and format constants
+      data_bundle_codec_impl.dart  // DataBundleCodec fronting the writer and reader
   presentation/
     home/
     add_refuel/
@@ -131,10 +161,17 @@ class Vehicle {
   final FuelCategory fuelCategory; // petrol | diesel | cng | lpg
   final String? registrationNo;   // optional
   final double? tankCapacity;     // optional, litres or kg per category
+  final double? claimedMileage;   // optional, km/l or km/kg, shown next to the real figure
+  final DateTime? insuranceExpiry; // optional, suppresses insurance reminders when unset
+  final DateTime? pucExpiry;       // optional
+  final DateTime? rcExpiry;        // optional
+  final DateTime? fitnessExpiry;   // optional
+  final double? engineOilIntervalKm;        // optional, defaults to 3000 km
+  final int? generalServiceIntervalDays;    // optional, defaults to 180 days
 }
 ```
 
-The fuel category fixes the unit for every entry on the vehicle: litre for petrol, diesel, and LPG, kg for CNG. Tank capacity only feeds projected range.
+The fuel category fixes the unit for every entry on the vehicle: litre for petrol, diesel, and LPG, kg for CNG. Tank capacity only feeds projected range. The four expiry dates back the document reminders; the two interval fields back the service due reminders, each falling back to `ServiceDueCalculator`'s default when unset.
 
 ### RefuelEntry
 
@@ -171,6 +208,37 @@ class FuelVariant {
 }
 ```
 
+### ServiceLogEntry
+
+```dart
+class ServiceLogEntry {
+  final int id;
+  final int vehicleId;
+  final ServiceTemplate template;  // engineOil | generalService
+  final DateTime performedAt;
+  final double odometer;           // km
+  final double? cost;              // optional, in the vehicle's currency
+  final String? note;              // optional
+}
+```
+
+Logging an entry resets that template's due countdown: the calculator always reads the most recent entry per template as its new baseline. A service's cost, when recorded, lives only here; it is folded into total cost of ownership directly and never duplicated into an `Expense` row.
+
+### Expense
+
+```dart
+class Expense {
+  final int id;
+  final int vehicleId;
+  final double amount;
+  final DateTime date;
+  final double? odometer;  // optional, many expenses have no meaningful reading
+  final String category;   // free text, not an enum
+}
+```
+
+A non-fuel cost against a vehicle: a tyre change, a repair, an insurance premium, and so on. The category is free text with suggestion chips in the UI (Service, Tyre, Repair, Insurance, Other), not a fixed enum, so an odd one out is still one tap of typing away.
+
 ### Computed value objects
 
 These are outputs of the calculators, never persisted. They exist so a screen receives one typed object instead of a bag of loose doubles.
@@ -192,7 +260,7 @@ class WindowMileage {
 }
 
 class VehicleStats {
-  final double totalSpend;
+  final double totalSpend;      // fuel only: the sum of every refuel's price paid
   final double totalDistance;
   final double totalQuantity;
   final double? averageMileage;    // null until a window closes
@@ -200,8 +268,49 @@ class VehicleStats {
   final WindowMileage? latestWindow;
   final double? lastFillRange;
   final double? projectedRange;    // null without tank capacity
+  final double nonFuelSpend;       // expenses plus logged service cost, defaults to 0
+
+  double get totalCostOfOwnership => totalSpend + nonFuelSpend;
+
+  // Null before any distance has been driven.
+  double? get costPerKmOfOwnership =>
+      totalDistance > 0 ? totalCostOfOwnership / totalDistance : null;
+}
+
+class DocumentReminder {
+  final int vehicleId;
+  final String vehicleName;
+  final VehicleDocument document;
+  final DateTime expiry;
+  final int daysBefore;    // lead time: 30, 15, 7, or 1
+  final DateTime fireAt;   // local wall clock instant, always in the future when produced
+}
+
+class DocumentAlert {
+  final VehicleDocument document;
+  final DateTime expiry;
+  final int daysRemaining; // negative once the document has lapsed
+
+  bool get overdue => daysRemaining < 0;
+}
+
+class ServiceDueStatus {
+  final ServiceTemplate template;
+  final double? remainingKm;        // null when the template has no distance dimension
+  final int? remainingDays;         // null when the template has no date dimension
+  final DateTime? projectedDueDate; // whichever dimension is sooner, for scheduling
+  final bool overdue;               // true once either dimension has crossed zero
+}
+
+class ServiceReminder {
+  final int vehicleId;
+  final String vehicleName;
+  final ServiceTemplate template;
+  final DateTime fireAt;  // local wall clock instant, always in the future when produced
 }
 ```
+
+`DocumentAlert` and `ServiceDueStatus` are the "how close is it" figures a glance element reads; `DocumentReminder` and `ServiceReminder` are what actually gets handed to the `ReminderScheduler` port.
 
 ## Repository interfaces
 
@@ -229,9 +338,34 @@ abstract class RefuelRepository {
 abstract class CatalogRepository {
   Future<Result<List<FuelVariant>>> load();
 }
+
+abstract class ServiceLogRepository {
+  Future<Result<List<ServiceLogEntry>>> getForVehicle(int vehicleId);
+  Future<Result<ServiceLogEntry>> add(ServiceLogEntry entry);
+  Future<Result<Unit>> delete(int id);
+}
+
+abstract class ExpenseRepository {
+  Future<Result<List<Expense>>> getForVehicle(int vehicleId);
+  Future<Result<Expense>> add(Expense expense);
+  Future<Result<Unit>> delete(int id);
+}
 ```
 
 The domain calculators consume the plain ordered list from `getForVehicle` and produce the value objects above. Ordering by odometer first, then timestamp, is deliberate: the window algorithm walks entries in the sequence they were driven, and the odometer is the source of truth for that order.
+
+## Reminder scheduler port
+
+Document expiry reminders and service due reminders both end at a local notification, but the domain has no business knowing about `flutter_local_notifications`. `ReminderScheduler` is the port that keeps it out:
+
+```dart
+abstract interface class ReminderScheduler {
+  Future<void> sync(List<DocumentReminder> reminders);
+  Future<void> syncServiceReminders(List<ServiceReminder> reminders);
+}
+```
+
+Each method is a full reconcile of its own category, not an append: the caller passes the complete set of future reminders and the implementation cancels anything in that category no longer in it. The two categories are reconciled independently, so syncing one never clobbers the other. `LocalNotificationScheduler` in `data/reminders/` is the only implementation, Android only, and best effort by contract: a platform that cannot schedule does nothing rather than failing the caller. The equivalent port for the backup file format, `DataBundleCodec`, follows the same shape; see the `ExportData` and `ImportData` use cases below.
 
 ## Use cases
 
@@ -245,23 +379,40 @@ Each use case is a thin, single-responsibility class that orchestrates repositor
 - **EditRefuel** updates a fill and triggers a window recompute for the affected vehicle.
 - **DeleteRefuel** removes a fill and recomputes affected windows.
 - **GetVehicleHistory** returns entries with their per-entry derived values for the timeline.
-- **GetVehicleStats** runs the calculators to produce `VehicleStats` for the dashboard and stats screen.
+- **GetVehicleStats** runs the calculators to produce `VehicleStats` for the dashboard and stats screen, including non-fuel spend once any is logged.
 - **LoadFuelCatalog** reads and parses the JSON asset into `FuelVariant` objects, filtered by category on request.
-- **ExportData** serialises vehicles and entries to CSV or a JSON backup.
-- **ImportData** parses and validates an incoming CSV or JSON backup before it touches the database.
+- **SyncDocumentReminders** replans every document expiry reminder against the current vehicles, through the `ReminderScheduler` port.
+- **LogService** validates and stores a service log entry, resetting that template's due countdown.
+- **GetServiceLog** returns a vehicle's service history, most recent first.
+- **GetServiceDue** runs `ServiceDueCalculator` to report where each maintenance template stands for a vehicle.
+- **DeleteService** removes a service log entry.
+- **SyncServiceReminders** replans every service due reminder against the current vehicles and their history, through the same `ReminderScheduler` port.
+- **LogExpense** validates and stores a non-fuel expense.
+- **GetExpenses** returns a vehicle's expenses, most recent first.
+- **DeleteExpense** removes an expense.
+- **ExportData** assembles every vehicle and everything logged against it, then hands the bundle to the `DataBundleCodec` port to produce the backup file content.
+- **ImportData** decodes a backup file through `DataBundleCodec` and writes it into the repositories, returning the imported bundle so the caller can report what came in.
+- **GetDataBundleTemplate** returns a blank backup file from the same port, for a user to fill in externally and import back.
 
 ## SQLite schema
 
-Two tables. Money and quantities are stored as `REAL`; ids and flags as `INTEGER`. SQLite has no boolean, so flags are 0 or 1. Timestamps are epoch milliseconds.
+Four tables. Money and quantities are stored as `REAL`; ids and flags as `INTEGER`. SQLite has no boolean, so flags are 0 or 1. Timestamps are epoch milliseconds.
 
 ```sql
 CREATE TABLE vehicles (
-  id             INTEGER PRIMARY KEY AUTOINCREMENT,
-  name           TEXT    NOT NULL,
-  type           TEXT    NOT NULL,   -- car | motorcycle | scooter | other
-  fuel_category  TEXT    NOT NULL,   -- petrol | diesel | cng | lpg
-  registration   TEXT,
-  tank_capacity  REAL
+  id                             INTEGER PRIMARY KEY AUTOINCREMENT,
+  name                           TEXT    NOT NULL,
+  type                           TEXT    NOT NULL,   -- car | motorcycle | scooter | other
+  fuel_category                  TEXT    NOT NULL,   -- petrol | diesel | cng | lpg
+  registration                   TEXT,
+  tank_capacity                  REAL,
+  claimed_mileage                REAL,
+  insurance_expiry               INTEGER,             -- epoch millis
+  puc_expiry                     INTEGER,
+  rc_expiry                      INTEGER,
+  fitness_expiry                 INTEGER,
+  engine_oil_interval_km         REAL,
+  general_service_interval_days  INTEGER
 );
 
 CREATE TABLE refuel_entries (
@@ -285,9 +436,34 @@ CREATE INDEX idx_entries_vehicle_odo
 
 CREATE INDEX idx_entries_vehicle_time
   ON refuel_entries (vehicle_id, filled_at);
+
+CREATE TABLE service_log (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  vehicle_id    INTEGER NOT NULL,
+  template      TEXT    NOT NULL,   -- engineOil | generalService
+  performed_at  INTEGER NOT NULL,   -- epoch millis
+  odometer      REAL    NOT NULL,
+  cost          REAL,
+  note          TEXT,
+  FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_service_log_vehicle ON service_log (vehicle_id);
+
+CREATE TABLE expenses (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  vehicle_id    INTEGER NOT NULL,
+  amount        REAL    NOT NULL,
+  date          INTEGER NOT NULL,   -- epoch millis
+  odometer      REAL,
+  category      TEXT    NOT NULL,   -- free text, not an enum
+  FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_expenses_vehicle ON expenses (vehicle_id);
 ```
 
-`ON DELETE CASCADE` handles vehicle deletion cleanly, and foreign keys are enabled per connection (`PRAGMA foreign_keys = ON`) since sqflite leaves them off by default. The composite index on `(vehicle_id, odometer)` backs the window walk; the timestamp index backs history and monthly grouping.
+`ON DELETE CASCADE` handles vehicle deletion cleanly, and foreign keys are enabled per connection (`PRAGMA foreign_keys = ON`) since sqflite leaves them off by default. The composite index on `(vehicle_id, odometer)` backs the window walk; the timestamp index backs history and monthly grouping. `service_log` and `expenses` each get a single index on `vehicle_id`, since both are only ever queried per vehicle.
 
 ### Migration policy
 
