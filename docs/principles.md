@@ -34,6 +34,6 @@ OdoLog is free and MIT licensed. No ads, no paid tier, no "pro" version dangling
 
 ## Honest scope
 
-This is a fuel log, not a car super-app. It is not trying to track insurance renewals, service schedules, tyre pressure, parking spots, or your driving route. Those are real needs and other apps handle them. Bolting them on here would blur the one thing OdoLog does well.
+This started as a fuel log and it is widening, on purpose but slowly, into a record of what a vehicle costs to run and keep road legal. Document expiry reminders (insurance, PUC, RC, fitness) are in, and a simple service log is next, because a lapsed paper is a real fine and it sits right next to the running costs the app already tracks. What stays out is the rest of the car super-app: your driving route, GPS, parking spots, live traffic, and anything that phones home. Those are real needs and other apps handle them.
 
 I would rather ship a small app that gets fuel and mileage exactly right than a big one that does ten things at seventy percent. When someone asks for a feature that pulls the app toward being a general vehicle manager, the honest answer is usually no, and that no is a feature in itself.

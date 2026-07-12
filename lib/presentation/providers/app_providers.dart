@@ -87,3 +87,20 @@ Future<List<FuelVariant>> catalog(Ref ref, FuelCategory category) async {
       .execute(category: category);
   return _unwrap(result);
 }
+
+/// Keeps the scheduled document reminders in step with the vehicles. Watched
+/// once by the app so it stays alive; it fires immediately on start and again
+/// whenever the vehicle list changes (a saved edit invalidates that list), so
+/// a newly entered or cleared expiry date reschedules without any extra call
+/// site. The sync itself is best effort and a no-op off Android.
+@Riverpod(keepAlive: true)
+class DocumentReminderSync extends _$DocumentReminderSync {
+  @override
+  void build() {
+    ref.listen(vehicleListProvider, (previous, next) {
+      final vehicles = next.value;
+      if (vehicles == null) return;
+      ref.read(syncDocumentRemindersProvider).execute(vehicles);
+    }, fireImmediately: true);
+  }
+}

@@ -49,3 +49,12 @@ String fuelCategoryLabel(FuelCategory category) => switch (category) {
   FuelCategory.cng => 'CNG',
   FuelCategory.lpg => 'LPG',
 };
+
+/// The short display name for a vehicle document, used in the form section and
+/// the dashboard glance. Acronyms stay uppercased.
+String documentLabel(VehicleDocument document) => switch (document) {
+  VehicleDocument.insurance => 'Insurance',
+  VehicleDocument.puc => 'PUC',
+  VehicleDocument.rc => 'RC',
+  VehicleDocument.fitness => 'Fitness',
+};

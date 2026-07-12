@@ -12,6 +12,7 @@ import '../../domain/entities/vehicle.dart';
 import '../common/csv_safe_text_formatter.dart';
 import '../common/formatting.dart';
 import '../common/grouped_list.dart';
+import '../common/single_decimal_formatter.dart';
 import '../providers/app_providers.dart';
 import '../providers/refuel_form_provider.dart';
 import '../providers/settings_provider.dart';
@@ -266,7 +267,7 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
       autofocus: autofocus,
       textInputAction: textInputAction,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [_SingleDecimalFormatter()],
+      inputFormatters: [SingleDecimalFormatter()],
       style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         labelText: label,
@@ -479,25 +480,6 @@ class _FullTankControl extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-/// A single decimal point, digits only formatter for the three numeric fields.
-/// The plain `[0-9.]` allow-filter it replaces still let a value like "3.4.5"
-/// through, which then failed to parse only at Save; rejecting the whole edit
-/// whenever it would produce a second decimal point makes that input
-/// impossible to type instead of deferring the error.
-class _SingleDecimalFormatter extends TextInputFormatter {
-  static final _validPartial = RegExp(r'^\d*\.?\d*$');
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.isEmpty) return newValue;
-    if (!_validPartial.hasMatch(newValue.text)) return oldValue;
-    return newValue;
   }
 }
 

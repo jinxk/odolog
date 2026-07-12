@@ -25,7 +25,7 @@ These are deliberately out of scope for v1. They are listed so the scope stays h
 - **No cloud sync and no accounts.** Data lives in local SQLite. No login, no server.
 - **No telemetry.** The app does not phone home. No analytics SDK, no crash reporting that ships data off device.
 - **No social or sharing features.** No leaderboards, no friends, no comparing your mileage with strangers.
-- **No maintenance or service tracker.** Oil changes, insurance renewals, and service reminders are a different app. Maybe later, not now.
+- **Running costs and paperwork are growing in, carefully.** Document expiry reminders (insurance, PUC, RC, fitness) landed in v0.2, and a basic service log is planned next. Full workshop management (parts, labour, a per-component service history) stays out, and so do driving routes, GPS, and anything that leaves the device.
 - **No live fuel price feeds.** Prices are whatever the user typed. The app does not fetch pump rates.
 - **No cost splitting, no trip logging, no GPS.** OdoLog records fills, not journeys.
 

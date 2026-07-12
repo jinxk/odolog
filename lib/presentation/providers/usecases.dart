@@ -12,6 +12,7 @@ import '../../domain/usecases/import_data.dart';
 import '../../domain/usecases/list_vehicles.dart';
 import '../../domain/usecases/load_fuel_catalog.dart';
 import '../../domain/usecases/log_refuel.dart';
+import '../../domain/usecases/sync_document_reminders.dart';
 import 'repositories.dart';
 
 part 'usecases.g.dart';
@@ -68,3 +69,7 @@ ImportData importData(Ref ref) => ImportData(
   ref.watch(vehicleRepositoryProvider),
   ref.watch(refuelRepositoryProvider),
 );
+
+@Riverpod(keepAlive: true)
+SyncDocumentReminders syncDocumentReminders(Ref ref) =>
+    SyncDocumentReminders(ref.watch(reminderSchedulerProvider));

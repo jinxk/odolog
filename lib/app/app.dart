@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../presentation/providers/app_providers.dart';
 import '../presentation/providers/settings_provider.dart';
 import 'router.dart';
 import 'theme/theme.dart';
@@ -14,6 +15,9 @@ class OdoLogApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    // Instantiate the reminder sync so it stays alive for the app's lifetime:
+    // it reschedules document reminders on start and after any vehicle edit.
+    ref.watch(documentReminderSyncProvider);
     final themeMode =
         ref.watch(settingsProvider).value?.themeMode ?? ThemeMode.system;
     return MaterialApp.router(

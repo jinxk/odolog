@@ -508,3 +508,51 @@ final class ImportDataProvider
 }
 
 String _$importDataHash() => r'3b5b974add27ab7e0ddd6a781dd757b3941262d6';
+
+@ProviderFor(syncDocumentReminders)
+final syncDocumentRemindersProvider = SyncDocumentRemindersProvider._();
+
+final class SyncDocumentRemindersProvider
+    extends
+        $FunctionalProvider<
+          SyncDocumentReminders,
+          SyncDocumentReminders,
+          SyncDocumentReminders
+        >
+    with $Provider<SyncDocumentReminders> {
+  SyncDocumentRemindersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'syncDocumentRemindersProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$syncDocumentRemindersHash();
+
+  @$internal
+  @override
+  $ProviderElement<SyncDocumentReminders> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SyncDocumentReminders create(Ref ref) {
+    return syncDocumentReminders(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SyncDocumentReminders value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SyncDocumentReminders>(value),
+    );
+  }
+}
+
+String _$syncDocumentRemindersHash() =>
+    r'a1c382486f2833431be496dd4a6d5b4ecbdefa69';
