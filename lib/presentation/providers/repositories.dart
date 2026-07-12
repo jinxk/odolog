@@ -2,15 +2,21 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../data/catalog/catalog_loader.dart';
+import '../../data/daos/expense_dao.dart';
 import '../../data/daos/refuel_dao.dart';
+import '../../data/daos/service_log_dao.dart';
 import '../../data/daos/vehicle_dao.dart';
 import '../../data/reminders/local_notification_scheduler.dart';
 import '../../data/repositories/catalog_repository_impl.dart';
+import '../../data/repositories/expense_repository_impl.dart';
 import '../../data/repositories/refuel_repository_impl.dart';
+import '../../data/repositories/service_log_repository_impl.dart';
 import '../../data/repositories/vehicle_repository_impl.dart';
 import '../../domain/reminders/reminder_scheduler.dart';
 import '../../domain/repositories/catalog_repository.dart';
+import '../../domain/repositories/expense_repository.dart';
 import '../../domain/repositories/refuel_repository.dart';
+import '../../domain/repositories/service_log_repository.dart';
 import '../../domain/repositories/vehicle_repository.dart';
 
 part 'repositories.g.dart';
@@ -34,6 +40,14 @@ RefuelRepository refuelRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 CatalogRepository catalogRepository(Ref ref) =>
     CatalogRepositoryImpl(CatalogLoader());
+
+@Riverpod(keepAlive: true)
+ServiceLogRepository serviceLogRepository(Ref ref) =>
+    ServiceLogRepositoryImpl(ServiceLogDao(ref.watch(databaseProvider)));
+
+@Riverpod(keepAlive: true)
+ExpenseRepository expenseRepository(Ref ref) =>
+    ExpenseRepositoryImpl(ExpenseDao(ref.watch(databaseProvider)));
 
 /// The platform notification scheduler. Widget tests can override this with a
 /// no-op, though the real one already stands down off Android.

@@ -10,7 +10,7 @@ class AppDatabase {
   const AppDatabase._();
 
   static const databaseName = 'odolog.db';
-  static const schemaVersion = 2;
+  static const schemaVersion = 3;
 
   /// Opens the database, running configuration, creation, and upgrades. Pass a
   /// [path] in tests (for example `inMemoryDatabasePath`); production leaves it
@@ -55,7 +55,9 @@ class AppDatabase {
       insurance_expiry  INTEGER,
       puc_expiry        INTEGER,
       rc_expiry         INTEGER,
-      fitness_expiry    INTEGER
+      fitness_expiry    INTEGER,
+      engine_oil_interval_km        REAL,
+      general_service_interval_days INTEGER
     )
     ''',
     '''
@@ -77,5 +79,30 @@ class AppDatabase {
     ''',
     'CREATE INDEX idx_entries_vehicle_odo ON refuel_entries (vehicle_id, odometer)',
     'CREATE INDEX idx_entries_vehicle_time ON refuel_entries (vehicle_id, filled_at)',
+    '''
+    CREATE TABLE service_log (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      vehicle_id    INTEGER NOT NULL,
+      template      TEXT    NOT NULL,
+      performed_at  INTEGER NOT NULL,
+      odometer      REAL    NOT NULL,
+      cost          REAL,
+      note          TEXT,
+      FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
+    )
+    ''',
+    'CREATE INDEX idx_service_log_vehicle ON service_log (vehicle_id)',
+    '''
+    CREATE TABLE expenses (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      vehicle_id    INTEGER NOT NULL,
+      amount        REAL    NOT NULL,
+      date          INTEGER NOT NULL,
+      odometer      REAL,
+      category      TEXT    NOT NULL,
+      FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
+    )
+    ''',
+    'CREATE INDEX idx_expenses_vehicle ON expenses (vehicle_id)',
   ];
 }

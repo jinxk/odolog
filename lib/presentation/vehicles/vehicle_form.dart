@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/failures.dart';
+import '../../domain/calculators/service_due_calculator.dart';
 import '../../domain/entities/vehicle.dart';
 import '../common/csv_safe_text_formatter.dart';
 import '../common/formatting.dart';
@@ -13,7 +14,8 @@ import '../providers/usecases.dart';
 /// Name, type, and fuel category are required and always visible. Registration,
 /// tank capacity, and the company claimed mileage are optional and sit under a
 /// "more details" divider; the document expiry dates sit under their own
-/// "Documents" divider so the fast path to adding a vehicle stays short. The
+/// "Documents" divider, and the two service intervals under a "Service
+/// intervals" divider, so the fast path to adding a vehicle stays short. The
 /// tank capacity and claimed mileage units follow the chosen fuel category.
 class VehicleForm extends ConsumerStatefulWidget {
   const VehicleForm({
@@ -36,11 +38,14 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
   late final TextEditingController _registration;
   late final TextEditingController _tankCapacity;
   late final TextEditingController _claimedMileage;
+  late final TextEditingController _engineOilInterval;
+  late final TextEditingController _generalServiceInterval;
   late VehicleType _type;
   late FuelCategory _category;
   late final Map<VehicleDocument, DateTime?> _docDates;
   bool _showMore = false;
   bool _showDocuments = false;
+  bool _showServiceIntervals = false;
   bool _saving = false;
   String? _nameError;
 
@@ -60,6 +65,14 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
           ? ''
           : formatMileage(initial!.claimedMileage!),
     );
+    _engineOilInterval = TextEditingController(
+      text: initial?.engineOilIntervalKm == null
+          ? ''
+          : formatQuantity(initial!.engineOilIntervalKm!),
+    );
+    _generalServiceInterval = TextEditingController(
+      text: initial?.generalServiceIntervalDays?.toString() ?? '',
+    );
     _type = initial?.type ?? VehicleType.car;
     _category = initial?.fuelCategory ?? FuelCategory.petrol;
     _docDates = {
@@ -71,6 +84,9 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
         (initial?.tankCapacity != null) ||
         (initial?.claimedMileage != null);
     _showDocuments = _docDates.values.any((date) => date != null);
+    _showServiceIntervals =
+        (initial?.engineOilIntervalKm != null) ||
+        (initial?.generalServiceIntervalDays != null);
   }
 
   @override
@@ -79,6 +95,8 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
     _registration.dispose();
     _tankCapacity.dispose();
     _claimedMileage.dispose();
+    _engineOilInterval.dispose();
+    _generalServiceInterval.dispose();
     super.dispose();
   }
 
@@ -101,6 +119,10 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
       pucExpiry: _docDates[VehicleDocument.puc],
       rcExpiry: _docDates[VehicleDocument.rc],
       fitnessExpiry: _docDates[VehicleDocument.fitness],
+      engineOilIntervalKm: double.tryParse(_engineOilInterval.text.trim()),
+      generalServiceIntervalDays: int.tryParse(
+        _generalServiceInterval.text.trim(),
+      ),
     );
 
     final result = widget.initial == null
@@ -242,6 +264,38 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
               ),
               onClear: () => setState(() => _docDates[document] = null),
             ),
+        ],
+        const SizedBox(height: 12),
+        _SectionDivider(
+          label: 'Service intervals',
+          expanded: _showServiceIntervals,
+          onToggle: () =>
+              setState(() => _showServiceIntervals = !_showServiceIntervals),
+        ),
+        if (_showServiceIntervals) ...[
+          const SizedBox(height: 20),
+          TextField(
+            controller: _engineOilInterval,
+            keyboardType: const TextInputType.numberWithOptions(),
+            inputFormatters: [SingleDecimalFormatter()],
+            decoration: InputDecoration(
+              labelText: 'Engine oil interval',
+              hintText:
+                  'Default ${ServiceDueCalculator.defaultEngineOilIntervalKm.toStringAsFixed(0)}',
+              suffixText: 'km',
+            ),
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: _generalServiceInterval,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'General service interval',
+              hintText:
+                  'Default ${ServiceDueCalculator.defaultGeneralServiceIntervalDays}',
+              suffixText: 'days',
+            ),
+          ),
         ],
         const SizedBox(height: 28),
         FilledButton(

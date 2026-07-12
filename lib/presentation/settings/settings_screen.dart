@@ -64,6 +64,26 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.betweenSections),
+              const SectionHeader('Maintenance'),
+              GroupedList(
+                rows: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: const Icon(Icons.build_outlined),
+                    title: const Text('Service log'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/service-log'),
+                  ),
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: const Icon(Icons.receipt_long_outlined),
+                    title: const Text('Expenses'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/expenses'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.betweenSections),
               const SectionHeader('Data'),
               const _DataSection(),
               const SizedBox(height: AppSpacing.betweenSections),
@@ -281,8 +301,9 @@ class _DataSectionState extends ConsumerState<_DataSection> {
       (_) async {
         ref.invalidate(vehicleListProvider);
         _showMessage(
-          'Imported ${bundle.vehicles.length} vehicles and '
-          '${bundle.entries.length} refuels.',
+          'Imported ${bundle.vehicles.length} vehicles, '
+          '${bundle.entries.length} refuels, ${bundle.serviceLog.length} '
+          'services, and ${bundle.expenses.length} expenses.',
         );
       },
     );

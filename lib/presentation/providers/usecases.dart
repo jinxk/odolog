@@ -1,18 +1,26 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../domain/usecases/add_vehicle.dart';
+import '../../domain/usecases/delete_expense.dart';
 import '../../domain/usecases/delete_refuel.dart';
+import '../../domain/usecases/delete_service.dart';
 import '../../domain/usecases/delete_vehicle.dart';
 import '../../domain/usecases/edit_refuel.dart';
 import '../../domain/usecases/edit_vehicle.dart';
 import '../../domain/usecases/export_data.dart';
+import '../../domain/usecases/get_expenses.dart';
+import '../../domain/usecases/get_service_due.dart';
+import '../../domain/usecases/get_service_log.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
 import '../../domain/usecases/get_vehicle_stats.dart';
 import '../../domain/usecases/import_data.dart';
 import '../../domain/usecases/list_vehicles.dart';
 import '../../domain/usecases/load_fuel_catalog.dart';
+import '../../domain/usecases/log_expense.dart';
 import '../../domain/usecases/log_refuel.dart';
+import '../../domain/usecases/log_service.dart';
 import '../../domain/usecases/sync_document_reminders.dart';
+import '../../domain/usecases/sync_service_reminders.dart';
 import 'repositories.dart';
 
 part 'usecases.g.dart';
@@ -52,6 +60,8 @@ GetVehicleHistory getVehicleHistory(Ref ref) =>
 GetVehicleStats getVehicleStats(Ref ref) => GetVehicleStats(
   ref.watch(vehicleRepositoryProvider),
   ref.watch(refuelRepositoryProvider),
+  ref.watch(expenseRepositoryProvider),
+  ref.watch(serviceLogRepositoryProvider),
 );
 
 @Riverpod(keepAlive: true)
@@ -62,14 +72,55 @@ LoadFuelCatalog loadFuelCatalog(Ref ref) =>
 ExportData exportData(Ref ref) => ExportData(
   ref.watch(vehicleRepositoryProvider),
   ref.watch(refuelRepositoryProvider),
+  ref.watch(serviceLogRepositoryProvider),
+  ref.watch(expenseRepositoryProvider),
 );
 
 @Riverpod(keepAlive: true)
 ImportData importData(Ref ref) => ImportData(
   ref.watch(vehicleRepositoryProvider),
   ref.watch(refuelRepositoryProvider),
+  ref.watch(serviceLogRepositoryProvider),
+  ref.watch(expenseRepositoryProvider),
 );
 
 @Riverpod(keepAlive: true)
 SyncDocumentReminders syncDocumentReminders(Ref ref) =>
     SyncDocumentReminders(ref.watch(reminderSchedulerProvider));
+
+@Riverpod(keepAlive: true)
+SyncServiceReminders syncServiceReminders(Ref ref) => SyncServiceReminders(
+  ref.watch(reminderSchedulerProvider),
+  ref.watch(refuelRepositoryProvider),
+  ref.watch(serviceLogRepositoryProvider),
+);
+
+@Riverpod(keepAlive: true)
+LogService logService(Ref ref) =>
+    LogService(ref.watch(serviceLogRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+DeleteService deleteService(Ref ref) =>
+    DeleteService(ref.watch(serviceLogRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+GetServiceLog getServiceLog(Ref ref) =>
+    GetServiceLog(ref.watch(serviceLogRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+GetServiceDue getServiceDue(Ref ref) => GetServiceDue(
+  ref.watch(refuelRepositoryProvider),
+  ref.watch(serviceLogRepositoryProvider),
+);
+
+@Riverpod(keepAlive: true)
+LogExpense logExpense(Ref ref) =>
+    LogExpense(ref.watch(expenseRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+DeleteExpense deleteExpense(Ref ref) =>
+    DeleteExpense(ref.watch(expenseRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+GetExpenses getExpenses(Ref ref) =>
+    GetExpenses(ref.watch(expenseRepositoryProvider));

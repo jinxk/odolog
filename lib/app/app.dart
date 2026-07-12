@@ -15,9 +15,11 @@ class OdoLogApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    // Instantiate the reminder sync so it stays alive for the app's lifetime:
-    // it reschedules document reminders on start and after any vehicle edit.
+    // Instantiate the reminder syncs so they stay alive for the app's
+    // lifetime: they reschedule document and service reminders on start and
+    // after any vehicle edit.
     ref.watch(documentReminderSyncProvider);
+    ref.watch(serviceReminderSyncProvider);
     final themeMode =
         ref.watch(settingsProvider).value?.themeMode ?? ThemeMode.system;
     return MaterialApp.router(

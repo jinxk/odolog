@@ -77,6 +77,7 @@ class _Dashboard extends ConsumerWidget {
       children: [
         _EditorialHeader(vehicle: vehicle),
         _DocumentsGlance(vehicle: vehicle),
+        _ServiceDueGlance(vehicle: vehicle),
         const SizedBox(height: 20),
         EntranceFade(
           child: _HeroCard(vehicle: vehicle, currency: currency),
@@ -689,6 +690,72 @@ class _DocumentsGlance extends StatelessWidget {
   }
 
   String _days(int days) => days == 1 ? '1 day' : '$days days';
+}
+
+/// A glance line per maintenance template that has anything to show, tapping
+/// through to the full service log. Unlike [_DocumentsGlance], which surfaces
+/// only the nearest alert, both templates get their own line here: there are
+/// only ever two, so showing both costs nothing and a countdown line the
+/// owner is not close to yet is still useful context, not noise.
+class _ServiceDueGlance extends ConsumerWidget {
+  const _ServiceDueGlance({required this.vehicle});
+
+  final Vehicle vehicle;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final due = ref.watch(serviceDueProvider(vehicle)).value;
+    if (due == null) return const SizedBox.shrink();
+    final withData = due
+        .where((s) => s.remainingKm != null || s.remainingDays != null)
+        .toList();
+    if (withData.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final roles =
+        theme.extension<AppColorRoles>() ??
+        AppColorRoles.of(theme.colorScheme.onSurface, theme.brightness);
+    final isDark = theme.brightness == Brightness.dark;
+    return InkWell(
+      onTap: () => context.push('/service-log'),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final status in withData)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      status.overdue
+                          ? Icons.warning_amber_rounded
+                          : Icons.build_outlined,
+                      size: 18,
+                      color: status.overdue
+                          ? roles.negative
+                          : (isDark ? AppColors.amber : AppColors.teal),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        serviceDueSummary(status),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: status.overdue
+                              ? roles.negative
+                              : (isDark ? AppColors.amber : AppColors.teal),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// A one-time, dismissible card that warns about aggressive OEM battery

@@ -32,6 +32,8 @@ class Vehicle extends Equatable {
     this.pucExpiry,
     this.rcExpiry,
     this.fitnessExpiry,
+    this.engineOilIntervalKm,
+    this.generalServiceIntervalDays,
   });
 
   final int id;
@@ -60,6 +62,14 @@ class Vehicle extends Equatable {
   /// when unset.
   final DateTime? fitnessExpiry;
 
+  /// How often this vehicle's engine oil should be changed, in km. Null uses
+  /// [ServiceDueCalculator.defaultEngineOilIntervalKm].
+  final double? engineOilIntervalKm;
+
+  /// How often this vehicle needs a general service, in days. Null uses
+  /// [ServiceDueCalculator.defaultGeneralServiceIntervalDays].
+  final int? generalServiceIntervalDays;
+
   /// The expiry date stored for [document], or null when that document has no
   /// date set on this vehicle.
   DateTime? expiryFor(VehicleDocument document) => switch (document) {
@@ -81,6 +91,8 @@ class Vehicle extends Equatable {
     DateTime? pucExpiry,
     DateTime? rcExpiry,
     DateTime? fitnessExpiry,
+    double? engineOilIntervalKm,
+    int? generalServiceIntervalDays,
   }) {
     return Vehicle(
       id: id ?? this.id,
@@ -94,6 +106,9 @@ class Vehicle extends Equatable {
       pucExpiry: pucExpiry ?? this.pucExpiry,
       rcExpiry: rcExpiry ?? this.rcExpiry,
       fitnessExpiry: fitnessExpiry ?? this.fitnessExpiry,
+      engineOilIntervalKm: engineOilIntervalKm ?? this.engineOilIntervalKm,
+      generalServiceIntervalDays:
+          generalServiceIntervalDays ?? this.generalServiceIntervalDays,
     );
   }
 
@@ -110,5 +125,7 @@ class Vehicle extends Equatable {
     pucExpiry,
     rcExpiry,
     fitnessExpiry,
+    engineOilIntervalKm,
+    generalServiceIntervalDays,
   ];
 }

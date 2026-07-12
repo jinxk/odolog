@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 
+import '../../domain/entities/service_log_entry.dart';
 import '../../domain/entities/vehicle.dart';
+import '../../domain/value_objects/service_due_status.dart';
 
 /// Shared display formatting. Kept in one place so every screen shows the same
 /// number of decimals and the same units, and so the fuel unit always follows
@@ -58,3 +60,34 @@ String documentLabel(VehicleDocument document) => switch (document) {
   VehicleDocument.rc => 'RC',
   VehicleDocument.fitness => 'Fitness',
 };
+
+String serviceTemplateLabel(ServiceTemplate template) => switch (template) {
+  ServiceTemplate.engineOil => 'Engine oil',
+  ServiceTemplate.generalService => 'General service',
+};
+
+/// A one-line countdown for one maintenance template, for example "Engine oil
+/// due in about 180 km" or "General service overdue by 12 days". A template
+/// whose distance dimension applies is read by distance; otherwise its date
+/// dimension is read by days. Falls back to a plain "not enough data yet"
+/// once a vehicle has no refuel history to measure against.
+String serviceDueSummary(ServiceDueStatus status) {
+  final label = serviceTemplateLabel(status.template);
+  final km = status.remainingKm;
+  if (km != null) {
+    final whole = km.abs().round();
+    return km > 0
+        ? '$label due in about $whole km'
+        : '$label overdue by $whole km';
+  }
+  final days = status.remainingDays;
+  if (days != null) {
+    if (days == 0) return '$label due today';
+    final whole = days.abs();
+    final unit = whole == 1 ? 'day' : 'days';
+    return days > 0
+        ? '$label due in about $whole $unit'
+        : '$label overdue by $whole $unit';
+  }
+  return '$label: not enough data yet';
+}

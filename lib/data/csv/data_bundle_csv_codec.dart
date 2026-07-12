@@ -1,17 +1,20 @@
 /// Reads and writes the CSV format used for both a full backup and the blank
-/// import template. One file carries both entities: a schema header row, a
-/// `vehicles` section with its own column header, then a `refuels` section
-/// with its own. The schema version lets the columns grow without breaking
-/// older files: the writer emits version 2 (vehicles gained a claimed mileage
-/// figure and four document expiry dates), and the reader still accepts a
-/// version 1 file, filling the new vehicle fields with null.
+/// import template. One file carries every entity: a schema header row, then
+/// one section per entity, each with its own column header. The schema
+/// version lets the columns and sections grow without breaking older files:
+/// the writer emits version 3 (vehicles gained two service interval columns,
+/// and a `service_log` and an `expenses` section were added), and the reader
+/// still accepts a version 1 or version 2 file, filling the new vehicle
+/// fields with null and the new sections with nothing.
 library;
 
 import 'package:fpdart/fpdart.dart';
 
 import '../../core/failures.dart';
 import '../../core/typedefs.dart';
+import '../../domain/entities/expense.dart';
 import '../../domain/entities/refuel_entry.dart';
+import '../../domain/entities/service_log_entry.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/export_data.dart';
 import 'csv_grammar.dart';
@@ -23,14 +26,17 @@ abstract final class DataBundleCsvFormat {
 
   /// The version the writer emits. The reader accepts every version in
   /// [supportedVersions].
-  static const schemaVersion = '2';
+  static const schemaVersion = '3';
 
   /// Versions the reader understands. Version 1 predates the vehicle document
-  /// and claimed mileage columns; its files still import.
-  static const supportedVersions = ['1', '2'];
+  /// and claimed mileage columns; version 2 predates the service interval
+  /// columns and the service log and expense sections. Both still import.
+  static const supportedVersions = ['1', '2', '3'];
 
   static const vehiclesSection = 'vehicles';
   static const refuelsSection = 'refuels';
+  static const serviceLogSection = 'service_log';
+  static const expensesSection = 'expenses';
 
   /// The original six vehicle columns, still the shape of a version 1 file.
   static const vehicleHeaderV1 = [
@@ -53,12 +59,22 @@ abstract final class DataBundleCsvFormat {
     'fitnessExpiry',
   ];
 
+  /// Version 3 appends the two service interval columns.
+  static const vehicleHeaderV3 = [
+    ...vehicleHeaderV2,
+    'engineOilIntervalKm',
+    'generalServiceIntervalDays',
+  ];
+
   /// The header the writer emits: always the current version.
-  static const vehicleHeader = vehicleHeaderV2;
+  static const vehicleHeader = vehicleHeaderV3;
 
   /// The expected vehicle header for a given file [version].
-  static List<String> vehicleHeaderFor(String version) =>
-      version == '1' ? vehicleHeaderV1 : vehicleHeaderV2;
+  static List<String> vehicleHeaderFor(String version) => switch (version) {
+    '1' => vehicleHeaderV1,
+    '2' => vehicleHeaderV2,
+    _ => vehicleHeaderV3,
+  };
 
   static const refuelHeader = [
     'id',
@@ -74,6 +90,28 @@ abstract final class DataBundleCsvFormat {
     'notes',
     'odometerOverride',
   ];
+
+  /// Introduced in version 3. A version 1 or 2 file has neither this section
+  /// nor [expenseHeader]'s.
+  static const serviceLogHeader = [
+    'id',
+    'vehicleId',
+    'template',
+    'performedAt',
+    'odometer',
+    'cost',
+    'note',
+  ];
+
+  /// Introduced in version 3.
+  static const expenseHeader = [
+    'id',
+    'vehicleId',
+    'amount',
+    'date',
+    'odometer',
+    'category',
+  ];
 }
 
 /// Serialises a [DataBundle] to the CSV format described in
@@ -81,8 +119,9 @@ abstract final class DataBundleCsvFormat {
 class DataBundleCsvWriter {
   const DataBundleCsvWriter._();
 
-  /// Serialises [bundle] to CSV: the schema header, then the vehicles
-  /// section, then the refuels section, every field quoted.
+  /// Serialises [bundle] to CSV: the schema header, then one section per
+  /// entity in vehicles, refuels, service log, expenses order, every field
+  /// quoted.
   static String write(DataBundle bundle) {
     final buffer = StringBuffer();
     buffer.writeln(
@@ -101,16 +140,31 @@ class DataBundleCsvWriter {
     for (final entry in bundle.entries) {
       buffer.writeln(CsvGrammar.row(_refuelFields(entry)));
     }
+    buffer.writeln(CsvGrammar.row([DataBundleCsvFormat.serviceLogSection]));
+    buffer.writeln(CsvGrammar.row(DataBundleCsvFormat.serviceLogHeader));
+    for (final entry in bundle.serviceLog) {
+      buffer.writeln(CsvGrammar.row(_serviceLogFields(entry)));
+    }
+    buffer.writeln(CsvGrammar.row([DataBundleCsvFormat.expensesSection]));
+    buffer.writeln(CsvGrammar.row(DataBundleCsvFormat.expenseHeader));
+    for (final expense in bundle.expenses) {
+      buffer.writeln(CsvGrammar.row(_expenseFields(expense)));
+    }
     return buffer.toString();
   }
 
-  /// A blank file with both section headers and one realistic example row
+  /// A blank file with every section header and one realistic example row
   /// each, so a user can fill it in externally and import it back. The
   /// example ids are left as if unsaved would also work on import (an empty
   /// id column asks the database to assign one), but a filled in id keeps the
-  /// vehicles and refuels sections linked to each other by example.
+  /// sections linked to each other by example.
   static String template() {
-    return write((vehicles: [_exampleVehicle], entries: [_exampleEntry]));
+    return write((
+      vehicles: [_exampleVehicle],
+      entries: [_exampleEntry],
+      serviceLog: [_exampleServiceLog],
+      expenses: [_exampleExpense],
+    ));
   }
 
   static List<String> _vehicleFields(Vehicle vehicle) => [
@@ -125,6 +179,8 @@ class DataBundleCsvWriter {
     vehicle.pucExpiry?.toIso8601String() ?? '',
     vehicle.rcExpiry?.toIso8601String() ?? '',
     vehicle.fitnessExpiry?.toIso8601String() ?? '',
+    vehicle.engineOilIntervalKm?.toString() ?? '',
+    vehicle.generalServiceIntervalDays?.toString() ?? '',
   ];
 
   static List<String> _refuelFields(RefuelEntry entry) => [
@@ -142,6 +198,25 @@ class DataBundleCsvWriter {
     entry.odometerOverride.toString(),
   ];
 
+  static List<String> _serviceLogFields(ServiceLogEntry entry) => [
+    entry.id.toString(),
+    entry.vehicleId.toString(),
+    entry.template.name,
+    entry.performedAt.toIso8601String(),
+    entry.odometer.toString(),
+    entry.cost?.toString() ?? '',
+    entry.note ?? '',
+  ];
+
+  static List<String> _expenseFields(Expense expense) => [
+    expense.id.toString(),
+    expense.vehicleId.toString(),
+    expense.amount.toString(),
+    expense.date.toIso8601String(),
+    expense.odometer?.toString() ?? '',
+    expense.category,
+  ];
+
   static final _exampleVehicle = Vehicle(
     id: 1,
     name: 'Activa',
@@ -152,6 +227,8 @@ class DataBundleCsvWriter {
     claimedMileage: 60,
     insuranceExpiry: DateTime(2026, 8, 15),
     pucExpiry: DateTime(2026, 4, 1),
+    engineOilIntervalKm: 3000,
+    generalServiceIntervalDays: 180,
   );
 
   static final _exampleEntry = RefuelEntry(
@@ -163,6 +240,25 @@ class DataBundleCsvWriter {
     pricePaid: 420,
     stationName: 'Highway Fuels',
     notes: 'Topped up before a trip',
+  );
+
+  static final _exampleServiceLog = ServiceLogEntry(
+    id: 1,
+    vehicleId: 1,
+    template: ServiceTemplate.engineOil,
+    performedAt: DateTime(2026, 1, 10),
+    odometer: 12000,
+    cost: 450,
+    note: 'Full synthetic',
+  );
+
+  static final _exampleExpense = Expense(
+    id: 1,
+    vehicleId: 1,
+    amount: 800,
+    date: DateTime(2026, 1, 20),
+    odometer: 12550,
+    category: 'Tyre',
   );
 }
 
@@ -235,13 +331,67 @@ class DataBundleCsvReader {
     );
     cursor++;
 
+    // A version 1 or 2 file ends here, so this loop still runs to end of
+    // file for them: a stray single-field row is not a legitimate section
+    // marker in those versions, and letting it reach _parseRefuel keeps the
+    // old behaviour of rejecting it loudly with a field-count error, rather
+    // than mistaking it for a boundary and silently dropping the rest of the
+    // import. A version 3 file has two more sections after refuels, so only
+    // it stops early at the next section marker, the same way the vehicles
+    // loop does.
     final entries = <RefuelEntry>[];
-    while (cursor < records.length) {
+    while (cursor < records.length &&
+        (version != '3' || records[cursor].fields.length != 1)) {
       entries.add(_parseRefuel(records[cursor]));
       cursor++;
     }
 
-    return (vehicles: vehicles, entries: entries);
+    var serviceLog = <ServiceLogEntry>[];
+    var expenses = <Expense>[];
+    if (version == '3') {
+      _expectSectionMarker(
+        records,
+        cursor,
+        DataBundleCsvFormat.serviceLogSection,
+      );
+      cursor++;
+      _expectHeaderRow(
+        records,
+        cursor,
+        DataBundleCsvFormat.serviceLogHeader,
+        DataBundleCsvFormat.serviceLogSection,
+      );
+      cursor++;
+      while (cursor < records.length && records[cursor].fields.length != 1) {
+        serviceLog.add(_parseServiceLog(records[cursor]));
+        cursor++;
+      }
+
+      _expectSectionMarker(
+        records,
+        cursor,
+        DataBundleCsvFormat.expensesSection,
+      );
+      cursor++;
+      _expectHeaderRow(
+        records,
+        cursor,
+        DataBundleCsvFormat.expenseHeader,
+        DataBundleCsvFormat.expensesSection,
+      );
+      cursor++;
+      while (cursor < records.length) {
+        expenses.add(_parseExpense(records[cursor]));
+        cursor++;
+      }
+    }
+
+    return (
+      vehicles: vehicles,
+      entries: entries,
+      serviceLog: serviceLog,
+      expenses: expenses,
+    );
   }
 
   /// Validates the schema header row and returns the declared version, which
@@ -372,6 +522,7 @@ class DataBundleCsvReader {
     }
     // Version 1 files stop at tankCapacity, so the new fields read back null.
     final hasV2 = version != '1';
+    final hasV3 = version == '3';
     return Vehicle(
       id: id,
       name: name,
@@ -420,6 +571,22 @@ class DataBundleCsvReader {
           ? _optionalDateTime(
               fields[10],
               label: 'fitnessExpiry',
+              line: record.line,
+              section: section,
+            )
+          : null,
+      engineOilIntervalKm: hasV3
+          ? _optionalDouble(
+              fields[11],
+              label: 'engineOilIntervalKm',
+              line: record.line,
+              section: section,
+            )
+          : null,
+      generalServiceIntervalDays: hasV3
+          ? _optionalInt(
+              fields[12],
+              label: 'generalServiceIntervalDays',
               line: record.line,
               section: section,
             )
@@ -495,6 +662,127 @@ class DataBundleCsvReader {
         label: 'odometerOverride',
         line: record.line,
         section: section,
+      ),
+    );
+  }
+
+  static ServiceLogEntry _parseServiceLog(CsvRecord record) {
+    const section = DataBundleCsvFormat.serviceLogSection;
+    final fields = record.fields;
+    if (fields.length != DataBundleCsvFormat.serviceLogHeader.length) {
+      throw _CsvFormatException(
+        ValidationFailure(
+          field: section,
+          reason:
+              'Line ${record.line}: expected '
+              '${DataBundleCsvFormat.serviceLogHeader.length} fields, found '
+              '${fields.length}.',
+        ),
+      );
+    }
+    final id = fields[0].isEmpty
+        ? 0
+        : _requiredInt(
+            fields[0],
+            label: 'id',
+            line: record.line,
+            section: section,
+          );
+    return ServiceLogEntry(
+      id: id,
+      vehicleId: _requiredInt(
+        fields[1],
+        label: 'vehicleId',
+        line: record.line,
+        section: section,
+      ),
+      template: _serviceTemplate(fields[2], record.line, section),
+      performedAt: _requiredDateTime(
+        fields[3],
+        label: 'performedAt',
+        line: record.line,
+        section: section,
+      ),
+      odometer: _requiredDouble(
+        fields[4],
+        label: 'odometer',
+        line: record.line,
+        section: section,
+      ),
+      cost: _optionalDouble(
+        fields[5],
+        label: 'cost',
+        line: record.line,
+        section: section,
+      ),
+      note: fields[6].isEmpty ? null : fields[6],
+    );
+  }
+
+  static Expense _parseExpense(CsvRecord record) {
+    const section = DataBundleCsvFormat.expensesSection;
+    final fields = record.fields;
+    if (fields.length != DataBundleCsvFormat.expenseHeader.length) {
+      throw _CsvFormatException(
+        ValidationFailure(
+          field: section,
+          reason:
+              'Line ${record.line}: expected '
+              '${DataBundleCsvFormat.expenseHeader.length} fields, found '
+              '${fields.length}.',
+        ),
+      );
+    }
+    final id = fields[0].isEmpty
+        ? 0
+        : _requiredInt(
+            fields[0],
+            label: 'id',
+            line: record.line,
+            section: section,
+          );
+    return Expense(
+      id: id,
+      vehicleId: _requiredInt(
+        fields[1],
+        label: 'vehicleId',
+        line: record.line,
+        section: section,
+      ),
+      amount: _requiredDouble(
+        fields[2],
+        label: 'amount',
+        line: record.line,
+        section: section,
+      ),
+      date: _requiredDateTime(
+        fields[3],
+        label: 'date',
+        line: record.line,
+        section: section,
+      ),
+      odometer: _optionalDouble(
+        fields[4],
+        label: 'odometer',
+        line: record.line,
+        section: section,
+      ),
+      category: fields[5],
+    );
+  }
+
+  static ServiceTemplate _serviceTemplate(
+    String raw,
+    int line,
+    String section,
+  ) {
+    for (final template in ServiceTemplate.values) {
+      if (template.name == raw) return template;
+    }
+    throw _CsvFormatException(
+      ValidationFailure(
+        field: section,
+        reason: 'Line $line: unknown service template "$raw".',
       ),
     );
   }
@@ -588,6 +876,7 @@ class DataBundleCsvReader {
 
   static DateTime _requiredDateTime(
     String raw, {
+    String label = 'filledAt',
     required int line,
     required String section,
   }) {
@@ -596,11 +885,21 @@ class DataBundleCsvReader {
       throw _CsvFormatException(
         ValidationFailure(
           field: section,
-          reason: 'Line $line: "filledAt" must be an ISO 8601 date and time.',
+          reason: 'Line $line: "$label" must be an ISO 8601 date and time.',
         ),
       );
     }
     return value;
+  }
+
+  static int? _optionalInt(
+    String raw, {
+    required String label,
+    required int line,
+    required String section,
+  }) {
+    if (raw.isEmpty) return null;
+    return _requiredInt(raw, label: label, line: line, section: section);
   }
 
   static DateTime? _optionalDateTime(

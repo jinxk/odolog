@@ -200,6 +200,101 @@ final class CatalogRepositoryProvider
 
 String _$catalogRepositoryHash() => r'eea770e029bd6d17747b2d817ec488a37014f592';
 
+@ProviderFor(serviceLogRepository)
+final serviceLogRepositoryProvider = ServiceLogRepositoryProvider._();
+
+final class ServiceLogRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ServiceLogRepository,
+          ServiceLogRepository,
+          ServiceLogRepository
+        >
+    with $Provider<ServiceLogRepository> {
+  ServiceLogRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'serviceLogRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$serviceLogRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ServiceLogRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ServiceLogRepository create(Ref ref) {
+    return serviceLogRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ServiceLogRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ServiceLogRepository>(value),
+    );
+  }
+}
+
+String _$serviceLogRepositoryHash() =>
+    r'a044d7de813b2d71e56c61cfb8a638eed044268c';
+
+@ProviderFor(expenseRepository)
+final expenseRepositoryProvider = ExpenseRepositoryProvider._();
+
+final class ExpenseRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ExpenseRepository,
+          ExpenseRepository,
+          ExpenseRepository
+        >
+    with $Provider<ExpenseRepository> {
+  ExpenseRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'expenseRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$expenseRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ExpenseRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ExpenseRepository create(Ref ref) {
+    return expenseRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ExpenseRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ExpenseRepository>(value),
+    );
+  }
+}
+
+String _$expenseRepositoryHash() => r'7b7f0c752025d9e217e415280eb41a72f2e6dc1b';
+
 /// The platform notification scheduler. Widget tests can override this with a
 /// no-op, though the real one already stands down off Android.
 
