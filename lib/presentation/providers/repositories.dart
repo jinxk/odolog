@@ -2,11 +2,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../data/catalog/catalog_loader.dart';
-import '../../data/csv/data_bundle_codec_impl.dart';
 import '../../data/daos/expense_dao.dart';
 import '../../data/daos/refuel_dao.dart';
 import '../../data/daos/service_log_dao.dart';
 import '../../data/daos/vehicle_dao.dart';
+import '../../data/json/data_bundle_json_codec.dart';
 import '../../data/reminders/local_notification_scheduler.dart';
 import '../../data/repositories/catalog_repository_impl.dart';
 import '../../data/repositories/expense_repository_impl.dart';
@@ -56,8 +56,8 @@ ExpenseRepository expenseRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 ReminderScheduler reminderScheduler(Ref ref) => LocalNotificationScheduler();
 
-/// The backup file format. Presentation never reaches the CSV writer and
+/// The backup file format. Presentation never reaches the JSON writer and
 /// reader directly; it goes through this port via the export, import, and
 /// template use cases.
 @Riverpod(keepAlive: true)
-DataBundleCodec dataBundleCodec(Ref ref) => const DataBundleCodecImpl();
+DataBundleCodec dataBundleCodec(Ref ref) => const DataBundleJsonCodec();

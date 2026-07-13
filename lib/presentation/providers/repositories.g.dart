@@ -350,14 +350,14 @@ final class ReminderSchedulerProvider
 
 String _$reminderSchedulerHash() => r'be7571a0b5f5b383c0752ec8bf9d7a94d39bce9c';
 
-/// The backup file format. Presentation never reaches the CSV writer and
+/// The backup file format. Presentation never reaches the JSON writer and
 /// reader directly; it goes through this port via the export, import, and
 /// template use cases.
 
 @ProviderFor(dataBundleCodec)
 final dataBundleCodecProvider = DataBundleCodecProvider._();
 
-/// The backup file format. Presentation never reaches the CSV writer and
+/// The backup file format. Presentation never reaches the JSON writer and
 /// reader directly; it goes through this port via the export, import, and
 /// template use cases.
 
@@ -365,7 +365,7 @@ final class DataBundleCodecProvider
     extends
         $FunctionalProvider<DataBundleCodec, DataBundleCodec, DataBundleCodec>
     with $Provider<DataBundleCodec> {
-  /// The backup file format. Presentation never reaches the CSV writer and
+  /// The backup file format. Presentation never reaches the JSON writer and
   /// reader directly; it goes through this port via the export, import, and
   /// template use cases.
   DataBundleCodecProvider._()
@@ -401,4 +401,4 @@ final class DataBundleCodecProvider
   }
 }
 
-String _$dataBundleCodecHash() => r'402bab9c50822f609fd1936c5de22cd4d0f0bda1';
+String _$dataBundleCodecHash() => r'27e80acb0ba88b8e6016438c5f64eab3e8d08e38';
