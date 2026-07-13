@@ -66,6 +66,20 @@ RefuelForm _controller(WidgetTester tester) {
   return container.read(refuelFormProvider('add:1').notifier);
 }
 
+RefuelFormState _state(WidgetTester tester) {
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(AddRefuelScreen)),
+  );
+  return container.read(refuelFormProvider('add:1'));
+}
+
+/// The preset chips sit low in the fast path, below the fold left by the pinned
+/// save bar. Drag the list up so they land clear of the edges before a tap.
+Future<void> _revealChips(WidgetTester tester) async {
+  await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
@@ -93,6 +107,14 @@ void main() {
     await tester.enterText(find.byKey(const Key('quantityField')), '15');
     await tester.enterText(find.byKey(const Key('priceField')), '1509');
     await tester.pump();
+
+    // The amount chips sit between the price field and this hint, pushing it
+    // below the fold, so scroll it into view before asserting.
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('priceHint')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
 
     expect(find.textContaining('100.60'), findsOneWidget);
   });
@@ -192,6 +214,53 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('overrideCheckbox')), findsOneWidget);
+  });
+
+  testWidgets('an amount chip drops its value into the amount field', (
+    tester,
+  ) async {
+    await pumpForm(tester);
+    await _revealChips(tester);
+
+    await tester.tap(find.byKey(const Key('amountChip200')));
+    await tester.pump();
+
+    expect(_state(tester).price, '200');
+  });
+
+  testWidgets('the Full chip turns the full tank flag on', (tester) async {
+    await pumpForm(tester);
+
+    // Move off the default so the chip has an effect to observe.
+    await tester.tap(find.text('Part fill'));
+    await tester.pump();
+    await _revealChips(tester);
+    await tester.tap(find.byKey(const Key('fullChip')));
+    await tester.pump();
+
+    expect(_state(tester).fullTank, isTrue);
+  });
+
+  testWidgets('an amount chip derives litres into the quantity field', (
+    tester,
+  ) async {
+    await pumpForm(
+      tester,
+      seed: [entry(id: 1, odometer: 1000, quantity: 10, pricePaid: 1000)],
+    );
+    await _revealChips(tester);
+
+    // Last price is 100 per litre, so 500 rupees shows as 5 litres.
+    await tester.tap(find.byKey(const Key('amountChip500')));
+    await tester.pump();
+
+    expect(_state(tester).quantity, '5.00');
+
+    // The derived value is mirrored into the quantity field as real text.
+    final quantity = tester.widget<TextField>(
+      find.byKey(const Key('quantityField')),
+    );
+    expect(quantity.controller!.text, '5.00');
   });
 
   testWidgets('a valid save writes the entry through the use case', (

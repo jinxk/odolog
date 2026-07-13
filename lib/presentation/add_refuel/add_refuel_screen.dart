@@ -45,6 +45,7 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
   late final TextEditingController _station;
   late final TextEditingController _notes;
   late final TextEditingController _variantOther;
+  final FocusNode _priceFocus = FocusNode();
   bool _expanded = false;
   bool _saving = false;
 
@@ -71,9 +72,11 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     // widget life-cycle, so it runs once after the first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref
-          .read(refuelFormProvider(_flowId).notifier)
-          .configure(vehicleId: widget.vehicle.id, existing: widget.existing);
+      unawaited(
+        ref
+            .read(refuelFormProvider(_flowId).notifier)
+            .configure(vehicleId: widget.vehicle.id, existing: widget.existing),
+      );
     });
   }
 
@@ -89,6 +92,7 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     _station.dispose();
     _notes.dispose();
     _variantOther.dispose();
+    _priceFocus.dispose();
     super.dispose();
   }
 
@@ -114,6 +118,21 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
   void _cancel() {
     ref.invalidate(refuelFormProvider(_flowId));
     if (context.canPop()) context.pop();
+  }
+
+  /// A preset amount chip: drops the value straight into the amount field, the
+  /// same path typing it would take, so the quantity derivation runs off it.
+  void _applyAmountChip(String amount) {
+    _price.text = amount;
+    _price.selection = TextSelection.collapsed(offset: amount.length);
+    _controller.setPrice(amount);
+  }
+
+  /// The Full chip: flags a full tank and hands focus back to the amount field
+  /// so the rider types what the pump showed.
+  void _applyFullChip() {
+    _controller.setFullTank(true);
+    _priceFocus.requestFocus();
   }
 
   Future<void> _pickDateTime(DateTime current) async {
@@ -145,6 +164,25 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     final category = widget.vehicle.fuelCategory;
     final currency = ref.watch(settingsProvider).value?.currencySymbol ?? 'Rs';
     final isEdit = widget.existing != null;
+
+    // The derivation writes the litres estimate into form state; mirror it into
+    // the quantity field so it shows as a real editable value. A programmatic
+    // text set does not fire onChanged, so this never marks the field touched.
+    ref.listen(refuelFormProvider(_flowId).select((s) => s.quantity), (
+      _,
+      next,
+    ) {
+      if (_quantity.text != next) {
+        _quantity.text = next;
+        _quantity.selection = TextSelection.collapsed(offset: next.length);
+      }
+    });
+
+    final lastPrice = state.lastPricePerUnit;
+    final lastPriceHint = lastPrice == null
+        ? null
+        : 'Last price $currency ${lastPrice.toStringAsFixed(2)}'
+              '${perUnitLabel(category)}';
 
     // The last odometer reading removes the single largest source of at-pump
     // typing, but only as a hint: silently pre-filling the value is not
@@ -211,12 +249,16 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
           _numberField(
             key: const Key('priceField'),
             controller: _price,
+            focusNode: _priceFocus,
             label: 'Price paid',
             unit: currency,
+            helperText: lastPriceHint,
             textInputAction: TextInputAction.done,
             error: state.fieldErrors['price'],
             onChanged: _controller.setPrice,
           ),
+          const SizedBox(height: 10),
+          _AmountChips(onAmount: _applyAmountChip, onFull: _applyFullChip),
           const SizedBox(height: 6),
           _PriceHint(
             pricePerUnit: state.pricePerUnit,
@@ -262,12 +304,14 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     required String? error,
     required ValueChanged<String> onChanged,
     String? helperText,
+    FocusNode? focusNode,
     bool autofocus = false,
     TextInputAction textInputAction = TextInputAction.next,
   }) {
     return TextField(
       key: key,
       controller: controller,
+      focusNode: focusNode,
       autofocus: autofocus,
       textInputAction: textInputAction,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -493,6 +537,41 @@ class _FullTankControl extends StatelessWidget {
             showSelectedIcon: false,
             onSelectionChanged: (selection) => onChanged(selection.first),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A row of one tap presets that sits right under the amount field. At an
+/// Indian pump the amount comes first ("300 ka daal do"), so the common notes
+/// drop straight into the amount field, and Full flags a full tank while
+/// leaving the amount for the rider to type what the pump showed. Convenience
+/// over the existing fields, not a separate entry mode.
+class _AmountChips extends StatelessWidget {
+  const _AmountChips({required this.onAmount, required this.onFull});
+
+  final ValueChanged<String> onAmount;
+  final VoidCallback onFull;
+
+  static const _amounts = ['100', '200', '500'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final amount in _amounts)
+          ActionChip(
+            key: Key('amountChip$amount'),
+            label: Text(amount),
+            onPressed: () => onAmount(amount),
+          ),
+        ActionChip(
+          key: const Key('fullChip'),
+          label: const Text('Full'),
+          onPressed: onFull,
         ),
       ],
     );

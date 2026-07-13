@@ -154,6 +154,14 @@ void main() {
     await tester.pumpAndSettle();
 
     if (expectOrderError) {
+      // Tapping Part fill aligned that control to the top of the list, which
+      // pushes the odometer field and its error off the top; scroll back up to
+      // bring the message into view before asserting on it.
+      await tester.scrollUntilVisible(
+        find.text('Odometer must be greater than the previous reading.'),
+        -200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(
         find.text('Odometer must be greater than the previous reading.'),
         findsOneWidget,

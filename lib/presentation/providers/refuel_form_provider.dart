@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/failures.dart';
+import '../../domain/calculators/mileage_calculator.dart';
 import '../../domain/entities/refuel_entry.dart';
 import 'auto_backup_provider.dart';
 import 'usecases.dart';
@@ -29,6 +30,8 @@ class RefuelFormState {
     this.odometerOverride = false,
     this.showOverride = false,
     this.fieldErrors = const {},
+    this.lastPricePerUnit,
+    this.quantityTouched = false,
   });
 
   final int vehicleId;
@@ -48,6 +51,16 @@ class RefuelFormState {
   /// checkbox appears inline exactly when that specific problem occurs.
   final bool showOverride;
   final Map<String, String> fieldErrors;
+
+  /// This vehicle's last known price per unit, seeded from its most recent
+  /// refuel. Backs the amount to quantity derivation and the "Last price" hint.
+  /// Null when the vehicle has no prior fill to read a price from.
+  final double? lastPricePerUnit;
+
+  /// Turns true once the user types in the quantity field, which stops the
+  /// amount to quantity derivation for the rest of the flow. An edit seeds it
+  /// true so an existing quantity is never derived over.
+  final bool quantityTouched;
 
   bool get isEditing => editingEntryId != null;
 
@@ -75,6 +88,8 @@ class RefuelFormState {
     bool? odometerOverride,
     bool? showOverride,
     Map<String, String>? fieldErrors,
+    double? lastPricePerUnit,
+    bool? quantityTouched,
   }) {
     return RefuelFormState(
       vehicleId: vehicleId ?? this.vehicleId,
@@ -93,6 +108,8 @@ class RefuelFormState {
       odometerOverride: odometerOverride ?? this.odometerOverride,
       showOverride: showOverride ?? this.showOverride,
       fieldErrors: fieldErrors ?? this.fieldErrors,
+      lastPricePerUnit: lastPricePerUnit ?? this.lastPricePerUnit,
+      quantityTouched: quantityTouched ?? this.quantityTouched,
     );
   }
 }
@@ -109,39 +126,81 @@ class RefuelForm extends _$RefuelForm {
   RefuelFormState build(String flowId) => const RefuelFormState();
 
   /// Seeds the form once when the screen opens. For an edit, pass the existing
-  /// entry so its values populate the fields.
-  void configure({required int vehicleId, RefuelEntry? existing}) {
+  /// entry so its values populate the fields. Then reads the vehicle's last
+  /// known price per unit in the background, which backs the amount to quantity
+  /// derivation and the "Last price" hint.
+  Future<void> configure({
+    required int vehicleId,
+    RefuelEntry? existing,
+  }) async {
     if (state.vehicleId != 0 || state.editingEntryId != null) return;
     if (existing == null) {
       state = state.copyWith(vehicleId: vehicleId, filledAt: DateTime.now());
-      return;
+    } else {
+      state = RefuelFormState(
+        vehicleId: vehicleId,
+        editingEntryId: existing.id,
+        odometer: _trimZero(existing.odometer),
+        quantity: _trimZero(existing.quantity),
+        price: _trimZero(existing.pricePaid),
+        variantId: existing.variantId,
+        variantOther: existing.variantOther,
+        filledAt: existing.filledAt,
+        fullTank: existing.fullTank,
+        station: existing.stationName ?? '',
+        notes: existing.notes ?? '',
+        odometerOverride: existing.odometerOverride,
+        quantityTouched: true,
+      );
     }
-    state = RefuelFormState(
-      vehicleId: vehicleId,
-      editingEntryId: existing.id,
-      odometer: _trimZero(existing.odometer),
-      quantity: _trimZero(existing.quantity),
-      price: _trimZero(existing.pricePaid),
-      variantId: existing.variantId,
-      variantOther: existing.variantOther,
-      filledAt: existing.filledAt,
-      fullTank: existing.fullTank,
-      station: existing.stationName ?? '',
-      notes: existing.notes ?? '',
-      odometerOverride: existing.odometerOverride,
+    final history = await ref
+        .read(getVehicleHistoryProvider)
+        .execute(vehicleId);
+    final lastPrice = history.match(
+      (_) => null,
+      (items) => const MileageCalculator().lastKnownPricePerUnit([
+        for (final item in items) item.entry,
+      ]),
     );
+    if (lastPrice != null) {
+      state = state.copyWith(lastPricePerUnit: lastPrice);
+    }
   }
 
   void setOdometer(String value) => state = state.copyWith(
     odometer: value,
     fieldErrors: _without('odometer'),
   );
+
+  /// A quantity edit is always the user's own: it marks the field touched so the
+  /// amount to quantity derivation stops for the rest of the flow.
   void setQuantity(String value) => state = state.copyWith(
     quantity: value,
+    quantityTouched: true,
     fieldErrors: _without('quantity'),
   );
-  void setPrice(String value) =>
-      state = state.copyWith(price: value, fieldErrors: _without('price'));
+
+  /// Sets the amount paid and, while the quantity field is still untouched and
+  /// a last price is known, refills the derived quantity live off it.
+  void setPrice(String value) => state = state.copyWith(
+    price: value,
+    quantity: _derivedQuantity(value),
+    fieldErrors: _without('price'),
+  );
+
+  /// The quantity to show for [price]: the derived litres while derivation is
+  /// live, cleared when the amount is empty or invalid, or the current value
+  /// left as is once the user has taken over the quantity field or no last
+  /// price exists to derive from.
+  String _derivedQuantity(String price) {
+    if (state.quantityTouched) return state.quantity;
+    final lastPrice = state.lastPricePerUnit;
+    if (lastPrice == null) return state.quantity;
+    final amount = double.tryParse(price);
+    if (amount == null || amount <= 0) return '';
+    return (amount / lastPrice).toStringAsFixed(2);
+  }
+
   void setStation(String value) => state = state.copyWith(station: value);
   void setNotes(String value) => state = state.copyWith(notes: value);
   void setFilledAt(DateTime value) => state = state.copyWith(filledAt: value);

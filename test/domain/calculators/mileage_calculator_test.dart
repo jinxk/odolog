@@ -254,6 +254,21 @@ void main() {
     expect(window.mileage, 12.5);
   });
 
+  group('last known price per unit', () {
+    test('reads the price per unit of the most recent fill', () {
+      final entries = [
+        entry(id: 1, odometer: 10000, quantity: 30, pricePaid: 3000),
+        entry(id: 2, odometer: 10600, quantity: 25, pricePaid: 2515),
+      ];
+
+      expect(calculator.lastKnownPricePerUnit(entries), 100.60);
+    });
+
+    test('is null when there is no history', () {
+      expect(calculator.lastKnownPricePerUnit(const []), isNull);
+    });
+  });
+
   test('CNG runs the same math with kg in place of litres', () {
     final entries = [
       entry(id: 1, odometer: 0, quantity: 5, pricePaid: 400),

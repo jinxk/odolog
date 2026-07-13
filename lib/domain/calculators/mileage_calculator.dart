@@ -100,6 +100,17 @@ class MileageCalculator {
     return entries.last.odometer - entries[entries.length - 2].odometer;
   }
 
+  /// Price per unit of the most recent refuel, the figure the add form turns a
+  /// rupee amount into an estimated quantity with. The list is odometer
+  /// ordered, so the last entry is the latest fill. Null when there is no
+  /// history to read, or the latest fill carries no quantity to divide by.
+  double? lastKnownPricePerUnit(List<RefuelEntry> entries) {
+    if (entries.isEmpty) return null;
+    final latest = entries.last;
+    if (latest.quantity <= 0) return null;
+    return latest.pricePaid / latest.quantity;
+  }
+
   /// Latest window mileage projected over a full tank, null without capacity
   /// or before a window has closed.
   double? projectedRange(List<RefuelEntry> entries, double? tankCapacity) {
