@@ -44,6 +44,7 @@ class EntryDetailScreen extends ConsumerWidget {
         title: const Text('Refuel'),
         actions: [
           IconButton(
+            tooltip: 'Delete refuel',
             icon: const Icon(Icons.delete_outline),
             onPressed: () => _confirmDelete(context, ref),
           ),

@@ -143,31 +143,45 @@ class _EditorialHeader extends ConsumerWidget {
                 child: Text(option.name),
               ),
           ],
-          builder: (context, controller, _) => InkWell(
-            onTap: hasMany
-                ? () =>
-                      controller.isOpen ? controller.close() : controller.open()
-                : null,
-            borderRadius: BorderRadius.circular(8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    vehicle.name,
-                    style: theme.textTheme.headlineMedium,
-                    overflow: TextOverflow.ellipsis,
+          builder: (context, controller, _) {
+            final trigger = InkWell(
+              onTap: hasMany
+                  ? () => controller.isOpen
+                        ? controller.close()
+                        : controller.open()
+                  : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      vehicle.name,
+                      style: theme.textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                if (hasMany)
-                  Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 28,
-                    color: theme.colorScheme.onSurface,
-                  ),
-              ],
-            ),
-          ),
+                  if (hasMany)
+                    Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 28,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                ],
+              ),
+            );
+            // With one vehicle the name is just a heading; with more it becomes
+            // the switcher, so it reads as one button carrying the name and the
+            // switch hint rather than a bare label and a stray chevron.
+            if (!hasMany) return trigger;
+            return MergeSemantics(
+              child: Semantics(
+                button: true,
+                hint: 'Switch vehicle',
+                child: trigger,
+              ),
+            );
+          },
         ),
       ],
     );
@@ -246,59 +260,81 @@ class _HeroCard extends ConsumerWidget {
     // rather than a misleading zero.
     final average = stats.averageMileage;
     final delta = average == null ? 0.0 : window.mileage - average;
+    // A single spoken label for the hero figure, so the reader hears the number,
+    // its unit, and the trend as one phrase rather than the animated numeral
+    // counting up digit by digit.
+    final trendPhrase = delta == 0
+        ? ''
+        : delta > 0
+        ? ', up ${formatMileage(delta.abs())} against your average'
+        : ', down ${formatMileage(delta.abs())} against your average';
+    final heroLabel =
+        'Mileage ${formatMileage(window.mileage)} '
+        '${mileageUnit(vehicle.fuelCategory)} over your last full tank '
+        'window$trendPhrase';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Mileage', style: label),
-        const SizedBox(height: 6),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.bottomLeft,
-                child: CountUpText(
-                  value: window.mileage,
-                  format: formatMileage,
-                  style: heroNumberStyle.copyWith(color: AppColors.amber),
-                ),
+        Semantics(
+          container: true,
+          label: heroLabel,
+          excludeSemantics: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Mileage', style: label),
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.bottomLeft,
+                      child: CountUpText(
+                        value: window.mileage,
+                        format: formatMileage,
+                        style: heroNumberStyle.copyWith(color: AppColors.amber),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      mileageUnit(vehicle.fuelCategory),
+                      style: const TextStyle(
+                        color: AppColors.offWhite,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  if (delta != 0) ...[
+                    const SizedBox(width: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: TrendDeltaChip(
+                        delta: delta,
+                        format: formatMileage,
+                        // The hero card is dark in both themes, so the delta
+                        // always uses the dark semantic pair.
+                        positiveColor: AppColors.positiveDark,
+                        negativeColor: AppColors.negativeDark,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
-            const SizedBox(width: 6),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Text(
-                mileageUnit(vehicle.fuelCategory),
-                style: const TextStyle(
-                  color: AppColors.offWhite,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            if (delta != 0) ...[
-              const SizedBox(width: 10),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TrendDeltaChip(
-                  delta: delta,
-                  format: formatMileage,
-                  // The hero card is dark in both themes, so the delta always
-                  // uses the dark semantic pair.
-                  positiveColor: AppColors.positiveDark,
-                  negativeColor: AppColors.negativeDark,
+              const SizedBox(height: 6),
+              Text(
+                'over your last full tank window',
+                style: TextStyle(
+                  color: AppColors.offWhite.withValues(alpha: 0.55),
+                  fontSize: 12,
                 ),
               ),
             ],
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'over your last full tank window',
-          style: TextStyle(
-            color: AppColors.offWhite.withValues(alpha: 0.55),
-            fontSize: 12,
           ),
         ),
         _ClaimedComparison(
@@ -577,7 +613,12 @@ class _TrendCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SectionHeader('Mileage trend'),
-            SectionCard(child: MileageTrend(windows: list)),
+            SectionCard(
+              child: MileageTrend(
+                windows: list,
+                unit: mileageUnit(vehicle.fuelCategory),
+              ),
+            ),
           ],
         );
       },

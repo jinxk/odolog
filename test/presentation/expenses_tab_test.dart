@@ -76,6 +76,21 @@ void main() {
     expect(find.text('No expenses yet'), findsNothing);
   });
 
+  testWidgets('a logged expense row carries a labelled delete control', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+
+    await tester.tap(find.text('Log expense'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('expenseAmountField')), '800');
+    await tester.tap(find.widgetWithText(ActionChip, 'Tyre'));
+    await tester.tap(find.byKey(const Key('saveExpenseButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Delete Tyre'), findsOneWidget);
+  });
+
   testWidgets('a zero amount is rejected inline', (tester) async {
     await pumpScreen(tester);
 

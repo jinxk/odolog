@@ -18,27 +18,31 @@ class StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(value, style: theme.textTheme.titleLarge),
-        if (caption != null) ...[
-          const SizedBox(height: 2),
+    // Merge so the reader hears the tile as one phrase, "Quantity 30.00 L",
+    // rather than the label and value as separate stops.
+    return MergeSemantics(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            caption!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
+          const SizedBox(height: 4),
+          Text(value, style: theme.textTheme.titleLarge),
+          if (caption != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              caption!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

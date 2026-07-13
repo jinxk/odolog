@@ -34,12 +34,13 @@ Future<void> pumpHome(
   WidgetTester tester, {
   List<RefuelEntry> seed = const [],
   Vehicle vehicle = _vehicle,
+  List<Vehicle> fleet = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         vehicleRepositoryProvider.overrideWithValue(
-          FakeVehicleRepository([vehicle]),
+          FakeVehicleRepository(fleet.isEmpty ? [vehicle] : fleet),
         ),
         refuelRepositoryProvider.overrideWithValue(FakeRefuelRepository(seed)),
         catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
@@ -105,6 +106,42 @@ void main() {
     );
 
     expect(find.text('15.0 real vs 20.0 claimed (75%)'), findsOneWidget);
+  });
+
+  testWidgets('reads the hero mileage as one labelled figure', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpHome(tester, seed: _workedExample);
+
+    expect(
+      find.bySemanticsLabel(
+        'Mileage 15.0 km/l over your last full tank window',
+      ),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
+  testWidgets('the title names the switch action when there is a fleet', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pumpHome(
+      tester,
+      seed: _workedExample,
+      fleet: const [
+        _vehicle,
+        Vehicle(
+          id: 2,
+          name: 'Activa',
+          type: VehicleType.scooter,
+          fuelCategory: FuelCategory.petrol,
+        ),
+      ],
+    );
+
+    final data = tester.getSemantics(find.text('Swift'));
+    expect(data.hint, 'Switch vehicle');
+    handle.dispose();
   });
 
   testWidgets('surfaces the nearest document expiry within thirty days', (

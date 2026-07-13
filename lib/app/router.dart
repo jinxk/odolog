@@ -174,6 +174,7 @@ class _ShellScaffoldState extends ConsumerState<_ShellScaffold> {
       floatingActionButton: showFab
           ? FloatingActionButton(
               key: const Key('addRefuelFab'),
+              tooltip: 'Add refuel',
               backgroundColor: AppColors.amber,
               foregroundColor: AppColors.ink,
               onPressed: () => _openAddRefuel(context, vehicle),

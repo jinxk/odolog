@@ -259,7 +259,10 @@ class _TrendSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              MileageTrend(windows: list),
+              MileageTrend(
+                windows: list,
+                unit: mileageUnit(vehicle.fuelCategory),
+              ),
               const SizedBox(height: 12),
               Text(
                 'Oldest to newest, one point per full tank window. The best '
