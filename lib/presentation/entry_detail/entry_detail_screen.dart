@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import '../../domain/value_objects/window_mileage.dart';
 import '../add_refuel/refuel_args.dart';
 import '../common/formatting.dart';
 import '../providers/app_providers.dart';
+import '../providers/auto_backup_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 
@@ -111,6 +114,7 @@ class EntryDetailScreen extends ConsumerWidget {
     ref.invalidate(vehicleStatsProvider(vehicle.id));
     ref.invalidate(vehicleWindowsProvider(vehicle.id));
     ref.invalidate(vehicleMonthlyProvider(vehicle.id));
+    unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
     if (context.mounted && context.canPop()) context.pop();
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +10,7 @@ import '../common/csv_safe_text_formatter.dart';
 import '../common/formatting.dart';
 import '../common/single_decimal_formatter.dart';
 import '../providers/app_providers.dart';
+import '../providers/auto_backup_provider.dart';
 import '../providers/usecases.dart';
 
 /// The add and edit vehicle form, shared by onboarding and vehicle management.
@@ -141,6 +144,7 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
       },
       (saved) {
         ref.invalidate(vehicleListProvider);
+        unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
         setState(() => _saving = false);
         widget.onSaved(saved);
       },

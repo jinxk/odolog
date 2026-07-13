@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,7 @@ import '../../domain/entities/vehicle.dart';
 import '../common/empty_state.dart';
 import '../common/formatting.dart';
 import '../providers/app_providers.dart';
+import '../providers/auto_backup_provider.dart';
 import '../providers/usecases.dart';
 
 /// Vehicle management: the list with add, edit, and delete. Deleting warns that
@@ -100,5 +103,6 @@ class VehiclesScreen extends ConsumerWidget {
       ref.read(activeVehicleIdProvider.notifier).select(null);
     }
     ref.invalidate(vehicleListProvider);
+    unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
   }
 }

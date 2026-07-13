@@ -20,6 +20,7 @@ import '../../domain/usecases/load_fuel_catalog.dart';
 import '../../domain/usecases/log_expense.dart';
 import '../../domain/usecases/log_refuel.dart';
 import '../../domain/usecases/log_service.dart';
+import '../../domain/usecases/run_auto_backup.dart';
 import '../../domain/usecases/sync_document_reminders.dart';
 import '../../domain/usecases/sync_service_reminders.dart';
 import 'repositories.dart';
@@ -90,6 +91,12 @@ ImportData importData(Ref ref) => ImportData(
 @Riverpod(keepAlive: true)
 GetDataBundleTemplate getDataBundleTemplate(Ref ref) =>
     GetDataBundleTemplate(ref.watch(dataBundleCodecProvider));
+
+@Riverpod(keepAlive: true)
+RunAutoBackup runAutoBackup(Ref ref) => RunAutoBackup(
+  ref.watch(exportDataProvider),
+  ref.watch(autoBackupWriterProvider),
+);
 
 @Riverpod(keepAlive: true)
 SyncDocumentReminders syncDocumentReminders(Ref ref) =>

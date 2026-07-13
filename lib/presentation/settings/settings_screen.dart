@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
@@ -10,10 +11,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/theme/spacing.dart';
 import '../../app/version.dart';
 import '../../core/failures.dart';
+import '../common/formatting.dart';
 import '../common/grouped_list.dart';
 import '../common/motion.dart';
 import '../common/section_header.dart';
 import '../providers/app_providers.dart';
+import '../providers/auto_backup_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 import 'currency_catalog.dart';
@@ -65,6 +68,8 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.betweenSections),
               const SectionHeader('Data'),
               const _DataSection(),
+              const SizedBox(height: 8),
+              const _AutoBackupRow(),
               const SizedBox(height: AppSpacing.betweenSections),
               const SectionHeader('About'),
               GroupedList(
@@ -281,6 +286,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
       (failure) => _reportFailure('Could not import your data.', failure),
       (bundle) async {
         ref.invalidate(vehicleListProvider);
+        unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
         _showMessage(
           'Imported ${bundle.vehicles.length} vehicles, '
           '${bundle.entries.length} refuels, ${bundle.serviceLog.length} '
@@ -335,5 +341,66 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+/// The automatic backup toggle and its "last backed up" line. On by default
+/// once the one time consent has been answered, it writes a daily copy of the
+/// data to Downloads/OdoLog, which survives an uninstall. Off a supported
+/// Android version the row disables itself with a short reason instead of
+/// pretending it can run.
+class _AutoBackupRow extends ConsumerWidget {
+  const _AutoBackupRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(autoBackupProvider).value;
+    if (state == null) {
+      return const GroupedList(
+        rows: [
+          ListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 16),
+            leading: Icon(Icons.backup_outlined),
+            title: Text('Automatic backup'),
+            subtitle: Text('Loading...'),
+          ),
+        ],
+      );
+    }
+    if (!state.available) {
+      return const GroupedList(
+        rows: [
+          ListTile(
+            enabled: false,
+            contentPadding: EdgeInsets.symmetric(horizontal: 16),
+            leading: Icon(Icons.backup_outlined),
+            title: Text('Automatic backup'),
+            subtitle: Text('Needs Android 10 or newer.'),
+          ),
+        ],
+      );
+    }
+    return GroupedList(
+      rows: [
+        SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          secondary: const Icon(Icons.backup_outlined),
+          title: const Text('Automatic backup'),
+          subtitle: Text(_subtitle(state)),
+          value: state.active,
+          onChanged: (value) =>
+              ref.read(autoBackupProvider.notifier).setEnabled(value),
+        ),
+      ],
+    );
+  }
+
+  String _subtitle(AutoBackupState state) {
+    if (!state.active) {
+      return 'Off. A daily copy to Downloads that survives an uninstall.';
+    }
+    final at = state.lastBackupAt;
+    if (at == null) return 'On. Last backed up: not yet.';
+    return 'On. Last backed up ${formatDateTime(at)}.';
   }
 }

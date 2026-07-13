@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,6 +16,7 @@ import '../common/section_header.dart';
 import '../common/single_decimal_formatter.dart';
 import '../common/stat_card.dart';
 import '../providers/app_providers.dart';
+import '../providers/auto_backup_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 
@@ -67,6 +70,7 @@ class ServiceLogTab extends ConsumerWidget {
     if (vehicles != null) {
       await ref.read(syncServiceRemindersProvider).execute(vehicles);
     }
+    unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
   }
 }
 
@@ -207,6 +211,7 @@ class _ServiceLogRow extends ConsumerWidget {
     ref.invalidate(serviceLogProvider(vehicle.id));
     ref.invalidate(serviceDueProvider(vehicle));
     ref.invalidate(vehicleStatsProvider(vehicle.id));
+    unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
   }
 }
 

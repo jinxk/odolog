@@ -402,3 +402,60 @@ final class DataBundleCodecProvider
 }
 
 String _$dataBundleCodecHash() => r'27e80acb0ba88b8e6016438c5f64eab3e8d08e38';
+
+/// The uninstall surviving backup writer. Android writes to the shared
+/// Downloads collection through a MethodChannel; off Android, and below
+/// Android 10, it reports itself unavailable and the feature stands down.
+
+@ProviderFor(autoBackupWriter)
+final autoBackupWriterProvider = AutoBackupWriterProvider._();
+
+/// The uninstall surviving backup writer. Android writes to the shared
+/// Downloads collection through a MethodChannel; off Android, and below
+/// Android 10, it reports itself unavailable and the feature stands down.
+
+final class AutoBackupWriterProvider
+    extends
+        $FunctionalProvider<
+          AutoBackupWriter,
+          AutoBackupWriter,
+          AutoBackupWriter
+        >
+    with $Provider<AutoBackupWriter> {
+  /// The uninstall surviving backup writer. Android writes to the shared
+  /// Downloads collection through a MethodChannel; off Android, and below
+  /// Android 10, it reports itself unavailable and the feature stands down.
+  AutoBackupWriterProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'autoBackupWriterProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$autoBackupWriterHash();
+
+  @$internal
+  @override
+  $ProviderElement<AutoBackupWriter> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AutoBackupWriter create(Ref ref) {
+    return autoBackupWriter(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AutoBackupWriter value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AutoBackupWriter>(value),
+    );
+  }
+}
+
+String _$autoBackupWriterHash() => r'1488f36be78e7a98f4ca71e858e958b79abd3281';
