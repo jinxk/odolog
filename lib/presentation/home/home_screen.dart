@@ -100,7 +100,10 @@ class _Dashboard extends ConsumerWidget {
 /// The screen header: a teal overline over the vehicle name as a large title,
 /// with a switcher chevron only when there is more than one vehicle to switch
 /// between. No container, left aligned, so the name anchors the screen the way
-/// a large title does.
+/// a large title does. The switcher opens as a menu anchored to the title
+/// itself, not a bottom sheet: the finger is already at the top of the screen,
+/// so the choices should appear under it instead of across the display where
+/// the hand covers them on the way down.
 class _EditorialHeader extends ConsumerWidget {
   const _EditorialHeader({required this.vehicle});
 
@@ -126,56 +129,47 @@ class _EditorialHeader extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 2),
-        InkWell(
-          onTap: hasMany ? () => _openSwitcher(context, ref, vehicles) : null,
-          borderRadius: BorderRadius.circular(8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  vehicle.name,
-                  style: theme.textTheme.headlineMedium,
-                  overflow: TextOverflow.ellipsis,
-                ),
+        MenuAnchor(
+          menuChildren: [
+            for (final option in vehicles)
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.directions_car),
+                trailingIcon: option.id == vehicle.id
+                    ? const Icon(Icons.check)
+                    : null,
+                onPressed: () => ref
+                    .read(activeVehicleIdProvider.notifier)
+                    .select(option.id),
+                child: Text(option.name),
               ),
-              if (hasMany)
-                Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 28,
-                  color: theme.colorScheme.onSurface,
+          ],
+          builder: (context, controller, _) => InkWell(
+            onTap: hasMany
+                ? () =>
+                      controller.isOpen ? controller.close() : controller.open()
+                : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    vehicle.name,
+                    style: theme.textTheme.headlineMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-            ],
+                if (hasMany)
+                  Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 28,
+                    color: theme.colorScheme.onSurface,
+                  ),
+              ],
+            ),
           ),
         ),
       ],
-    );
-  }
-
-  Future<void> _openSwitcher(
-    BuildContext context,
-    WidgetRef ref,
-    List<Vehicle> vehicles,
-  ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final option in vehicles)
-              ListTile(
-                leading: const Icon(Icons.directions_car),
-                title: Text(option.name),
-                selected: option.id == vehicle.id,
-                onTap: () {
-                  ref.read(activeVehicleIdProvider.notifier).select(option.id);
-                  Navigator.of(context).pop();
-                },
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -49,6 +49,7 @@ dependencies:
   timezone: ^0.11.1
   flutter_timezone: ^5.1.0
   android_intent_plus: ^6.0.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +74,7 @@ flutter:
 
   assets:
     - assets/fuel_catalog.json
+    - LICENSE
 
   fonts:
     # Inter is bundled as static TTFs (no runtime download) under the SIL Open
