@@ -31,7 +31,7 @@ It is 100% offline. No account, no cloud, no ads, no analytics. Your data lives 
 Present today (early development):
 
 - Add and manage multiple vehicles.
-- Log every refuel: quantity, amount paid, odometer reading.
+- Log every refuel: quantity, amount paid, odometer reading. Amount chips (100, 200, 500, Full) and litres derived from your last price cover the "300 ka daal do" fill in a few taps.
 - Optional per refuel: fuel variant (XP95, Shell V-Power, and the rest), station, notes, and a full or partial tank flag.
 - Real mileage computed full tank to full tank (km/l, or km/kg for CNG).
 - Cost per kilometre, range per tank, monthly spend, and a mileage trend chart, one point per full tank window.
@@ -106,7 +106,7 @@ Keeping the domain layer free of Flutter is what lets the mileage math be tested
 
 - **v0.1**: vehicles, refuel log, and the core stats (mileage, cost per km, range per tank, monthly spend). Done.
 - **v1.0**: visual overhaul, mileage trend, CSV backup and restore, claimed mileage comparison, document expiry reminders, service log with due reminders, and non-fuel expense tracking.
-- **v1.1** (current): history tab that folds in the service log and expenses, JSON backup format (CSV backups still restore), automatic daily backups that survive an uninstall, restore from the welcome screen, screen reader labels throughout, and a round of fixes from on-phone use.
+- **v1.1** (current): history tab that folds in the service log and expenses, JSON backup format (CSV backups still restore), automatic daily backups that survive an uninstall, restore from the welcome screen, rupee-first entry with amount chips, screen reader labels throughout, and a round of fixes from on-phone use.
 - **Later**: more locales and fuel presets beyond India, a running-cost share card, and an iOS release once it is properly tested.
 
 ## Contributing
