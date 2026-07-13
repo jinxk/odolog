@@ -17,19 +17,19 @@ import '../providers/app_providers.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 
-/// The active vehicle's maintenance: a due countdown for each template up
-/// top, then its service history, most recent first. Logging a service resets
-/// that template's countdown and replans its reminder immediately, since
-/// logging a service does not otherwise touch the vehicle list the app
-/// listens on for a reschedule.
-class ServiceLogScreen extends ConsumerWidget {
-  const ServiceLogScreen({super.key});
+/// The service segment of the history tab: a due countdown for each template
+/// up top, then the service history, most recent first. A nested Scaffold, so
+/// the segment carries its own log action instead of borrowing the shell's
+/// refuel button. Logging a service resets that template's countdown and
+/// replans its reminder immediately, since logging a service does not
+/// otherwise touch the vehicle list the app listens on for a reschedule.
+class ServiceLogTab extends ConsumerWidget {
+  const ServiceLogTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vehicle = ref.watch(currentVehicleProvider).value;
     return Scaffold(
-      appBar: AppBar(title: const Text('Service log')),
       body: vehicle == null
           ? const EmptyState(
               icon: Icons.build_outlined,

@@ -687,7 +687,8 @@ class _DocumentsGlance extends StatelessWidget {
 }
 
 /// A glance line per maintenance template that has anything to show, tapping
-/// through to the full service log. Unlike [_DocumentsGlance], which surfaces
+/// through to the history tab's service segment. Unlike [_DocumentsGlance],
+/// which surfaces
 /// only the nearest alert, both templates get their own line here: there are
 /// only ever two, so showing both costs nothing and a countdown line the
 /// owner is not close to yet is still useful context, not noise.
@@ -710,7 +711,10 @@ class _ServiceDueGlance extends ConsumerWidget {
         AppColorRoles.of(theme.colorScheme.onSurface, theme.brightness);
     final isDark = theme.brightness == Brightness.dark;
     return InkWell(
-      onTap: () => context.push('/service-log'),
+      onTap: () {
+        ref.read(historyTabProvider.notifier).select(HistorySegment.service);
+        context.go('/history');
+      },
       child: Padding(
         padding: const EdgeInsets.only(top: 4),
         child: Column(

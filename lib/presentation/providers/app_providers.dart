@@ -31,6 +31,21 @@ class ActiveVehicleId extends _$ActiveVehicleId {
   void select(int? id) => state = id;
 }
 
+/// The three logs the history tab can show.
+enum HistorySegment { fuel, service, expenses }
+
+/// Which history segment is showing. Session scoped and kept alive, like the
+/// vehicle selection, so leaving the tab and coming back does not lose the
+/// segment; the shell also reads it to decide which add button to float, and
+/// the dashboard's service glance sets it before jumping to the tab.
+@Riverpod(keepAlive: true)
+class HistoryTab extends _$HistoryTab {
+  @override
+  HistorySegment build() => HistorySegment.fuel;
+
+  void select(HistorySegment segment) => state = segment;
+}
+
 @riverpod
 Future<List<Vehicle>> vehicleList(Ref ref) async {
   final result = await ref.watch(listVehiclesProvider).execute();
