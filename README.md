@@ -40,6 +40,7 @@ Present today (early development):
 - Service log with due reminders: engine oil by distance, general service by date, whichever comes first.
 - Non-fuel expenses (service, tyres, repairs, insurance) folded into a total cost of ownership figure.
 - JSON export and import, plus a blank template to fill in and import back. Since data lives only on the device, the export is your backup. CSV backups from 1.0 still restore.
+- Automatic daily backup to Downloads/OdoLog, kept to the last seven days. Files there survive an uninstall, so a bad update cannot take your history with it. On by default after a one-time consent, and restorable straight from the welcome screen.
 - India-first fuel presets: IOCL, BPCL, HPCL, Shell, Nayara, Jio-bp variants, CNG, and Auto LPG. Free text entry and a currency picker mean the app works anywhere.
 - Material 3 interface with dark and light themes.
 
@@ -105,7 +106,7 @@ Keeping the domain layer free of Flutter is what lets the mileage math be tested
 
 - **v0.1**: vehicles, refuel log, and the core stats (mileage, cost per km, range per tank, monthly spend). Done.
 - **v1.0**: visual overhaul, mileage trend, CSV backup and restore, claimed mileage comparison, document expiry reminders, service log with due reminders, and non-fuel expense tracking.
-- **v1.1** (current): history tab that folds in the service log and expenses, JSON backup format (CSV backups still restore), and a round of fixes from on-phone use.
+- **v1.1** (current): history tab that folds in the service log and expenses, JSON backup format (CSV backups still restore), automatic daily backups that survive an uninstall, restore from the welcome screen, screen reader labels throughout, and a round of fixes from on-phone use.
 - **Later**: more locales and fuel presets beyond India, a running-cost share card, and an iOS release once it is properly tested.
 
 ## Contributing
