@@ -80,7 +80,7 @@ lib/
       reminder_scheduler.dart        // port, see Reminder scheduler port
     backup/
       data_bundle.dart                // the DataBundle typedef
-      data_bundle_codec.dart          // port fronting the CSV writer and reader
+      data_bundle_codec.dart          // port the backup format codec implements
     calculators/
       mileage_calculator.dart      // pure full-tank window math
       aggregate_calculator.dart    // lifetime and monthly rollups
@@ -131,8 +131,11 @@ lib/
       catalog_loader.dart    // reads assets/fuel_catalog.json
     reminders/
       local_notification_scheduler.dart  // ReminderScheduler over flutter_local_notifications
+    json/
+      data_bundle_json_codec.dart  // the JSON backup format: writer, reader, template
     csv/
-      data_bundle_csv_codec.dart   // the CSV writer, reader, and format constants
+      data_bundle_csv_codec.dart   // legacy CSV reader, keeps pre-1.1 backups restoring
+      csv_grammar.dart
       data_bundle_codec_impl.dart  // DataBundleCodec fronting the writer and reader
   presentation/
     home/
