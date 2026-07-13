@@ -108,6 +108,38 @@ flutter test
 
 The `--fatal-infos` flag is deliberate. Info-level hints count as failures, so the analyzer stays at zero noise instead of slowly filling with warnings everyone learns to skip.
 
+## Release builds
+
+Play Store uploads are app bundles signed with an upload keystore. The keystore and its passwords never enter the repo: `android/.gitignore` blocks `key.properties` and every `*.jks`/`*.keystore`, and the keystore file itself should live outside the project tree entirely.
+
+One-time setup:
+
+1. Generate the upload keystore somewhere outside the repo:
+
+   ```bash
+   keytool -genkey -v -keystore ~/upload-keystore.jks -storetype JKS \
+     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+
+2. Create `android/key.properties` pointing at it:
+
+   ```properties
+   storePassword=<store password>
+   keyPassword=<key password>
+   keyAlias=upload
+   storeFile=<absolute path to upload-keystore.jks>
+   ```
+
+3. Build the bundle:
+
+   ```bash
+   flutter build appbundle
+   ```
+
+Back up the keystore and `key.properties` together in at least two places that survive a dead laptop, for example an encrypted archive on an external drive plus a private cloud folder. Losing the upload key after enrolling in Play App Signing means a reset request with Google and a waiting period; losing it without that safety net can mean losing the ability to update the listing at all. Treat it like the house key it is: never commit it, never share it, never park it in a shared folder.
+
+When `key.properties` is absent, release builds fall back to the debug key so `flutter run --release` works on a fresh clone. Debug-signed builds are fine for sideloading and useless for Play.
+
 ## Commits and branches
 
 Conventional commits. The type prefixes in use are `feat`, `fix`, `docs`, `chore`, `refactor`, and `test`.
