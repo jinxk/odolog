@@ -110,33 +110,7 @@ The `--fatal-infos` flag is deliberate. Info-level hints count as failures, so t
 
 ## Release builds
 
-Play Store uploads are app bundles signed with an upload keystore. The keystore and its passwords never enter the repo: `android/.gitignore` blocks `key.properties` and every `*.jks`/`*.keystore`, and the keystore file itself should live outside the project tree entirely.
-
-One-time setup:
-
-1. Generate the upload keystore somewhere outside the repo:
-
-   ```bash
-   keytool -genkey -v -keystore ~/upload-keystore.jks -storetype JKS \
-     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
-   ```
-
-2. Create `android/key.properties` pointing at it:
-
-   ```properties
-   storePassword=<store password>
-   keyPassword=<key password>
-   keyAlias=upload
-   storeFile=<absolute path to upload-keystore.jks>
-   ```
-
-3. Build the bundle:
-
-   ```bash
-   flutter build appbundle
-   ```
-
-Back up the keystore and `key.properties` together in at least two places that survive a dead laptop, for example an encrypted archive on an external drive plus a private cloud folder. Losing the upload key after enrolling in Play App Signing means a reset request with Google and a waiting period; losing it without that safety net can mean losing the ability to update the listing at all. Treat it like the house key it is: never commit it, never share it, never park it in a shared folder.
+Official releases are signed with a private keystore that never enters the repo: `android/.gitignore` blocks `key.properties` and every `*.jks`/`*.keystore`. Signing is a maintainer concern and is not documented here. A fork that wants its own releases should generate its own keystore and wire it through `android/key.properties`.
 
 When `key.properties` is absent, release builds fall back to the debug key so `flutter run --release` works on a fresh clone. Debug-signed builds are fine for sideloading and useless for Play.
 
