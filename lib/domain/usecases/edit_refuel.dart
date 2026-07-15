@@ -4,6 +4,7 @@ import '../../core/failures.dart';
 import '../../core/typedefs.dart';
 import '../entities/refuel_entry.dart';
 import '../repositories/refuel_repository.dart';
+import '../validators/odometer_sequence_validator.dart';
 import '../validators/text_input_validator.dart';
 
 class EditRefuel {
@@ -65,15 +66,12 @@ class EditRefuel {
             left(const NotFoundFailure('Entry does not exist.')),
           );
         }
-        if (index > 0 && entry.odometer <= entries[index - 1].odometer) {
-          return Future<Result<RefuelEntry>>.value(
-            left(
-              const ValidationFailure(
-                field: 'odometer',
-                reason: 'Odometer must be greater than the previous reading.',
-              ),
-            ),
-          );
+        final issue = OdometerSequenceValidator.check(
+          entry,
+          entries.where((e) => e.id != entry.id),
+        );
+        if (issue != null) {
+          return Future<Result<RefuelEntry>>.value(left(issue));
         }
         return _repository.update(entry);
       },

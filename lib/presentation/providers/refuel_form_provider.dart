@@ -47,7 +47,7 @@ class RefuelFormState {
   final String notes;
   final bool odometerOverride;
 
-  /// Turns true only after a non increasing odometer failure, so the override
+  /// Turns true only after an odometer ordering failure, so the override
   /// checkbox appears inline exactly when that specific problem occurs.
   final bool showOverride;
   final Map<String, String> fieldErrors;
@@ -266,8 +266,9 @@ class RefuelForm extends _$RefuelForm {
   void _applyFailure(Failure failure) {
     if (failure is ValidationFailure) {
       final field = _fieldFor(failure.field);
-      final isOdometerOrder =
-          field == 'odometer' && failure.reason.contains('previous');
+      // The refuel use cases only fail on the odometer field for an ordering
+      // problem, in either direction, so the field alone identifies it.
+      final isOdometerOrder = field == 'odometer';
       state = state.copyWith(
         fieldErrors: {field: failure.reason},
         showOverride: isOdometerOrder ? true : null,
