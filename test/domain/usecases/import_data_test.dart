@@ -2,8 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:odolog/core/failures.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
+import 'package:odolog/domain/usecases/add_vehicle.dart';
 import 'package:odolog/domain/usecases/import_data.dart';
+import 'package:odolog/domain/usecases/log_expense.dart';
+import 'package:odolog/domain/usecases/log_refuel.dart';
+import 'package:odolog/domain/usecases/log_service.dart';
 
+import '../../helpers/entry_builder.dart';
 import '../../helpers/fake_data_bundle_codec.dart';
 import '../../helpers/fake_expense_repository.dart';
 import '../../helpers/fake_refuel_repository.dart';
@@ -18,6 +23,20 @@ void main() {
     fuelCategory: FuelCategory.petrol,
   );
 
+  ImportData importer({
+    FakeVehicleRepository? vehicleRepo,
+    FakeRefuelRepository? refuelRepo,
+    required FakeDataBundleCodec codec,
+  }) {
+    return ImportData(
+      AddVehicle(vehicleRepo ?? FakeVehicleRepository()),
+      LogRefuel(refuelRepo ?? FakeRefuelRepository()),
+      LogService(FakeServiceLogRepository()),
+      LogExpense(FakeExpenseRepository()),
+      codec,
+    );
+  }
+
   test(
     'a decode failure is returned without touching any repository',
     () async {
@@ -28,12 +47,9 @@ void main() {
         ),
       );
 
-      final result = await ImportData(
-        vehicleRepo,
-        FakeRefuelRepository(),
-        FakeServiceLogRepository(),
-        FakeExpenseRepository(),
-        codec,
+      final result = await importer(
+        vehicleRepo: vehicleRepo,
+        codec: codec,
       ).execute('garbage');
 
       expect(result.isLeft(), isTrue);
@@ -54,12 +70,9 @@ void main() {
         )),
       );
 
-      final result = await ImportData(
-        vehicleRepo,
-        FakeRefuelRepository(),
-        FakeServiceLogRepository(),
-        FakeExpenseRepository(),
-        codec,
+      final result = await importer(
+        vehicleRepo: vehicleRepo,
+        codec: codec,
       ).execute('"odolog","3"...');
 
       expect(vehicleRepo.vehicles, hasLength(1));
@@ -68,4 +81,68 @@ void main() {
       expect(bundle.vehicles, hasLength(1));
     },
   );
+
+  test('an imported refuel passes the same checks a form entry does', () async {
+    final refuelRepo = FakeRefuelRepository();
+    final codec = FakeDataBundleCodec(
+      decodeResult: right((
+        vehicles: [vehicle],
+        entries: [entry(id: 0, odometer: 1000, quantity: 0, pricePaid: 2000)],
+        serviceLog: const [],
+        expenses: const [],
+      )),
+    );
+
+    final result = await importer(
+      refuelRepo: refuelRepo,
+      codec: codec,
+    ).execute('...');
+
+    final failure = result.getLeft().toNullable()! as ValidationFailure;
+    expect(failure.field, 'quantity');
+    expect(failure.reason, startsWith('refuels[0]:'));
+    expect(refuelRepo.entries, isEmpty);
+  });
+
+  test('a bundle holding a backdated fill imports cleanly', () async {
+    final refuelRepo = FakeRefuelRepository();
+    final codec = FakeDataBundleCodec(
+      decodeResult: right((
+        vehicles: [vehicle],
+        entries: [
+          entry(
+            id: 0,
+            odometer: 1000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: DateTime.utc(2020, 1, 1),
+          ),
+          entry(
+            id: 0,
+            odometer: 2000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: DateTime.utc(2020, 1, 20),
+          ),
+          entry(
+            id: 0,
+            odometer: 1500,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: DateTime.utc(2020, 1, 10),
+          ),
+        ],
+        serviceLog: const [],
+        expenses: const [],
+      )),
+    );
+
+    final result = await importer(
+      refuelRepo: refuelRepo,
+      codec: codec,
+    ).execute('...');
+
+    expect(result.isRight(), isTrue);
+    expect(refuelRepo.entries, hasLength(3));
+  });
 }
