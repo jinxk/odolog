@@ -4,4 +4,4 @@
 /// way to read the manifest at runtime without an extra dependency.
 /// `test/app/version_test.dart` checks the two still agree, so a forgotten
 /// bump fails the test suite instead of shipping a stale number.
-const appVersion = '1.0.0';
+const appVersion = '1.1.0';
