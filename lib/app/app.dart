@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../presentation/providers/app_providers.dart';
 import '../presentation/providers/settings_provider.dart';
+import '../presentation/splash/launch_splash.dart';
 import 'router.dart';
 import 'theme/theme.dart';
 
@@ -28,6 +29,9 @@ class OdoLogApp extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
+      // The gauge sweep over the first frame; see LaunchSplash for why this
+      // only ever shows on a cold start.
+      builder: (context, child) => LaunchSplash(child: child!),
       routerConfig: router,
     );
   }
