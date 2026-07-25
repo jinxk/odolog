@@ -507,7 +507,7 @@ final class ImportDataProvider
   }
 }
 
-String _$importDataHash() => r'0eb910aba85512ee758943787867ced1c1b6465b';
+String _$importDataHash() => r'529e3b301fb66004951d86f565b66d2b0f2d86b7';
 
 @ProviderFor(getDataBundleTemplate)
 final getDataBundleTemplateProvider = GetDataBundleTemplateProvider._();

@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/entities/expense.dart';
+import '../db/transaction_zone.dart';
 import '../models/expense_row.dart';
 
 /// Raw SQL for the `expenses` table.
@@ -9,10 +10,12 @@ class ExpenseDao {
 
   final DatabaseExecutor _db;
 
+  DatabaseExecutor get _executor => currentExecutor(_db);
+
   /// Most recent first; a tie on the date falls back to id so the order is
   /// still deterministic.
   Future<List<Expense>> getForVehicle(int vehicleId) async {
-    final rows = await _db.query(
+    final rows = await _executor.query(
       ExpenseRow.table,
       where: 'vehicle_id = ?',
       whereArgs: [vehicleId],
@@ -22,10 +25,10 @@ class ExpenseDao {
   }
 
   Future<int> insert(Expense expense) {
-    return _db.insert(ExpenseRow.table, ExpenseRow.toMap(expense));
+    return _executor.insert(ExpenseRow.table, ExpenseRow.toMap(expense));
   }
 
   Future<int> delete(int id) {
-    return _db.delete(ExpenseRow.table, where: 'id = ?', whereArgs: [id]);
+    return _executor.delete(ExpenseRow.table, where: 'id = ?', whereArgs: [id]);
   }
 }

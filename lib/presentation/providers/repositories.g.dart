@@ -295,6 +295,58 @@ final class ExpenseRepositoryProvider
 
 String _$expenseRepositoryHash() => r'7b7f0c752025d9e217e415280eb41a72f2e6dc1b';
 
+/// The transaction boundary the import runs inside. Shares the one open
+/// database with the repositories: a transaction it opens is picked up by every
+/// DAO called underneath it.
+
+@ProviderFor(unitOfWork)
+final unitOfWorkProvider = UnitOfWorkProvider._();
+
+/// The transaction boundary the import runs inside. Shares the one open
+/// database with the repositories: a transaction it opens is picked up by every
+/// DAO called underneath it.
+
+final class UnitOfWorkProvider
+    extends $FunctionalProvider<UnitOfWork, UnitOfWork, UnitOfWork>
+    with $Provider<UnitOfWork> {
+  /// The transaction boundary the import runs inside. Shares the one open
+  /// database with the repositories: a transaction it opens is picked up by every
+  /// DAO called underneath it.
+  UnitOfWorkProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'unitOfWorkProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$unitOfWorkHash();
+
+  @$internal
+  @override
+  $ProviderElement<UnitOfWork> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  UnitOfWork create(Ref ref) {
+    return unitOfWork(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UnitOfWork value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UnitOfWork>(value),
+    );
+  }
+}
+
+String _$unitOfWorkHash() => r'97b1b5472e14279e71df536df8fcd84dc1372837';
+
 /// The platform notification scheduler. Widget tests can override this with a
 /// no-op, though the real one already stands down off Android.
 

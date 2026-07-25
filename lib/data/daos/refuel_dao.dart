@@ -1,19 +1,23 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/entities/refuel_entry.dart';
+import '../db/transaction_zone.dart';
 import '../models/refuel_row.dart';
 
-/// Raw SQL for the `refuel_entries` table. Takes a [DatabaseExecutor] so it
-/// works on both a database and a transaction.
+/// Raw SQL for the `refuel_entries` table. Every statement runs on the
+/// transaction in flight when there is one, otherwise on the database it was
+/// built with.
 class RefuelDao {
   const RefuelDao(this._db);
 
   final DatabaseExecutor _db;
 
+  DatabaseExecutor get _executor => currentExecutor(_db);
+
   /// Entries for a vehicle ordered by odometer, then by filled_at. The window
   /// walk relies on this sequence, and the composite index backs it.
   Future<List<RefuelEntry>> getForVehicle(int vehicleId) async {
-    final rows = await _db.query(
+    final rows = await _executor.query(
       RefuelRow.table,
       where: 'vehicle_id = ?',
       whereArgs: [vehicleId],
@@ -23,7 +27,7 @@ class RefuelDao {
   }
 
   Future<RefuelEntry?> getById(int id) async {
-    final rows = await _db.query(
+    final rows = await _executor.query(
       RefuelRow.table,
       where: 'id = ?',
       whereArgs: [id],
@@ -33,11 +37,11 @@ class RefuelDao {
   }
 
   Future<int> insert(RefuelEntry entry) {
-    return _db.insert(RefuelRow.table, RefuelRow.toMap(entry));
+    return _executor.insert(RefuelRow.table, RefuelRow.toMap(entry));
   }
 
   Future<int> update(RefuelEntry entry) {
-    return _db.update(
+    return _executor.update(
       RefuelRow.table,
       RefuelRow.toMap(entry),
       where: 'id = ?',
@@ -46,6 +50,6 @@ class RefuelDao {
   }
 
   Future<int> delete(int id) {
-    return _db.delete(RefuelRow.table, where: 'id = ?', whereArgs: [id]);
+    return _executor.delete(RefuelRow.table, where: 'id = ?', whereArgs: [id]);
   }
 }

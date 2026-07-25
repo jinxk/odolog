@@ -85,7 +85,9 @@ ImportData importData(Ref ref) => ImportData(
   ref.watch(logRefuelProvider),
   ref.watch(logServiceProvider),
   ref.watch(logExpenseProvider),
+  ref.watch(listVehiclesProvider),
   ref.watch(dataBundleCodecProvider),
+  ref.watch(unitOfWorkProvider),
 );
 
 @Riverpod(keepAlive: true)

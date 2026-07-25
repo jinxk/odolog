@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/entities/service_log_entry.dart';
+import '../db/transaction_zone.dart';
 import '../models/service_log_row.dart';
 
 /// Raw SQL for the `service_log` table.
@@ -9,10 +10,12 @@ class ServiceLogDao {
 
   final DatabaseExecutor _db;
 
+  DatabaseExecutor get _executor => currentExecutor(_db);
+
   /// Most recently performed first; a tie on the date falls back to id so the
   /// order is still deterministic.
   Future<List<ServiceLogEntry>> getForVehicle(int vehicleId) async {
-    final rows = await _db.query(
+    final rows = await _executor.query(
       ServiceLogRow.table,
       where: 'vehicle_id = ?',
       whereArgs: [vehicleId],
@@ -22,10 +25,14 @@ class ServiceLogDao {
   }
 
   Future<int> insert(ServiceLogEntry entry) {
-    return _db.insert(ServiceLogRow.table, ServiceLogRow.toMap(entry));
+    return _executor.insert(ServiceLogRow.table, ServiceLogRow.toMap(entry));
   }
 
   Future<int> delete(int id) {
-    return _db.delete(ServiceLogRow.table, where: 'id = ?', whereArgs: [id]);
+    return _executor.delete(
+      ServiceLogRow.table,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }

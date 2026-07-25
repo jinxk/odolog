@@ -7,12 +7,15 @@ import 'package:odolog/domain/repositories/vehicle_repository.dart';
 /// In-memory [VehicleRepository] for use case tests. Vehicles with id 0 are
 /// treated as unsaved and get an assigned id on add.
 class FakeVehicleRepository implements VehicleRepository {
-  FakeVehicleRepository([List<Vehicle> seed = const []]) {
+  FakeVehicleRepository([List<Vehicle> seed = const [], this.addFailure]) {
     _vehicles.addAll(seed);
     for (final vehicle in seed) {
       if (vehicle.id >= _nextId) _nextId = vehicle.id + 1;
     }
   }
+
+  /// When set, every add is rejected with it instead of storing the vehicle.
+  final Failure? addFailure;
 
   final List<Vehicle> _vehicles = [];
   int _nextId = 1;
@@ -21,6 +24,8 @@ class FakeVehicleRepository implements VehicleRepository {
 
   @override
   Future<Result<Vehicle>> add(Vehicle vehicle) async {
+    final failure = addFailure;
+    if (failure != null) return left(failure);
     final stored = vehicle.id == 0 ? vehicle.copyWith(id: _nextId++) : vehicle;
     _vehicles.add(stored);
     return right(stored);

@@ -70,7 +70,7 @@ final class RefuelFormProvider
   }
 }
 
-String _$refuelFormHash() => r'363029f5b81232f8a8592f08281cd8f8c5af060f';
+String _$refuelFormHash() => r'c81c3ca7e2eaea6c1d49f3e552e5c44db0e90aec';
 
 /// Keeps a refuel form's state alive for the duration of one add or edit flow,
 /// keyed by a flow id so add and edit never share a buffer. Disposed explicitly

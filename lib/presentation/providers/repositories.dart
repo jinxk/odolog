@@ -7,6 +7,7 @@ import '../../data/daos/expense_dao.dart';
 import '../../data/daos/refuel_dao.dart';
 import '../../data/daos/service_log_dao.dart';
 import '../../data/daos/vehicle_dao.dart';
+import '../../data/db/sqflite_unit_of_work.dart';
 import '../../data/json/data_bundle_json_codec.dart';
 import '../../data/reminders/local_notification_scheduler.dart';
 import '../../data/repositories/catalog_repository_impl.dart';
@@ -16,6 +17,7 @@ import '../../data/repositories/service_log_repository_impl.dart';
 import '../../data/repositories/vehicle_repository_impl.dart';
 import '../../domain/backup/auto_backup_writer.dart';
 import '../../domain/backup/data_bundle_codec.dart';
+import '../../domain/backup/unit_of_work.dart';
 import '../../domain/reminders/reminder_scheduler.dart';
 import '../../domain/repositories/catalog_repository.dart';
 import '../../domain/repositories/expense_repository.dart';
@@ -52,6 +54,13 @@ ServiceLogRepository serviceLogRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 ExpenseRepository expenseRepository(Ref ref) =>
     ExpenseRepositoryImpl(ExpenseDao(ref.watch(databaseProvider)));
+
+/// The transaction boundary the import runs inside. Shares the one open
+/// database with the repositories: a transaction it opens is picked up by every
+/// DAO called underneath it.
+@Riverpod(keepAlive: true)
+UnitOfWork unitOfWork(Ref ref) =>
+    SqfliteUnitOfWork(ref.watch(databaseProvider));
 
 /// The platform notification scheduler. Widget tests can override this with a
 /// no-op, though the real one already stands down off Android.
