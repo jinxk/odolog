@@ -12,7 +12,9 @@ import 'package:flutter/material.dart';
 /// Callers pass the surface-appropriate [positiveColor] and [negativeColor]
 /// rather than reading them from the theme, because the same chip sits on the
 /// always-dark hero card in the light theme, where the light semantic greens go
-/// muddy. A [delta] of zero renders nothing, since there is no change to report.
+/// muddy. A [delta] of zero renders nothing, since there is no change to
+/// report, and neither does one too small to survive [format]'s rounding, which
+/// would otherwise read as "-0.0".
 class TrendDeltaChip extends StatelessWidget {
   const TrendDeltaChip({
     super.key,
@@ -35,9 +37,13 @@ class TrendDeltaChip extends StatelessWidget {
   /// Whether a rise in the figure is the good direction.
   final bool higherIsBetter;
 
+  static final _significantDigit = RegExp('[1-9]');
+
   @override
   Widget build(BuildContext context) {
     if (delta == 0) return const SizedBox.shrink();
+    final magnitude = format(delta.abs());
+    if (!magnitude.contains(_significantDigit)) return const SizedBox.shrink();
     final rising = delta > 0;
     final good = rising == higherIsBetter;
     final color = good ? positiveColor : negativeColor;
@@ -58,7 +64,7 @@ class TrendDeltaChip extends StatelessWidget {
           ),
           const SizedBox(width: 2),
           Text(
-            '$sign${format(delta.abs())}',
+            '$sign$magnitude',
             style: TextStyle(
               color: color,
               fontSize: 13,

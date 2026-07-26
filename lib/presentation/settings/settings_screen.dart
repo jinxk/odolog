@@ -298,9 +298,10 @@ class _DataSectionState extends ConsumerState<_DataSection> {
         ref.invalidate(serviceDueProvider);
         unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
         _showMessage(
-          'Imported ${bundle.vehicles.length} vehicles, '
-          '${bundle.entries.length} refuels, ${bundle.serviceLog.length} '
-          'services, and ${bundle.expenses.length} expenses.',
+          'Imported ${_counted(bundle.vehicles.length, 'vehicle')}, '
+          '${_counted(bundle.entries.length, 'refuel')}, '
+          '${_counted(bundle.serviceLog.length, 'service')}, and '
+          '${_counted(bundle.expenses.length, 'expense')}.',
         );
       },
     );
@@ -346,6 +347,11 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     NotFoundFailure(:final message) => message,
     DatabaseFailure(:final message) => message,
   };
+
+  /// "1 vehicle", "2 vehicles". Every noun in the import summary takes a plain
+  /// -s plural.
+  String _counted(int count, String noun) =>
+      '$count $noun${count == 1 ? '' : 's'}';
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(
