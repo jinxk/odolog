@@ -117,6 +117,57 @@ void main() {
     expect(find.text('km/l'), findsOneWidget);
   });
 
+  testWidgets('a registration failure reports on the registration field', (
+    tester,
+  ) async {
+    const initial = Vehicle(
+      id: 1,
+      name: 'Activa',
+      type: VehicleType.scooter,
+      fuelCategory: FuelCategory.petrol,
+      registrationNo: 'MH12 "AB" 1234',
+    );
+    // An edit opens the "More details" section, so the form is taller than the
+    // default test surface; give it room rather than scrolling twice.
+    tester.view.physicalSize = const Size(1000, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          vehicleRepositoryProvider.overrideWithValue(
+            FakeVehicleRepository([initial]),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: VehicleForm(
+              initial: initial,
+              saveLabel: 'Save',
+              onSaved: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    const reason = 'Cannot contain a quote mark or a line break.';
+    final registration = tester.widget<TextField>(
+      find.ancestor(
+        of: find.text('Registration number'),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(registration.decoration!.errorText, reason);
+
+    final name = tester.widget<TextField>(find.byType(TextField).first);
+    expect(name.decoration!.errorText, isNull);
+  });
+
   testWidgets('a document quick-set fills a date without auto-filling others', (
     tester,
   ) async {

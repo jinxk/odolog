@@ -107,6 +107,9 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     ref.invalidate(vehicleStatsProvider(widget.vehicle.id));
     ref.invalidate(historyProvider(widget.vehicle.id));
     ref.invalidate(vehicleListProvider);
+    // The engine oil interval is measured in km, so a new odometer reading can
+    // move the service due state even though no service was logged.
+    ref.invalidate(serviceDueProvider(widget.vehicle));
     ref.invalidate(refuelFormProvider(_flowId));
     // A haptic confirms the write even when the rider cannot read fine print
     // in glare. It is fire and forget: the pop must not wait on it, and the
@@ -195,100 +198,107 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
       }
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isEdit ? 'Edit refuel' : 'Add refuel'),
-        leading: IconButton(
-          tooltip: 'Close',
-          icon: const Icon(Icons.close),
-          onPressed: _cancel,
+    return PopScope(
+      // The system back gesture drops the draft the same way the close button
+      // does, otherwise the next open reopens a stale form.
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) ref.invalidate(refuelFormProvider(_flowId));
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(isEdit ? 'Edit refuel' : 'Add refuel'),
+          leading: IconButton(
+            tooltip: 'Close',
+            icon: const Icon(Icons.close),
+            onPressed: _cancel,
+          ),
         ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _numberField(
-            key: const Key('odometerField'),
-            controller: _odometer,
-            label: 'Odometer',
-            unit: 'km',
-            autofocus: true,
-            textInputAction: TextInputAction.next,
-            helperText: odometerHint,
-            error: state.fieldErrors['odometer'],
-            onChanged: _controller.setOdometer,
-          ),
-          if (state.showOverride)
-            CheckboxListTile(
-              key: const Key('overrideCheckbox'),
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              value: state.odometerOverride,
-              onChanged: (value) => _controller.setOverride(value ?? false),
-              title: const Text('Allow a lower odometer reading'),
-              subtitle: const Text(
-                'The affected mileage is flagged so the math stays honest.',
-              ),
-            ),
-          const SizedBox(height: 20),
-          _FullTankControl(
-            fullTank: state.fullTank,
-            onChanged: _controller.setFullTank,
-          ),
-          const SizedBox(height: 20),
-          _numberField(
-            key: const Key('quantityField'),
-            controller: _quantity,
-            label: 'Quantity',
-            unit: unitLabel(category),
-            textInputAction: TextInputAction.next,
-            error: state.fieldErrors['quantity'],
-            onChanged: _controller.setQuantity,
-          ),
-          const SizedBox(height: 20),
-          _numberField(
-            key: const Key('priceField'),
-            controller: _price,
-            focusNode: _priceFocus,
-            label: 'Price paid',
-            unit: currency,
-            helperText: lastPriceHint,
-            textInputAction: TextInputAction.done,
-            error: state.fieldErrors['price'],
-            onChanged: _controller.setPrice,
-          ),
-          const SizedBox(height: 10),
-          _AmountChips(onAmount: _applyAmountChip, onFull: _applyFullChip),
-          const SizedBox(height: 6),
-          _PriceHint(
-            pricePerUnit: state.pricePerUnit,
-            currency: currency,
-            category: category,
-          ),
-          const SizedBox(height: 12),
-          _OptionalDivider(
-            expanded: _expanded,
-            onToggle: () => setState(() => _expanded = !_expanded),
-          ),
-          if (_expanded) _optionalSection(context, state, category),
-          if (state.fieldErrors['date'] != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                state.fieldErrors['date']!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
+        body: ListView(
           padding: const EdgeInsets.all(16),
-          child: SizedBox(
-            height: 64,
-            child: FilledButton(
-              onPressed: _saving ? null : _save,
-              child: Text(isEdit ? 'Save changes' : 'Save refuel'),
+          children: [
+            _numberField(
+              key: const Key('odometerField'),
+              controller: _odometer,
+              label: 'Odometer',
+              unit: 'km',
+              autofocus: true,
+              textInputAction: TextInputAction.next,
+              helperText: odometerHint,
+              error: state.fieldErrors['odometer'],
+              onChanged: _controller.setOdometer,
+            ),
+            if (state.showOverride)
+              CheckboxListTile(
+                key: const Key('overrideCheckbox'),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: state.odometerOverride,
+                onChanged: (value) => _controller.setOverride(value ?? false),
+                title: const Text('Allow a lower odometer reading'),
+                subtitle: const Text(
+                  'The affected mileage is flagged so the math stays honest.',
+                ),
+              ),
+            const SizedBox(height: 20),
+            _FullTankControl(
+              fullTank: state.fullTank,
+              onChanged: _controller.setFullTank,
+            ),
+            const SizedBox(height: 20),
+            _numberField(
+              key: const Key('quantityField'),
+              controller: _quantity,
+              label: 'Quantity',
+              unit: unitLabel(category),
+              textInputAction: TextInputAction.next,
+              error: state.fieldErrors['quantity'],
+              onChanged: _controller.setQuantity,
+            ),
+            const SizedBox(height: 20),
+            _numberField(
+              key: const Key('priceField'),
+              controller: _price,
+              focusNode: _priceFocus,
+              label: 'Price paid',
+              unit: currency,
+              helperText: lastPriceHint,
+              textInputAction: TextInputAction.done,
+              error: state.fieldErrors['price'],
+              onChanged: _controller.setPrice,
+            ),
+            const SizedBox(height: 10),
+            _AmountChips(onAmount: _applyAmountChip, onFull: _applyFullChip),
+            const SizedBox(height: 6),
+            _PriceHint(
+              pricePerUnit: state.pricePerUnit,
+              currency: currency,
+              category: category,
+            ),
+            const SizedBox(height: 12),
+            _OptionalDivider(
+              expanded: _expanded,
+              onToggle: () => setState(() => _expanded = !_expanded),
+            ),
+            if (_expanded) _optionalSection(context, state, category),
+            if (state.fieldErrors['date'] != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  state.fieldErrors['date']!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+          ],
+        ),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              height: 64,
+              child: FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(isEdit ? 'Save changes' : 'Save refuel'),
+              ),
             ),
           ),
         ),

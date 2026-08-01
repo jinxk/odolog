@@ -50,7 +50,10 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
   bool _showDocuments = false;
   bool _showServiceIntervals = false;
   bool _saving = false;
-  String? _nameError;
+
+  /// Save failures keyed by the field name the use cases report, so a reason
+  /// renders against the input it came from.
+  Map<String, String> _fieldErrors = const {};
 
   @override
   void initState() {
@@ -106,7 +109,7 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
   Future<void> _save() async {
     setState(() {
       _saving = true;
-      _nameError = null;
+      _fieldErrors = const {};
     });
     final vehicle = Vehicle(
       id: widget.initial?.id ?? 0,
@@ -137,8 +140,8 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
       (failure) {
         setState(() {
           _saving = false;
-          if (failure is ValidationFailure && failure.field == 'name') {
-            _nameError = failure.reason;
+          if (failure is ValidationFailure) {
+            _fieldErrors = {failure.field: failure.reason};
           }
         });
       },
@@ -178,7 +181,7 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
           decoration: InputDecoration(
             labelText: 'Name',
             hintText: 'Activa, Swift',
-            errorText: _nameError,
+            errorText: _fieldErrors['name'],
           ),
         ),
         const SizedBox(height: 20),
@@ -221,9 +224,10 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
             controller: _registration,
             textCapitalization: TextCapitalization.characters,
             inputFormatters: [csvSafeTextFormatter],
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Registration number',
               hintText: 'Optional',
+              errorText: _fieldErrors['registrationNo'],
             ),
           ),
           const SizedBox(height: 20),

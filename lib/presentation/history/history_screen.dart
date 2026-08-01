@@ -135,52 +135,54 @@ class _HistoryList extends ConsumerWidget {
           );
         }
         final reversed = items.reversed.toList();
-        // Rows carry their own month header when the month changes, so one flat
-        // list stays lazy instead of building every group up front.
-        final children = <Widget>[];
-        DateTime? runningMonth;
-        for (var i = 0; i < reversed.length; i++) {
-          final item = reversed[i];
-          final month = DateTime(
-            item.entry.filledAt.year,
-            item.entry.filledAt.month,
-          );
-          final newMonth = runningMonth == null || month != runningMonth;
-          if (newMonth) {
-            runningMonth = month;
-            children.add(
-              Padding(
-                padding: EdgeInsets.only(
-                  top: children.isEmpty ? 8 : AppSpacing.betweenSections,
-                  bottom: 4,
-                ),
-                child: Text(
-                  formatMonth(month),
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-            );
-          } else {
-            // Inset hairline between rows in the same month, stopping short of
-            // the row edges rather than cutting fully across.
-            children.add(Divider(height: 1, color: roles.hairline));
-          }
-          children.add(
-            _HistoryRow(
-              vehicle: vehicle,
-              item: item,
-              window: byClosing[item.entry.id],
-              currency: currency,
-            ),
-          );
-        }
-        return ListView(
+        // Each row carries its own month header when the month changes, so the
+        // list builds lazily instead of laying out every group up front.
+        return ListView.builder(
           padding: const EdgeInsets.only(
             left: AppSpacing.screenH,
             right: AppSpacing.screenH,
             bottom: 88,
           ),
-          children: children,
+          itemCount: reversed.length,
+          itemBuilder: (context, index) {
+            final item = reversed[index];
+            final month = DateTime(
+              item.entry.filledAt.year,
+              item.entry.filledAt.month,
+            );
+            final previous = index == 0 ? null : reversed[index - 1].entry;
+            final newMonth =
+                previous == null ||
+                month !=
+                    DateTime(previous.filledAt.year, previous.filledAt.month);
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (newMonth)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: index == 0 ? 8 : AppSpacing.betweenSections,
+                      bottom: 4,
+                    ),
+                    child: Text(
+                      formatMonth(month),
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  )
+                else
+                  // Inset hairline between rows in the same month, stopping
+                  // short of the row edges rather than cutting fully across.
+                  Divider(height: 1, color: roles.hairline),
+                _HistoryRow(
+                  vehicle: vehicle,
+                  item: item,
+                  window: byClosing[item.entry.id],
+                  currency: currency,
+                ),
+              ],
+            );
+          },
         );
       },
     );

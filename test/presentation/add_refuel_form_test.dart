@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/presentation/add_refuel/add_refuel_screen.dart';
+import 'package:odolog/presentation/providers/app_providers.dart';
 import 'package:odolog/presentation/providers/refuel_form_provider.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../helpers/entry_builder.dart';
 import '../helpers/fake_catalog_repository.dart';
 import '../helpers/fake_refuel_repository.dart';
+import '../helpers/fake_service_log_repository.dart';
 import '../helpers/fake_vehicle_repository.dart';
 
 const _vehicle = Vehicle(
@@ -50,6 +52,9 @@ Future<FakeRefuelRepository> pumpForm(
         ),
         refuelRepositoryProvider.overrideWithValue(refuelRepo),
         catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
+        serviceLogRepositoryProvider.overrideWithValue(
+          FakeServiceLogRepository(),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -277,5 +282,42 @@ void main() {
     expect(refuelRepo.entries, hasLength(1));
     expect(refuelRepo.entries.single.odometer, 12000);
     expect(find.text('home'), findsOneWidget);
+  });
+
+  testWidgets('a save refreshes the service due state', (tester) async {
+    await pumpForm(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AddRefuelScreen)),
+    );
+
+    var refreshes = 0;
+    container.listen(serviceDueProvider(_vehicle), (_, _) => refreshes++);
+    await tester.pumpAndSettle();
+    refreshes = 0;
+
+    await tester.enterText(find.byKey(const Key('odometerField')), '12000');
+    await tester.enterText(find.byKey(const Key('quantityField')), '20');
+    await tester.enterText(find.byKey(const Key('priceField')), '2000');
+    await tester.tap(find.text('Save refuel'));
+    await tester.pumpAndSettle();
+
+    expect(refreshes, greaterThan(0));
+  });
+
+  testWidgets('the hardware back gesture drops the draft', (tester) async {
+    await pumpForm(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AddRefuelScreen)),
+    );
+
+    await tester.enterText(find.byKey(const Key('odometerField')), '12000');
+    await tester.pump();
+    expect(container.read(refuelFormProvider('add:1')).odometer, '12000');
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('home'), findsOneWidget);
+    expect(container.read(refuelFormProvider('add:1')).odometer, '');
   });
 }
