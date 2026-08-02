@@ -9,6 +9,7 @@ import '../../domain/entities/expense.dart';
 import '../../domain/entities/vehicle.dart';
 import '../common/csv_safe_text_formatter.dart';
 import '../common/empty_state.dart';
+import '../common/error_view.dart';
 import '../common/formatting.dart';
 import '../common/grouped_list.dart';
 import '../common/single_decimal_formatter.dart';
@@ -82,7 +83,10 @@ class _ExpensesBody extends ConsumerWidget {
     final expenses = ref.watch(expensesProvider(vehicle.id));
     return expenses.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('$error')),
+      error: (error, _) => ErrorView(
+        error: error,
+        onRetry: () => ref.invalidate(expensesProvider(vehicle.id)),
+      ),
       data: (list) {
         if (list.isEmpty) {
           return const EmptyState(

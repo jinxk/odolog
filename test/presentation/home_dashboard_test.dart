@@ -113,9 +113,7 @@ void main() {
     await pumpHome(tester, seed: _workedExample);
 
     expect(
-      find.bySemanticsLabel(
-        'Mileage 15.0 km/l over your last full tank window',
-      ),
+      find.bySemanticsLabel('Mileage 15.0 km/l over your last full tank'),
       findsOneWidget,
     );
     handle.dispose();

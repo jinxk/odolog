@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/theme/spacing.dart';
 import '../../app/version.dart';
 import '../../core/failures.dart';
+import '../common/error_view.dart';
 import '../common/formatting.dart';
 import '../common/grouped_list.dart';
 import '../common/motion.dart';
@@ -36,7 +37,10 @@ class SettingsScreen extends ConsumerWidget {
       body: SafeArea(
         child: settings.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('$error')),
+          error: (error, _) => ErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(settingsProvider),
+          ),
           data: (settings) => ListView(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenH,
@@ -232,7 +236,9 @@ class _DataSectionState extends ConsumerState<_DataSection> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           leading: const Icon(Icons.file_download_outlined),
           title: const Text('Import data'),
-          subtitle: const Text('Load everything from a JSON file'),
+          subtitle: const Text(
+            'Load everything from a JSON file, adds to what is already here',
+          ),
           enabled: !_busy,
           onTap: _importData,
         ),

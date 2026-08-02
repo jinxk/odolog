@@ -10,6 +10,7 @@ import '../../domain/entities/vehicle.dart';
 import '../../domain/value_objects/service_due_status.dart';
 import '../common/csv_safe_text_formatter.dart';
 import '../common/empty_state.dart';
+import '../common/error_view.dart';
 import '../common/formatting.dart';
 import '../common/grouped_list.dart';
 import '../common/section_header.dart';
@@ -94,13 +95,23 @@ class _ServiceLogBody extends ConsumerWidget {
         const SectionHeader('Due'),
         due.when(
           loading: () => const SectionCard(child: Text('Loading...')),
-          error: (error, _) => SectionCard(child: Text('$error')),
+          error: (error, _) => SectionCard(
+            child: ErrorView(
+              error: error,
+              compact: true,
+              onRetry: () => ref.invalidate(serviceDueProvider(vehicle)),
+            ),
+          ),
           data: (statuses) => _DueCard(statuses: statuses),
         ),
         const SectionHeader('History'),
         log.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Text('$error'),
+          error: (error, _) => ErrorView(
+            error: error,
+            compact: true,
+            onRetry: () => ref.invalidate(serviceLogProvider(vehicle.id)),
+          ),
           data: (entries) => entries.isEmpty
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),

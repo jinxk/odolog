@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:odolog/core/failures.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/presentation/add_refuel/add_refuel_screen.dart';
@@ -319,5 +320,23 @@ void main() {
 
     expect(find.text('home'), findsOneWidget);
     expect(container.read(refuelFormProvider('add:1')).odometer, '');
+  });
+
+  testWidgets('a write that fails reports above the save button', (
+    tester,
+  ) async {
+    final repo = await pumpForm(tester);
+    repo.failOnAdd = const DatabaseFailure('sqlite write failed');
+
+    await tester.enterText(find.byKey(const Key('odometerField')), '12000');
+    await tester.enterText(find.byKey(const Key('quantityField')), '20');
+    await tester.enterText(find.byKey(const Key('priceField')), '2000');
+    await tester.tap(find.text('Save refuel'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('refuelFormError')), findsOneWidget);
+    expect(find.text('Could not save. Try again.'), findsOneWidget);
+    expect(find.textContaining('sqlite'), findsNothing);
+    expect(find.text('home'), findsNothing);
   });
 }

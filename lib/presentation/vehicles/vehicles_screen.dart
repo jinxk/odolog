@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/vehicle.dart';
 import '../common/empty_state.dart';
+import '../common/error_view.dart';
 import '../common/formatting.dart';
 import '../providers/app_providers.dart';
 import '../providers/auto_backup_provider.dart';
@@ -28,7 +29,10 @@ class VehiclesScreen extends ConsumerWidget {
       ),
       body: vehicles.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('$error')),
+        error: (error, _) => ErrorView(
+          error: error,
+          onRetry: () => ref.invalidate(vehicleListProvider),
+        ),
         data: (list) {
           if (list.isEmpty) {
             return const EmptyState(

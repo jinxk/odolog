@@ -7,11 +7,13 @@ import '../../domain/entities/vehicle.dart';
 import '../../domain/value_objects/vehicle_stats.dart';
 import '../../domain/value_objects/window_mileage.dart';
 import '../common/empty_state.dart';
+import '../common/error_view.dart';
 import '../common/formatting.dart';
 import '../common/mileage_trend.dart';
 import '../common/motion.dart';
 import '../common/section_header.dart';
 import '../common/stat_card.dart';
+import '../common/vehicle_switcher.dart';
 import '../providers/app_providers.dart';
 import '../providers/settings_provider.dart';
 
@@ -29,7 +31,10 @@ class StatsScreen extends ConsumerWidget {
       body: SafeArea(
         child: vehicle.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('$error')),
+          error: (error, _) => ErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(currentVehicleProvider),
+          ),
           data: (vehicle) => vehicle == null
               ? const EmptyState(
                   icon: Icons.insights,
@@ -57,7 +62,10 @@ class _StatsBody extends ConsumerWidget {
 
     return stats.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('$error')),
+      error: (error, _) => ErrorView(
+        error: error,
+        onRetry: () => ref.invalidate(vehicleStatsProvider(vehicle.id)),
+      ),
       data: (stats) {
         if (stats.totalQuantity == 0) {
           return const EmptyState(
@@ -74,7 +82,20 @@ class _StatsBody extends ConsumerWidget {
             bottom: 88,
           ),
           children: [
-            const EntranceFade(child: _ScreenTitle('Stats')),
+            EntranceFade(
+              child: Row(
+                children: [
+                  const _ScreenTitle('Stats'),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: VehicleSwitcher(vehicle: vehicle, compact: true),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 12),
             EntranceFade(
               delay: const Duration(milliseconds: 40),
@@ -236,16 +257,40 @@ class _LifetimeCard extends StatelessWidget {
   }
 }
 
-class _TrendSection extends StatelessWidget {
+/// Loading state inside a card, sized so the section keeps its height when
+/// the data arrives.
+class _SectionSpinner extends StatelessWidget {
+  const _SectionSpinner();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox(
+        height: 20,
+        width: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+  }
+}
+
+class _TrendSection extends ConsumerWidget {
   const _TrendSection({required this.vehicle, required this.windows});
 
   final Vehicle vehicle;
   final AsyncValue<List<WindowMileage>> windows;
 
   @override
-  Widget build(BuildContext context) {
-    return windows.maybeWhen(
-      orElse: () => const SectionCard(child: Text('Loading trend...')),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return windows.when(
+      loading: () => const SectionCard(child: _SectionSpinner()),
+      error: (error, _) => SectionCard(
+        child: ErrorView(
+          error: error,
+          compact: true,
+          onRetry: () => ref.invalidate(vehicleWindowsProvider(vehicle.id)),
+        ),
+      ),
       data: (list) {
         if (list.isEmpty) {
           return SectionCard(
@@ -265,8 +310,8 @@ class _TrendSection extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Oldest to newest, one point per full tank window. The best '
-                'window is marked in amber.',
+                'Oldest to newest, one point per full tank. The best one is '
+                'marked in amber.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -279,7 +324,7 @@ class _TrendSection extends StatelessWidget {
 
 /// Per month rollups as one inset grouped list rather than a card per month, so
 /// the months read as a single scannable column.
-class _MonthlySection extends StatelessWidget {
+class _MonthlySection extends ConsumerWidget {
   const _MonthlySection({
     required this.vehicle,
     required this.monthly,
@@ -291,13 +336,20 @@ class _MonthlySection extends StatelessWidget {
   final String currency;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final roles =
         theme.extension<AppColorRoles>() ??
         AppColorRoles.of(theme.colorScheme.onSurface, theme.brightness);
-    return monthly.maybeWhen(
-      orElse: () => const SectionCard(child: Text('Loading months...')),
+    return monthly.when(
+      loading: () => const SectionCard(child: _SectionSpinner()),
+      error: (error, _) => SectionCard(
+        child: ErrorView(
+          error: error,
+          compact: true,
+          onRetry: () => ref.invalidate(vehicleMonthlyProvider(vehicle.id)),
+        ),
+      ),
       data: (byMonth) {
         if (byMonth.isEmpty) {
           return SectionCard(

@@ -17,10 +17,15 @@ class FakeRefuelRepository implements RefuelRepository {
   final List<RefuelEntry> _entries = [];
   int _nextId = 1;
 
+  /// When set, [add] returns this instead of storing the entry, so a caller can
+  /// be tested against a write that fails.
+  Failure? failOnAdd;
+
   List<RefuelEntry> get entries => List.unmodifiable(_entries);
 
   @override
   Future<Result<RefuelEntry>> add(RefuelEntry entry) async {
+    if (failOnAdd != null) return left(failOnAdd!);
     final stored = entry.id == 0 ? entry.copyWith(id: _nextId++) : entry;
     _entries.add(stored);
     return right(stored);

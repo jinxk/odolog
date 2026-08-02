@@ -9,6 +9,7 @@ import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
 import '../../domain/value_objects/window_mileage.dart';
 import '../add_refuel/refuel_args.dart';
+import '../common/error_view.dart';
 import '../common/formatting.dart';
 import '../providers/app_providers.dart';
 import '../providers/auto_backup_provider.dart';
@@ -52,7 +53,10 @@ class EntryDetailScreen extends ConsumerWidget {
       ),
       body: history.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('$error')),
+        error: (error, _) => ErrorView(
+          error: error,
+          onRetry: () => ref.invalidate(historyProvider(vehicle.id)),
+        ),
         data: (items) {
           HistoryItem? match;
           for (final item in items) {
@@ -175,7 +179,7 @@ class _Detail extends StatelessWidget {
         if (window != null) ...[
           const SizedBox(height: 12),
           Text(
-            'This fill closed a full tank window',
+            'This fill closed a full tank',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -190,7 +194,7 @@ class _Detail extends StatelessWidget {
             value: formatMoneyPerKm(window!.costPerKm, currency),
           ),
           _DetailRow(
-            label: 'Window distance',
+            label: 'Distance on this tank',
             value: formatDistance(window!.distance),
           ),
         ],

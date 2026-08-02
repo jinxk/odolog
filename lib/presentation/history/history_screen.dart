@@ -8,8 +8,10 @@ import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
 import '../../domain/value_objects/window_mileage.dart';
 import '../common/empty_state.dart';
+import '../common/error_view.dart';
 import '../common/formatting.dart';
 import '../common/motion.dart';
+import '../common/vehicle_switcher.dart';
 import '../expenses/expenses_tab.dart';
 import '../providers/app_providers.dart';
 import '../providers/settings_provider.dart';
@@ -29,14 +31,34 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final segment = ref.watch(historyTabProvider);
+    final vehicle = ref.watch(currentVehicleProvider).value;
     return Scaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
-              child: EntranceFade(child: _ScreenTitle('History')),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenH,
+              ),
+              child: EntranceFade(
+                child: Row(
+                  children: [
+                    const _ScreenTitle('History'),
+                    const SizedBox(width: 12),
+                    if (vehicle != null)
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: VehicleSwitcher(
+                            vehicle: vehicle,
+                            compact: true,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -93,7 +115,10 @@ class _FuelHistory extends ConsumerWidget {
     final vehicle = ref.watch(currentVehicleProvider);
     return vehicle.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('$error')),
+      error: (error, _) => ErrorView(
+        error: error,
+        onRetry: () => ref.invalidate(currentVehicleProvider),
+      ),
       data: (vehicle) => vehicle == null
           ? const EmptyState(
               icon: Icons.history,
@@ -125,7 +150,10 @@ class _HistoryList extends ConsumerWidget {
 
     return history.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('$error')),
+      error: (error, _) => ErrorView(
+        error: error,
+        onRetry: () => ref.invalidate(historyProvider(vehicle.id)),
+      ),
       data: (items) {
         if (items.isEmpty) {
           return const EmptyState(

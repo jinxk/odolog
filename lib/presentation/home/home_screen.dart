@@ -20,8 +20,10 @@ import '../common/formatting.dart';
 import '../common/mileage_trend.dart';
 import '../common/motion.dart';
 import '../common/section_header.dart';
+import '../common/error_view.dart';
 import '../common/stat_card.dart';
 import '../common/trend_delta_chip.dart';
+import '../common/vehicle_switcher.dart';
 import '../providers/app_providers.dart';
 import '../providers/reminder_nudge_provider.dart';
 import '../providers/settings_provider.dart';
@@ -40,7 +42,10 @@ class HomeScreen extends ConsumerWidget {
       body: SafeArea(
         child: vehicle.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('$error')),
+          error: (error, _) => ErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(currentVehicleProvider),
+          ),
           data: (vehicle) {
             if (vehicle == null) {
               return EmptyState(
@@ -97,13 +102,9 @@ class _Dashboard extends ConsumerWidget {
   }
 }
 
-/// The screen header: a teal overline over the vehicle name as a large title,
-/// with a switcher chevron only when there is more than one vehicle to switch
-/// between. No container, left aligned, so the name anchors the screen the way
-/// a large title does. The switcher opens as a menu anchored to the title
-/// itself, not a bottom sheet: the finger is already at the top of the screen,
-/// so the choices should appear under it instead of across the display where
-/// the hand covers them on the way down.
+/// The screen header: a teal overline over the vehicle name as a large title.
+/// No container, left aligned, so the name anchors the screen the way a large
+/// title does.
 class _EditorialHeader extends ConsumerWidget {
   const _EditorialHeader({required this.vehicle});
 
@@ -113,8 +114,6 @@ class _EditorialHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final vehicles = ref.watch(vehicleListProvider).value ?? const [];
-    final hasMany = vehicles.length > 1;
     // Teal reads at 5.7:1 on the light surface but only 3.2:1 on black, so the
     // dark theme lifts the overline to the brighter teal.
     final overlineColor = isDark ? AppColors.tealBright : AppColors.teal;
@@ -129,60 +128,7 @@ class _EditorialHeader extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 2),
-        MenuAnchor(
-          menuChildren: [
-            for (final option in vehicles)
-              MenuItemButton(
-                leadingIcon: const Icon(Icons.directions_car),
-                trailingIcon: option.id == vehicle.id
-                    ? const Icon(Icons.check)
-                    : null,
-                onPressed: () => ref
-                    .read(activeVehicleIdProvider.notifier)
-                    .select(option.id),
-                child: Text(option.name),
-              ),
-          ],
-          builder: (context, controller, _) {
-            final trigger = InkWell(
-              onTap: hasMany
-                  ? () => controller.isOpen
-                        ? controller.close()
-                        : controller.open()
-                  : null,
-              borderRadius: BorderRadius.circular(8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      vehicle.name,
-                      style: theme.textTheme.headlineMedium,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (hasMany)
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 28,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                ],
-              ),
-            );
-            // With one vehicle the name is just a heading; with more it becomes
-            // the switcher, so it reads as one button carrying the name and the
-            // switch hint rather than a bare label and a stray chevron.
-            if (!hasMany) return trigger;
-            return MergeSemantics(
-              child: Semantics(
-                button: true,
-                hint: 'Switch vehicle',
-                child: trigger,
-              ),
-            );
-          },
-        ),
+        VehicleSwitcher(vehicle: vehicle),
       ],
     );
   }
@@ -270,8 +216,8 @@ class _HeroCard extends ConsumerWidget {
         : ', down ${formatMileage(delta.abs())} against your average';
     final heroLabel =
         'Mileage ${formatMileage(window.mileage)} '
-        '${mileageUnit(vehicle.fuelCategory)} over your last full tank '
-        'window$trendPhrase';
+        '${mileageUnit(vehicle.fuelCategory)} over your last full '
+        'tank$trendPhrase';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -328,7 +274,7 @@ class _HeroCard extends ConsumerWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'over your last full tank window',
+                'over your last full tank',
                 style: TextStyle(
                   color: AppColors.offWhite.withValues(alpha: 0.55),
                   fontSize: 12,

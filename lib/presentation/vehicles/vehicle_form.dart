@@ -308,7 +308,13 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
         const SizedBox(height: 28),
         FilledButton(
           onPressed: _saving ? null : _save,
-          child: Text(widget.saveLabel),
+          child: _saving
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(widget.saveLabel),
         ),
       ],
     );

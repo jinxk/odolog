@@ -293,12 +293,35 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
         bottomNavigationBar: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              height: 64,
-              child: FilledButton(
-                onPressed: _saving ? null : _save,
-                child: Text(isEdit ? 'Save changes' : 'Save refuel'),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (state.fieldErrors['form'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      state.fieldErrors['form']!,
+                      key: const Key('refuelFormError'),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                SizedBox(
+                  height: 64,
+                  child: FilledButton(
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(isEdit ? 'Save changes' : 'Save refuel'),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
