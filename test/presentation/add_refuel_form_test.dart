@@ -234,19 +234,6 @@ void main() {
     expect(_state(tester).price, '200');
   });
 
-  testWidgets('the Full chip turns the full tank flag on', (tester) async {
-    await pumpForm(tester);
-
-    // Move off the default so the chip has an effect to observe.
-    await tester.tap(find.text('Part fill'));
-    await tester.pump();
-    await _revealChips(tester);
-    await tester.tap(find.byKey(const Key('fullChip')));
-    await tester.pump();
-
-    expect(_state(tester).fullTank, isTrue);
-  });
-
   testWidgets('an amount chip derives litres into the quantity field', (
     tester,
   ) async {

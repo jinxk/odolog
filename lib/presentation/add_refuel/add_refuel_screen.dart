@@ -131,13 +131,6 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     _controller.setPrice(amount);
   }
 
-  /// The Full chip: flags a full tank and hands focus back to the amount field
-  /// so the rider types what the pump showed.
-  void _applyFullChip() {
-    _controller.setFullTank(true);
-    _priceFocus.requestFocus();
-  }
-
   Future<void> _pickDateTime(DateTime current) async {
     final date = await showDatePicker(
       context: context,
@@ -267,7 +260,7 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
               onChanged: _controller.setPrice,
             ),
             const SizedBox(height: 10),
-            _AmountChips(onAmount: _applyAmountChip, onFull: _applyFullChip),
+            _AmountChips(onAmount: _applyAmountChip),
             const SizedBox(height: 6),
             _PriceHint(
               pricePerUnit: state.pricePerUnit,
@@ -578,14 +571,12 @@ class _FullTankControl extends StatelessWidget {
 
 /// A row of one tap presets that sits right under the amount field. At an
 /// Indian pump the amount comes first ("300 ka daal do"), so the common notes
-/// drop straight into the amount field, and Full flags a full tank while
-/// leaving the amount for the rider to type what the pump showed. Convenience
-/// over the existing fields, not a separate entry mode.
+/// drop straight into the amount field. Convenience over the existing fields,
+/// not a separate entry mode.
 class _AmountChips extends StatelessWidget {
-  const _AmountChips({required this.onAmount, required this.onFull});
+  const _AmountChips({required this.onAmount});
 
   final ValueChanged<String> onAmount;
-  final VoidCallback onFull;
 
   static const _amounts = ['100', '200', '500'];
 
@@ -601,11 +592,6 @@ class _AmountChips extends StatelessWidget {
             label: Text(amount),
             onPressed: () => onAmount(amount),
           ),
-        ActionChip(
-          key: const Key('fullChip'),
-          label: const Text('Full'),
-          onPressed: onFull,
-        ),
       ],
     );
   }

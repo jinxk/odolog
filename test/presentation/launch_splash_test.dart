@@ -16,11 +16,30 @@ void main() {
     expect(gauge(), findsOneWidget);
 
     // Mid sweep the overlay is still up.
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(gauge(), findsOneWidget);
+
+    // Still up through the hold, before the fade starts.
+    await tester.pump(const Duration(milliseconds: 250));
     expect(gauge(), findsOneWidget);
 
     // Past the full timeline the overlay is gone and only the app remains.
     await tester.pumpAndSettle();
+    expect(gauge(), findsNothing);
+    expect(find.text('home'), findsOneWidget);
+  });
+
+  testWidgets('a tap during the sweep reveals the app underneath', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: LaunchSplash(child: Text('home'))),
+    );
+
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.byType(LaunchSplash));
+    await tester.pump();
+
     expect(gauge(), findsNothing);
     expect(find.text('home'), findsOneWidget);
   });

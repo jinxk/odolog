@@ -17,7 +17,6 @@ import '../../domain/value_objects/vehicle_stats.dart';
 import '../add_refuel/refuel_args.dart';
 import '../common/empty_state.dart';
 import '../common/formatting.dart';
-import '../common/mileage_trend.dart';
 import '../common/motion.dart';
 import '../common/section_header.dart';
 import '../common/error_view.dart';
@@ -29,7 +28,7 @@ import '../providers/reminder_nudge_provider.dart';
 import '../providers/settings_provider.dart';
 
 /// The home dashboard: an editorial header, one dominant hero number, the add
-/// refuel action, and the last fill, this month, and trend cards. The centre of
+/// refuel action, and the last fill and this month cards. The centre of
 /// gravity is the add refuel action, reachable here and from the bottom
 /// navigation.
 class HomeScreen extends ConsumerWidget {
@@ -96,7 +95,6 @@ class _Dashboard extends ConsumerWidget {
         const SizedBox(height: AppSpacing.betweenSections),
         _LastFillCard(vehicle: vehicle, currency: currency),
         _ThisMonthCard(vehicle: vehicle, currency: currency),
-        _TrendCard(vehicle: vehicle),
       ],
     );
   }
@@ -535,35 +533,6 @@ class _ThisMonthCard extends ConsumerWidget {
                         ),
                       ],
                     ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _TrendCard extends ConsumerWidget {
-  const _TrendCard({required this.vehicle});
-
-  final Vehicle vehicle;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final windows = ref.watch(vehicleWindowsProvider(vehicle.id));
-    return windows.maybeWhen(
-      orElse: () => const SizedBox.shrink(),
-      data: (list) {
-        if (list.length < 2) return const SizedBox.shrink();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SectionHeader('Mileage trend'),
-            SectionCard(
-              child: MileageTrend(
-                windows: list,
-                unit: mileageUnit(vehicle.fuelCategory),
-              ),
             ),
           ],
         );

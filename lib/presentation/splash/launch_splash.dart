@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import '../../app/theme/colors.dart';
 
 /// Plays the app icon's gauge over the first frame of a cold start: the needle
-/// sweeps up the dial, overshoots, settles where the icon holds it, and the
-/// overlay fades away. Mounted once from the root app builder, so it runs when
-/// the process starts and never again: returning from recents keeps this
-/// widget's state alive, so the swing stays a cold start moment.
+/// sweeps up the dial over 420ms, overshoots, settles where the icon holds it
+/// for 140ms, and the overlay fades away over the last 140ms. Mounted once from
+/// the root app builder, so it runs when the process starts and never again:
+/// returning from recents keeps this widget's state alive, so the swing stays a
+/// cold start moment. A tap anywhere on the overlay drops it right away.
 ///
 /// A user who has animations turned off at the system level gets the app
 /// straight away with no overlay at all.
@@ -25,7 +26,7 @@ class _LaunchSplashState extends State<LaunchSplash>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1100),
+    duration: const Duration(milliseconds: 700),
   );
 
   /// The needle's share of the timeline. easeOutBack carries it past the rest
@@ -67,6 +68,13 @@ class _LaunchSplashState extends State<LaunchSplash>
     }
   }
 
+  /// Drops the overlay on a tap without winding the animation back, so an
+  /// impatient tap lands on the app rather than restarting the swing.
+  void _dismiss() {
+    _controller.stop();
+    setState(() => _done = true);
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -89,17 +97,21 @@ class _LaunchSplashState extends State<LaunchSplash>
         FadeTransition(
           opacity: ReverseAnimation(_exit),
           child: ExcludeSemantics(
-            child: ColoredBox(
-              color: theme.scaffoldBackgroundColor,
-              child: Center(
-                child: SizedBox.square(
-                  dimension: 112,
-                  child: AnimatedBuilder(
-                    animation: _sweep,
-                    builder: (context, _) => CustomPaint(
-                      painter: _GaugePainter(
-                        color: gaugeColor,
-                        sweep: _sweep.value,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _dismiss,
+              child: ColoredBox(
+                color: theme.scaffoldBackgroundColor,
+                child: Center(
+                  child: SizedBox.square(
+                    dimension: 112,
+                    child: AnimatedBuilder(
+                      animation: _sweep,
+                      builder: (context, _) => CustomPaint(
+                        painter: _GaugePainter(
+                          color: gaugeColor,
+                          sweep: _sweep.value,
+                        ),
                       ),
                     ),
                   ),
