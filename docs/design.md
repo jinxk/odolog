@@ -46,9 +46,9 @@ Once saved, the app lands on the home dashboard for that vehicle, showing an emp
 This is the screen the user sees most. Top to bottom:
 
 - **Greeting header.** A light rounded bar with a small wordmark, a friendly greeting, and the active vehicle selector. Tapping the vehicle name opens a quick switcher if more than one vehicle exists.
-- **Hero stat card.** A rounded card in the ink base with the amber accent (see Theme and palette). It shows the two headline numbers: latest mileage (km/l or km/kg) and cost per kilometre. A small caption notes which fills the mileage came from (for example "over your last full-tank window"). Before there is enough data, this card shows a calm empty state instead of zeros.
+- **Hero stat card.** A rounded card in the ink base with the amber accent (see Theme and palette). It shows the two headline numbers: latest mileage (km/l or km/kg) and cost per kilometre. A small caption notes which fills the mileage came from (for example "over your last full tank"). Before there is enough data, this card shows a calm empty state instead of zeros.
 - **Quick actions row.** Four small tiles: Add refuel, Vehicles, History, Stats.
-- **Card sections below.** Last fill summary (date, quantity, price, price per unit, distance since previous), this month's spend and distance, and a small mileage trend once several full-tank windows exist.
+- **Card sections below.** Last fill summary (date, quantity, price, price per unit, distance since previous), and this month's spend and distance. The mileage trend lives on Stats.
 
 Add refuel is also reachable from the bottom navigation.
 
