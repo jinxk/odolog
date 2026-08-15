@@ -153,6 +153,54 @@ final class RefuelRepositoryProvider
 
 String _$refuelRepositoryHash() => r'3e63ee155c017fa86a505597fad97b218d88af32';
 
+@ProviderFor(odometerReadingRepository)
+final odometerReadingRepositoryProvider = OdometerReadingRepositoryProvider._();
+
+final class OdometerReadingRepositoryProvider
+    extends
+        $FunctionalProvider<
+          OdometerReadingRepository,
+          OdometerReadingRepository,
+          OdometerReadingRepository
+        >
+    with $Provider<OdometerReadingRepository> {
+  OdometerReadingRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'odometerReadingRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$odometerReadingRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<OdometerReadingRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  OdometerReadingRepository create(Ref ref) {
+    return odometerReadingRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(OdometerReadingRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<OdometerReadingRepository>(value),
+    );
+  }
+}
+
+String _$odometerReadingRepositoryHash() =>
+    r'c7b68f0c0593c854ccb4635862a045bbce14f0b8';
+
 @ProviderFor(catalogRepository)
 final catalogRepositoryProvider = CatalogRepositoryProvider._();
 

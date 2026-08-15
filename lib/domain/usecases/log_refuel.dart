@@ -3,14 +3,16 @@ import 'package:fpdart/fpdart.dart';
 import '../../core/failures.dart';
 import '../../core/typedefs.dart';
 import '../entities/refuel_entry.dart';
+import '../repositories/odometer_reading_repository.dart';
 import '../repositories/refuel_repository.dart';
 import '../validators/odometer_sequence_validator.dart';
 import '../validators/text_input_validator.dart';
 
 class LogRefuel {
-  const LogRefuel(this._repository);
+  const LogRefuel(this._repository, this._readingRepository);
 
   final RefuelRepository _repository;
+  final OdometerReadingRepository _readingRepository;
 
   Future<Result<RefuelEntry>> execute(RefuelEntry entry) async {
     if (entry.quantity <= 0) {
@@ -57,15 +59,21 @@ class LogRefuel {
     }
 
     final existing = await _repository.getForVehicle(entry.vehicleId);
-    return existing.match(
-      (failure) => Future<Result<RefuelEntry>>.value(left(failure)),
-      (entries) {
-        final issue = OdometerSequenceValidator.check(entry, entries);
-        if (issue != null) {
-          return Future<Result<RefuelEntry>>.value(left(issue));
-        }
-        return _repository.add(entry);
-      },
+    final existingFailure = existing.getLeft().toNullable();
+    if (existingFailure != null) return left(existingFailure);
+
+    final readings = await _readingRepository.getForVehicle(entry.vehicleId);
+    final readingsFailure = readings.getLeft().toNullable();
+    if (readingsFailure != null) return left(readingsFailure);
+
+    final issue = OdometerSequenceValidator.check(
+      OdometerSequenceValidator.refuelPoint(entry),
+      OdometerSequenceValidator.pointsOf(
+        existing.getRight().toNullable()!,
+        readings.getRight().toNullable()!,
+      ),
     );
+    if (issue != null) return left(issue);
+    return _repository.add(entry);
   }
 }

@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../data/backup/media_store_auto_backup_writer.dart';
 import '../../data/catalog/catalog_loader.dart';
 import '../../data/daos/expense_dao.dart';
+import '../../data/daos/odometer_reading_dao.dart';
 import '../../data/daos/refuel_dao.dart';
 import '../../data/daos/service_log_dao.dart';
 import '../../data/daos/vehicle_dao.dart';
@@ -12,6 +13,7 @@ import '../../data/json/data_bundle_json_codec.dart';
 import '../../data/reminders/local_notification_scheduler.dart';
 import '../../data/repositories/catalog_repository_impl.dart';
 import '../../data/repositories/expense_repository_impl.dart';
+import '../../data/repositories/odometer_reading_repository_impl.dart';
 import '../../data/repositories/refuel_repository_impl.dart';
 import '../../data/repositories/service_log_repository_impl.dart';
 import '../../data/repositories/vehicle_repository_impl.dart';
@@ -21,6 +23,7 @@ import '../../domain/backup/unit_of_work.dart';
 import '../../domain/reminders/reminder_scheduler.dart';
 import '../../domain/repositories/catalog_repository.dart';
 import '../../domain/repositories/expense_repository.dart';
+import '../../domain/repositories/odometer_reading_repository.dart';
 import '../../domain/repositories/refuel_repository.dart';
 import '../../domain/repositories/service_log_repository.dart';
 import '../../domain/repositories/vehicle_repository.dart';
@@ -42,6 +45,12 @@ VehicleRepository vehicleRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 RefuelRepository refuelRepository(Ref ref) =>
     RefuelRepositoryImpl(RefuelDao(ref.watch(databaseProvider)));
+
+@Riverpod(keepAlive: true)
+OdometerReadingRepository odometerReadingRepository(Ref ref) =>
+    OdometerReadingRepositoryImpl(
+      OdometerReadingDao(ref.watch(databaseProvider)),
+    );
 
 @Riverpod(keepAlive: true)
 CatalogRepository catalogRepository(Ref ref) =>

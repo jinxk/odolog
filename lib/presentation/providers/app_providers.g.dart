@@ -806,6 +806,97 @@ final class ExpensesFamily extends $Family
   String toString() => r'expensesProvider';
 }
 
+/// A vehicle's manual odometer readings, ordered by odometer then date, the
+/// same sequence the refuel history uses.
+
+@ProviderFor(odometerReadings)
+final odometerReadingsProvider = OdometerReadingsFamily._();
+
+/// A vehicle's manual odometer readings, ordered by odometer then date, the
+/// same sequence the refuel history uses.
+
+final class OdometerReadingsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<OdometerReading>>,
+          List<OdometerReading>,
+          FutureOr<List<OdometerReading>>
+        >
+    with
+        $FutureModifier<List<OdometerReading>>,
+        $FutureProvider<List<OdometerReading>> {
+  /// A vehicle's manual odometer readings, ordered by odometer then date, the
+  /// same sequence the refuel history uses.
+  OdometerReadingsProvider._({
+    required OdometerReadingsFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'odometerReadingsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$odometerReadingsHash();
+
+  @override
+  String toString() {
+    return r'odometerReadingsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<OdometerReading>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<OdometerReading>> create(Ref ref) {
+    final argument = this.argument as int;
+    return odometerReadings(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is OdometerReadingsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$odometerReadingsHash() => r'6e1ece6862a2dfc31672ec141741e7f0bb8d9804';
+
+/// A vehicle's manual odometer readings, ordered by odometer then date, the
+/// same sequence the refuel history uses.
+
+final class OdometerReadingsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<OdometerReading>>, int> {
+  OdometerReadingsFamily._()
+    : super(
+        retry: null,
+        name: r'odometerReadingsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// A vehicle's manual odometer readings, ordered by odometer then date, the
+  /// same sequence the refuel history uses.
+
+  OdometerReadingsProvider call(int vehicleId) =>
+      OdometerReadingsProvider._(argument: vehicleId, from: this);
+
+  @override
+  String toString() => r'odometerReadingsProvider';
+}
+
 /// Where a vehicle's two maintenance templates stand right now, for the
 /// dashboard glance and the service log screen's header.
 

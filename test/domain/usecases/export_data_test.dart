@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:odolog/core/failures.dart';
 import 'package:odolog/core/typedefs.dart';
+import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/domain/repositories/service_log_repository.dart';
@@ -10,6 +11,7 @@ import 'package:odolog/domain/usecases/export_data.dart';
 import '../../helpers/entry_builder.dart';
 import '../../helpers/fake_data_bundle_codec.dart';
 import '../../helpers/fake_expense_repository.dart';
+import '../../helpers/fake_odometer_reading_repository.dart';
 import '../../helpers/fake_refuel_repository.dart';
 import '../../helpers/fake_service_log_repository.dart';
 import '../../helpers/fake_vehicle_repository.dart';
@@ -53,14 +55,37 @@ void main() {
         FakeRefuelRepository([refuel]),
         FakeServiceLogRepository(),
         FakeExpenseRepository(),
+        FakeOdometerReadingRepository(),
         codec,
       ).execute();
 
       expect(result.getRight().toNullable(), 'encoded');
       expect(codec.lastEncoded!.vehicles, [vehicle]);
       expect(codec.lastEncoded!.entries, [refuel]);
+      expect(codec.lastEncoded!.odometerReadings, isEmpty);
     },
   );
+
+  test('odometer readings are collected per vehicle', () async {
+    final reading = OdometerReading(
+      id: 1,
+      vehicleId: vehicle.id,
+      odometer: 1400,
+      recordedAt: DateTime.now(),
+    );
+    final codec = FakeDataBundleCodec();
+
+    await ExportData(
+      FakeVehicleRepository([vehicle]),
+      FakeRefuelRepository(),
+      FakeServiceLogRepository(),
+      FakeExpenseRepository(),
+      FakeOdometerReadingRepository([reading]),
+      codec,
+    ).execute();
+
+    expect(codec.lastEncoded!.odometerReadings, [reading]);
+  });
 
   test(
     'a repository failure short circuits before reaching the codec',
@@ -71,6 +96,7 @@ void main() {
         FakeRefuelRepository(),
         _FailingServiceLogRepository(),
         FakeExpenseRepository(),
+        FakeOdometerReadingRepository(),
         codec,
       ).execute();
 

@@ -1,10 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:odolog/core/failures.dart';
+import 'package:odolog/data/daos/odometer_reading_dao.dart';
 import 'package:odolog/data/daos/refuel_dao.dart';
 import 'package:odolog/data/daos/vehicle_dao.dart';
 import 'package:odolog/data/db/app_database.dart';
+import 'package:odolog/data/repositories/odometer_reading_repository_impl.dart';
 import 'package:odolog/data/repositories/refuel_repository_impl.dart';
 import 'package:odolog/data/repositories/vehicle_repository_impl.dart';
+import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -146,5 +149,37 @@ void main() {
       other.id,
     )).getRight().toNullable()!;
     expect(survivor, hasLength(1));
+  });
+
+  test('deleting a vehicle cascades its odometer readings', () async {
+    final readings = OdometerReadingRepositoryImpl(OdometerReadingDao(db));
+    final vehicle = (await repository.add(
+      fullVehicle,
+    )).getRight().toNullable()!;
+    final other = (await repository.add(
+      fullVehicle.copyWith(name: 'Untouched'),
+    )).getRight().toNullable()!;
+
+    OdometerReading readingFor(int vehicleId, double odometer) =>
+        OdometerReading(
+          id: 0,
+          vehicleId: vehicleId,
+          odometer: odometer,
+          recordedAt: DateTime.now(),
+        );
+
+    await readings.add(readingFor(vehicle.id, 400));
+    await readings.add(readingFor(other.id, 400));
+
+    await repository.delete(vehicle.id);
+
+    expect(
+      (await readings.getForVehicle(vehicle.id)).getRight().toNullable(),
+      isEmpty,
+    );
+    expect(
+      (await readings.getForVehicle(other.id)).getRight().toNullable(),
+      hasLength(1),
+    );
   });
 }

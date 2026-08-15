@@ -11,6 +11,7 @@ import 'package:odolog/domain/usecases/run_auto_backup.dart';
 import '../../helpers/fake_auto_backup_writer.dart';
 import '../../helpers/fake_data_bundle_codec.dart';
 import '../../helpers/fake_expense_repository.dart';
+import '../../helpers/fake_odometer_reading_repository.dart';
 import '../../helpers/fake_refuel_repository.dart';
 import '../../helpers/fake_service_log_repository.dart';
 import '../../helpers/fake_vehicle_repository.dart';
@@ -52,6 +53,7 @@ void main() {
     FakeRefuelRepository(),
     FakeServiceLogRepository(),
     FakeExpenseRepository(),
+    FakeOdometerReadingRepository(),
     FakeDataBundleCodec(),
   );
 

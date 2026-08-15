@@ -10,7 +10,7 @@ class AppDatabase {
   const AppDatabase._();
 
   static const databaseName = 'odolog.db';
-  static const schemaVersion = 3;
+  static const schemaVersion = 4;
 
   /// Opens the database, running configuration, creation, and upgrades. Pass a
   /// [path] in tests (for example `inMemoryDatabasePath`); production leaves it
@@ -104,5 +104,17 @@ class AppDatabase {
     )
     ''',
     'CREATE INDEX idx_expenses_vehicle ON expenses (vehicle_id)',
+    '''
+    CREATE TABLE odometer_readings (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      vehicle_id    INTEGER NOT NULL,
+      odometer      REAL    NOT NULL,
+      recorded_at   INTEGER NOT NULL,
+      note          TEXT,
+      FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
+    )
+    ''',
+    'CREATE INDEX idx_odometer_readings_vehicle '
+        'ON odometer_readings (vehicle_id)',
   ];
 }

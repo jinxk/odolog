@@ -7,6 +7,7 @@ import 'package:odolog/presentation/service/service_log_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/entry_builder.dart';
+import '../helpers/fake_odometer_reading_repository.dart';
 import '../helpers/fake_refuel_repository.dart';
 import '../helpers/fake_service_log_repository.dart';
 import '../helpers/fake_vehicle_repository.dart';
@@ -32,6 +33,9 @@ Future<FakeServiceLogRepository> pumpScreen(WidgetTester tester) async {
           ]),
         ),
         serviceLogRepositoryProvider.overrideWithValue(serviceLogRepo),
+        odometerReadingRepositoryProvider.overrideWithValue(
+          FakeOdometerReadingRepository(),
+        ),
       ],
       child: const MaterialApp(home: ServiceLogTab()),
     ),

@@ -69,6 +69,25 @@ class Migrations {
         'CREATE INDEX idx_expenses_vehicle ON expenses (vehicle_id)',
       );
     },
+    // v4 adds the manual odometer reading table, so a vehicle's latest reading
+    // no longer has to come from a fill. Additive only: nothing else in the
+    // schema changes and no existing row is rewritten.
+    4: (db) async {
+      await db.execute('''
+        CREATE TABLE odometer_readings (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          vehicle_id    INTEGER NOT NULL,
+          odometer      REAL    NOT NULL,
+          recorded_at   INTEGER NOT NULL,
+          note          TEXT,
+          FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_odometer_readings_vehicle '
+        'ON odometer_readings (vehicle_id)',
+      );
+    },
   };
 
   /// Applies every registered step for versions in (oldVersion, newVersion],

@@ -7,12 +7,14 @@ import 'package:odolog/domain/usecases/add_vehicle.dart';
 import 'package:odolog/domain/usecases/import_data.dart';
 import 'package:odolog/domain/usecases/list_vehicles.dart';
 import 'package:odolog/domain/usecases/log_expense.dart';
+import 'package:odolog/domain/usecases/log_odometer_reading.dart';
 import 'package:odolog/domain/usecases/log_refuel.dart';
 import 'package:odolog/domain/usecases/log_service.dart';
 
 import '../../helpers/entry_builder.dart';
 import '../../helpers/fake_data_bundle_codec.dart';
 import '../../helpers/fake_expense_repository.dart';
+import '../../helpers/fake_odometer_reading_repository.dart';
 import '../../helpers/fake_refuel_repository.dart';
 import '../../helpers/fake_service_log_repository.dart';
 import '../../helpers/fake_unit_of_work.dart';
@@ -31,15 +33,19 @@ void main() {
   ImportData importer({
     FakeVehicleRepository? vehicleRepo,
     FakeRefuelRepository? refuelRepo,
+    FakeOdometerReadingRepository? readingRepo,
     FakeUnitOfWork? unitOfWork,
     required FakeDataBundleCodec codec,
   }) {
     final vehicles = vehicleRepo ?? FakeVehicleRepository();
+    final refuels = refuelRepo ?? FakeRefuelRepository();
+    final readings = readingRepo ?? FakeOdometerReadingRepository();
     return ImportData(
       AddVehicle(vehicles),
-      LogRefuel(refuelRepo ?? FakeRefuelRepository()),
+      LogRefuel(refuels, readings),
       LogService(FakeServiceLogRepository()),
       LogExpense(FakeExpenseRepository()),
+      LogOdometerReading(readings, refuels),
       ListVehicles(vehicles),
       codec,
       unitOfWork ?? FakeUnitOfWork(),
@@ -75,6 +81,7 @@ void main() {
           vehicles: [vehicle],
           entries: const [],
           serviceLog: const [],
+          odometerReadings: const [],
           expenses: const [],
         )),
       );
@@ -98,6 +105,7 @@ void main() {
         vehicles: [vehicle],
         entries: [entry(id: 0, odometer: 1000, quantity: 0, pricePaid: 2000)],
         serviceLog: const [],
+        odometerReadings: const [],
         expenses: const [],
       )),
     );
@@ -142,6 +150,7 @@ void main() {
           ),
         ],
         serviceLog: const [],
+        odometerReadings: const [],
         expenses: const [],
       )),
     );
@@ -162,6 +171,7 @@ void main() {
         vehicles: [vehicle],
         entries: [entry(id: 0, odometer: 1000, quantity: 0, pricePaid: 2000)],
         serviceLog: const [],
+        odometerReadings: const [],
         expenses: const [],
       )),
     );
@@ -183,6 +193,7 @@ void main() {
         vehicles: [vehicle],
         entries: const [],
         serviceLog: const [],
+        odometerReadings: const [],
         expenses: const [],
       )),
     );
@@ -216,6 +227,7 @@ void main() {
             ),
           ],
           serviceLog: const [],
+          odometerReadings: const [],
           expenses: const [],
         )),
       );
@@ -247,6 +259,7 @@ void main() {
           vehicles: const <Vehicle>[],
           entries: const [],
           serviceLog: const [],
+          odometerReadings: const [],
           expenses: [
             Expense(
               id: 0,
@@ -276,6 +289,7 @@ void main() {
           vehicles: [vehicle],
           entries: const [],
           serviceLog: const [],
+          odometerReadings: const [],
           expenses: const [],
         )),
       );

@@ -4,10 +4,12 @@
 /// function of its inputs and the current time.
 library;
 
+import '../entities/odometer_reading.dart';
 import '../entities/refuel_entry.dart';
 import '../entities/service_log_entry.dart';
 import '../entities/vehicle.dart';
 import '../value_objects/service_reminder.dart';
+import 'latest_odometer.dart';
 import 'service_due_calculator.dart';
 
 class ServiceReminderPlanner {
@@ -25,13 +27,15 @@ class ServiceReminderPlanner {
     Iterable<Vehicle> vehicles, {
     required Map<int, List<RefuelEntry>> refuelsByVehicle,
     required Map<int, List<ServiceLogEntry>> serviceLogByVehicle,
+    Map<int, List<OdometerReading>> readingsByVehicle = const {},
     required DateTime now,
   }) {
     final reminders = <ServiceReminder>[];
     for (final vehicle in vehicles) {
       final refuels = refuelsByVehicle[vehicle.id] ?? const [];
       final log = serviceLogByVehicle[vehicle.id] ?? const [];
-      final latestOdometer = refuels.isEmpty ? null : refuels.last.odometer;
+      final readings = readingsByVehicle[vehicle.id] ?? const [];
+      final latest = LatestOdometerCalculator.of(refuels, readings);
       final averageDailyDistance = ServiceDueCalculator.averageDailyDistance(
         refuels,
       );
@@ -50,7 +54,7 @@ class ServiceReminderPlanner {
             log,
             template,
           ),
-          latestOdometer: latestOdometer,
+          latestOdometer: latest?.odometer,
           averageDailyDistance: averageDailyDistance,
           now: now,
         );

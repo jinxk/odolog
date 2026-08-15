@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/entry_builder.dart';
 import '../helpers/fake_catalog_repository.dart';
+import '../helpers/fake_odometer_reading_repository.dart';
 import '../helpers/fake_refuel_repository.dart';
 import '../helpers/fake_service_log_repository.dart';
 import '../helpers/fake_vehicle_repository.dart';
@@ -55,6 +56,9 @@ Future<FakeRefuelRepository> pumpForm(
         catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
         serviceLogRepositoryProvider.overrideWithValue(
           FakeServiceLogRepository(),
+        ),
+        odometerReadingRepositoryProvider.overrideWithValue(
+          FakeOdometerReadingRepository(),
         ),
       ],
       child: MaterialApp.router(routerConfig: router),

@@ -1,7 +1,12 @@
 import '../../core/failures.dart';
+import '../entities/odometer_reading.dart';
 import '../entities/refuel_entry.dart';
 
-/// Checks that a fill's odometer agrees with its date: greater than the
+/// One dated odometer reading, from a fill or a manual update. The sequence
+/// check compares both kinds against each other.
+typedef OdometerPoint = ({DateTime at, double odometer});
+
+/// Checks that a reading's odometer agrees with its date: greater than the
 /// closest reading logged before it and less than the closest reading logged
 /// after it. Comparing against the date neighbours instead of the highest
 /// reading on record lets a backdated fill with a historically correct
@@ -9,40 +14,54 @@ import '../entities/refuel_entry.dart';
 class OdometerSequenceValidator {
   const OdometerSequenceValidator._();
 
-  /// Null when [entry] fits between its neighbours in [others], otherwise the
+  static OdometerPoint refuelPoint(RefuelEntry entry) =>
+      (at: entry.filledAt, odometer: entry.odometer);
+
+  static OdometerPoint readingPoint(OdometerReading reading) =>
+      (at: reading.recordedAt, odometer: reading.odometer);
+
+  /// Every fill and manual reading a vehicle has, as one list of points, ready
+  /// to hand to [check].
+  static List<OdometerPoint> pointsOf(
+    Iterable<RefuelEntry> refuels,
+    Iterable<OdometerReading> readings,
+  ) => [
+    for (final entry in refuels) refuelPoint(entry),
+    for (final reading in readings) readingPoint(reading),
+  ];
+
+  /// Null when [point] fits between its neighbours in [others], otherwise the
   /// failure to report against the odometer field. Ties on the timestamp are
-  /// treated as earlier fills, so a same-moment duplicate still needs a
+  /// treated as earlier records, so a same-moment duplicate still needs a
   /// higher reading.
   static ValidationFailure? check(
-    RefuelEntry entry,
-    Iterable<RefuelEntry> others,
+    OdometerPoint point,
+    Iterable<OdometerPoint> others,
   ) {
-    RefuelEntry? before;
-    RefuelEntry? after;
+    OdometerPoint? before;
+    OdometerPoint? after;
     for (final other in others) {
-      if (other.filledAt.isAfter(entry.filledAt)) {
+      if (other.at.isAfter(point.at)) {
         if (after == null ||
-            other.filledAt.isBefore(after.filledAt) ||
-            (other.filledAt == after.filledAt &&
-                other.odometer < after.odometer)) {
+            other.at.isBefore(after.at) ||
+            (other.at == after.at && other.odometer < after.odometer)) {
           after = other;
         }
       } else {
         if (before == null ||
-            other.filledAt.isAfter(before.filledAt) ||
-            (other.filledAt == before.filledAt &&
-                other.odometer > before.odometer)) {
+            other.at.isAfter(before.at) ||
+            (other.at == before.at && other.odometer > before.odometer)) {
           before = other;
         }
       }
     }
-    if (before != null && entry.odometer <= before.odometer) {
+    if (before != null && point.odometer <= before.odometer) {
       return const ValidationFailure(
         field: 'odometer',
         reason: 'Odometer must be greater than the previous reading.',
       );
     }
-    if (after != null && entry.odometer >= after.odometer) {
+    if (after != null && point.odometer >= after.odometer) {
       return const ValidationFailure(
         field: 'odometer',
         reason: 'Odometer must be less than the next reading.',

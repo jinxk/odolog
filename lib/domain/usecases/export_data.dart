@@ -4,9 +4,11 @@ import '../../core/failures.dart';
 import '../../core/typedefs.dart';
 import '../backup/data_bundle_codec.dart';
 import '../entities/expense.dart';
+import '../entities/odometer_reading.dart';
 import '../entities/refuel_entry.dart';
 import '../entities/service_log_entry.dart';
 import '../repositories/expense_repository.dart';
+import '../repositories/odometer_reading_repository.dart';
 import '../repositories/refuel_repository.dart';
 import '../repositories/service_log_repository.dart';
 import '../repositories/vehicle_repository.dart';
@@ -20,6 +22,7 @@ class ExportData {
     this._refuelRepository,
     this._serviceLogRepository,
     this._expenseRepository,
+    this._readingRepository,
     this._codec,
   );
 
@@ -27,6 +30,7 @@ class ExportData {
   final RefuelRepository _refuelRepository;
   final ServiceLogRepository _serviceLogRepository;
   final ExpenseRepository _expenseRepository;
+  final OdometerReadingRepository _readingRepository;
   final DataBundleCodec _codec;
 
   Future<Result<String>> execute() async {
@@ -37,6 +41,7 @@ class ExportData {
         final entries = <RefuelEntry>[];
         final serviceLog = <ServiceLogEntry>[];
         final expenses = <Expense>[];
+        final odometerReadings = <OdometerReading>[];
         for (final vehicle in vehicles) {
           final entriesResult = await _refuelRepository.getForVehicle(
             vehicle.id,
@@ -70,6 +75,17 @@ class ExportData {
             return null;
           });
           if (expensesFailure != null) return left(expensesFailure);
+
+          final readingsResult = await _readingRepository.getForVehicle(
+            vehicle.id,
+          );
+          final readingsFailure = readingsResult.match<Failure?>((f) => f, (
+            vehicleReadings,
+          ) {
+            odometerReadings.addAll(vehicleReadings);
+            return null;
+          });
+          if (readingsFailure != null) return left(readingsFailure);
         }
         return right(
           _codec.encode((
@@ -77,6 +93,7 @@ class ExportData {
             entries: entries,
             serviceLog: serviceLog,
             expenses: expenses,
+            odometerReadings: odometerReadings,
           )),
         );
       },

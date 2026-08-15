@@ -164,6 +164,7 @@ class DataBundleCsvWriter {
       entries: [_exampleEntry],
       serviceLog: [_exampleServiceLog],
       expenses: [_exampleExpense],
+      odometerReadings: const [],
     ));
   }
 
@@ -391,6 +392,9 @@ class DataBundleCsvReader {
       entries: entries,
       serviceLog: serviceLog,
       expenses: expenses,
+      // The CSV format predates manual odometer readings and stays as it is,
+      // so a CSV backup restores without any.
+      odometerReadings: const [],
     );
   }
 

@@ -1,4 +1,5 @@
 import '../entities/expense.dart';
+import '../entities/odometer_reading.dart';
 import '../entities/refuel_entry.dart';
 import '../entities/service_log_entry.dart';
 import '../entities/vehicle.dart';
@@ -12,4 +13,5 @@ typedef DataBundle = ({
   List<RefuelEntry> entries,
   List<ServiceLogEntry> serviceLog,
   List<Expense> expenses,
+  List<OdometerReading> odometerReadings,
 });

@@ -7,6 +7,7 @@ import 'package:odolog/data/csv/data_bundle_csv_codec.dart';
 import 'package:odolog/data/json/data_bundle_json_codec.dart';
 import 'package:odolog/domain/backup/data_bundle.dart';
 import 'package:odolog/domain/entities/expense.dart';
+import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
@@ -16,17 +17,19 @@ ValidationFailure failureOf(Result<DataBundle> result) {
 }
 
 /// A bundle literal with only the fields a given test cares about; the rest
-/// default to empty so most tests do not have to spell out all four sections.
+/// default to empty so most tests do not have to spell out every section.
 DataBundle bundle({
   List<Vehicle> vehicles = const [],
   List<RefuelEntry> entries = const [],
   List<ServiceLogEntry> serviceLog = const [],
   List<Expense> expenses = const [],
+  List<OdometerReading> odometerReadings = const [],
 }) => (
   vehicles: vehicles,
   entries: entries,
   serviceLog: serviceLog,
   expenses: expenses,
+  odometerReadings: odometerReadings,
 );
 
 void main() {
@@ -112,6 +115,50 @@ void main() {
       expect(read.expenses, data.expenses);
     });
 
+    test('the writer stamps the current version', () {
+      final document =
+          json.decode(codec.encode(bundle())) as Map<String, Object?>;
+
+      expect(document['version'], 2);
+      expect(document, contains('odometerReadings'));
+    });
+
+    test('odometer readings survive a write and read cycle', () {
+      final data = bundle(
+        odometerReadings: [
+          OdometerReading(
+            id: 1,
+            vehicleId: 1,
+            odometer: 12700,
+            recordedAt: DateTime(2026, 1, 25, 8, 0),
+            note: 'Checked before the service booking',
+          ),
+          OdometerReading(
+            id: 2,
+            vehicleId: 1,
+            odometer: 13100,
+            recordedAt: DateTime(2026, 2, 2, 19, 30),
+          ),
+        ],
+      );
+
+      final read = codec.decode(codec.encode(data)).getRight().toNullable()!;
+
+      expect(read.odometerReadings, data.odometerReadings);
+    });
+
+    test('a version 1 file reads back with no odometer readings', () {
+      final read = codec
+          .decode(
+            '{"schema": "odolog", "version": 1, "vehicles": [], '
+            '"refuels": [], "serviceLog": [], "expenses": []}',
+          )
+          .getRight()
+          .toNullable()!;
+
+      expect(read.odometerReadings, isEmpty);
+    });
+
     test('optional fields round trip as null', () {
       final entry = RefuelEntry(
         id: 1,
@@ -139,6 +186,7 @@ void main() {
       expect(read.entries, hasLength(1));
       expect(read.serviceLog, hasLength(1));
       expect(read.expenses, hasLength(1));
+      expect(read.odometerReadings, hasLength(1));
     });
 
     test('is pretty printed for hand editing', () {
@@ -245,6 +293,31 @@ void main() {
       final failure = failureOf(codec.decode('{"schema": "odolog",'));
 
       expect(failure.reason, contains('Not valid JSON'));
+    });
+
+    test('a version 2 file without the readings array is rejected', () {
+      final failure = failureOf(
+        codec.decode(
+          '{"schema": "odolog", "version": 2, "vehicles": [], '
+          '"refuels": [], "serviceLog": [], "expenses": []}',
+        ),
+      );
+
+      expect(failure.reason, contains('odometerReadings'));
+    });
+
+    test('a reading without an odometer is rejected', () {
+      final failure = failureOf(
+        codec.decode(
+          '{"schema": "odolog", "version": 2, "vehicles": [], '
+          '"refuels": [], "serviceLog": [], "expenses": [], '
+          '"odometerReadings": [{"vehicleId": 1, '
+          '"recordedAt": "2026-01-25T08:00:00.000"}]}',
+        ),
+      );
+
+      expect(failure.reason, contains('odometerReadings[0]'));
+      expect(failure.reason, contains('odometer'));
     });
 
     test('a missing section array is named in the failure', () {

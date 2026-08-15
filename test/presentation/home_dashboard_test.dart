@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/presentation/home/home_screen.dart';
@@ -10,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../helpers/entry_builder.dart';
 import '../helpers/fake_catalog_repository.dart';
 import '../helpers/fake_expense_repository.dart';
+import '../helpers/fake_odometer_reading_repository.dart';
 import '../helpers/fake_refuel_repository.dart';
 import '../helpers/fake_service_log_repository.dart';
 import '../helpers/fake_vehicle_repository.dart';
@@ -35,6 +37,7 @@ Future<void> pumpHome(
   List<RefuelEntry> seed = const [],
   Vehicle vehicle = _vehicle,
   List<Vehicle> fleet = const [],
+  List<OdometerReading> readings = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -48,6 +51,9 @@ Future<void> pumpHome(
           FakeServiceLogRepository(),
         ),
         expenseRepositoryProvider.overrideWithValue(FakeExpenseRepository()),
+        odometerReadingRepositoryProvider.overrideWithValue(
+          FakeOdometerReadingRepository(readings),
+        ),
       ],
       child: const MaterialApp(home: HomeScreen()),
     ),

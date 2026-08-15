@@ -212,7 +212,7 @@ final class LogRefuelProvider
   }
 }
 
-String _$logRefuelHash() => r'191ccfad7ffdb9f7c33b366fd49eeb8238d137e1';
+String _$logRefuelHash() => r'18a7219fbbde786eb988d2187d548a92af3426f2';
 
 @ProviderFor(editRefuel)
 final editRefuelProvider = EditRefuelProvider._();
@@ -253,7 +253,7 @@ final class EditRefuelProvider
   }
 }
 
-String _$editRefuelHash() => r'839b72a63b665e4637981d8175036aff2282d087';
+String _$editRefuelHash() => r'37a578478dd4f7742d772d897f46eb158cf62ede';
 
 @ProviderFor(deleteRefuel)
 final deleteRefuelProvider = DeleteRefuelProvider._();
@@ -383,7 +383,7 @@ final class GetVehicleStatsProvider
   }
 }
 
-String _$getVehicleStatsHash() => r'fb6e15d6e976ed5a05fc7b7ea2b809f93da51239';
+String _$getVehicleStatsHash() => r'bd4f696da4a8b9fbf09accc8145c1e713ada0602';
 
 @ProviderFor(loadFuelCatalog)
 final loadFuelCatalogProvider = LoadFuelCatalogProvider._();
@@ -466,7 +466,7 @@ final class ExportDataProvider
   }
 }
 
-String _$exportDataHash() => r'c6746822f23c9e7fd607279a51bb6fe1e4febaee';
+String _$exportDataHash() => r'd51f89560cb538d14a947e60b681d17c582d712a';
 
 @ProviderFor(importData)
 final importDataProvider = ImportDataProvider._();
@@ -507,7 +507,7 @@ final class ImportDataProvider
   }
 }
 
-String _$importDataHash() => r'529e3b301fb66004951d86f565b66d2b0f2d86b7';
+String _$importDataHash() => r'6b5b0c2a574277602a84aa9b6feba62c7792fd13';
 
 @ProviderFor(getDataBundleTemplate)
 final getDataBundleTemplateProvider = GetDataBundleTemplateProvider._();
@@ -692,7 +692,7 @@ final class SyncServiceRemindersProvider
 }
 
 String _$syncServiceRemindersHash() =>
-    r'91d19ee7a4f52dc9f209e06c63f3f8ff34309fa9';
+    r'923cf2046c082c4b8aa6a9314792a6c0c13c5f34';
 
 @ProviderFor(logService)
 final logServiceProvider = LogServiceProvider._();
@@ -856,7 +856,7 @@ final class GetServiceDueProvider
   }
 }
 
-String _$getServiceDueHash() => r'49fe1cee8c8eea53a15ff7902326435b300354fe';
+String _$getServiceDueHash() => r'ede6d5ab856c5aff4163f7109c546f17c4ed5e71';
 
 @ProviderFor(logExpense)
 final logExpenseProvider = LogExpenseProvider._();
@@ -980,3 +980,147 @@ final class GetExpensesProvider
 }
 
 String _$getExpensesHash() => r'b2982661bf0e537c78f6148c47fb728400a5b505';
+
+@ProviderFor(logOdometerReading)
+final logOdometerReadingProvider = LogOdometerReadingProvider._();
+
+final class LogOdometerReadingProvider
+    extends
+        $FunctionalProvider<
+          LogOdometerReading,
+          LogOdometerReading,
+          LogOdometerReading
+        >
+    with $Provider<LogOdometerReading> {
+  LogOdometerReadingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'logOdometerReadingProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$logOdometerReadingHash();
+
+  @$internal
+  @override
+  $ProviderElement<LogOdometerReading> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  LogOdometerReading create(Ref ref) {
+    return logOdometerReading(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LogOdometerReading value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LogOdometerReading>(value),
+    );
+  }
+}
+
+String _$logOdometerReadingHash() =>
+    r'158dad916b0cbcb245a0706e6cae73b555d3337e';
+
+@ProviderFor(deleteOdometerReading)
+final deleteOdometerReadingProvider = DeleteOdometerReadingProvider._();
+
+final class DeleteOdometerReadingProvider
+    extends
+        $FunctionalProvider<
+          DeleteOdometerReading,
+          DeleteOdometerReading,
+          DeleteOdometerReading
+        >
+    with $Provider<DeleteOdometerReading> {
+  DeleteOdometerReadingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'deleteOdometerReadingProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$deleteOdometerReadingHash();
+
+  @$internal
+  @override
+  $ProviderElement<DeleteOdometerReading> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  DeleteOdometerReading create(Ref ref) {
+    return deleteOdometerReading(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DeleteOdometerReading value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DeleteOdometerReading>(value),
+    );
+  }
+}
+
+String _$deleteOdometerReadingHash() =>
+    r'd208a587df42ed8248ab64c792c063fe2bac54aa';
+
+@ProviderFor(getOdometerReadings)
+final getOdometerReadingsProvider = GetOdometerReadingsProvider._();
+
+final class GetOdometerReadingsProvider
+    extends
+        $FunctionalProvider<
+          GetOdometerReadings,
+          GetOdometerReadings,
+          GetOdometerReadings
+        >
+    with $Provider<GetOdometerReadings> {
+  GetOdometerReadingsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getOdometerReadingsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getOdometerReadingsHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetOdometerReadings> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetOdometerReadings create(Ref ref) {
+    return getOdometerReadings(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetOdometerReadings value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetOdometerReadings>(value),
+    );
+  }
+}
+
+String _$getOdometerReadingsHash() =>
+    r'6bcace98dc4cbebce606f903b479f02df47e096a';

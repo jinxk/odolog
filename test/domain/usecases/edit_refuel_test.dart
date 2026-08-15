@@ -1,13 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:odolog/core/failures.dart';
+import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/usecases/edit_refuel.dart';
 
 import '../../helpers/entry_builder.dart';
+import '../../helpers/fake_odometer_reading_repository.dart';
 import '../../helpers/fake_refuel_repository.dart';
 
 void main() {
+  EditRefuel editRefuel(
+    FakeRefuelRepository repo, [
+    FakeOdometerReadingRepository? readings,
+  ]) => EditRefuel(repo, readings ?? FakeOdometerReadingRepository());
+
   ValidationFailure validationOf(Either<Failure, RefuelEntry> result) {
     return result.getLeft().toNullable()! as ValidationFailure;
   }
@@ -40,7 +47,7 @@ void main() {
     'an edit that keeps the odometer between its neighbours is stored',
     () async {
       final repo = FakeRefuelRepository(threeFills());
-      final result = await EditRefuel(repo).execute(
+      final result = await editRefuel(repo).execute(
         entry(
           id: 2,
           odometer: 1600,
@@ -57,7 +64,7 @@ void main() {
 
   test('an edit below the earlier neighbour is rejected', () async {
     final repo = FakeRefuelRepository(threeFills());
-    final result = await EditRefuel(repo).execute(
+    final result = await editRefuel(repo).execute(
       entry(
         id: 2,
         odometer: 900,
@@ -73,7 +80,7 @@ void main() {
 
   test('an edit past the later neighbour is rejected', () async {
     final repo = FakeRefuelRepository(threeFills());
-    final result = await EditRefuel(repo).execute(
+    final result = await editRefuel(repo).execute(
       entry(
         id: 2,
         odometer: 2500,
@@ -89,7 +96,7 @@ void main() {
 
   test('editing an unknown entry reports not found', () async {
     final repo = FakeRefuelRepository(threeFills());
-    final result = await EditRefuel(repo).execute(
+    final result = await editRefuel(repo).execute(
       entry(
         id: 9,
         odometer: 1600,
@@ -100,5 +107,30 @@ void main() {
     );
 
     expect(result.getLeft().toNullable(), isA<NotFoundFailure>());
+  });
+
+  test('an edit past a manual reading is rejected', () async {
+    final repo = FakeRefuelRepository(threeFills());
+    final readings = FakeOdometerReadingRepository([
+      OdometerReading(
+        id: 1,
+        vehicleId: 1,
+        odometer: 1700,
+        recordedAt: DateTime.utc(2020, 1, 15),
+      ),
+    ]);
+
+    final result = await editRefuel(repo, readings).execute(
+      entry(
+        id: 2,
+        odometer: 1800,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: DateTime.utc(2020, 1, 10),
+      ),
+    );
+
+    expect(validationOf(result).field, 'odometer');
+    expect(repo.entries.firstWhere((e) => e.id == 2).odometer, 1500);
   });
 }

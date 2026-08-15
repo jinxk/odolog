@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../domain/usecases/add_vehicle.dart';
 import '../../domain/usecases/delete_expense.dart';
+import '../../domain/usecases/delete_odometer_reading.dart';
 import '../../domain/usecases/delete_refuel.dart';
 import '../../domain/usecases/delete_service.dart';
 import '../../domain/usecases/delete_vehicle.dart';
@@ -10,6 +11,7 @@ import '../../domain/usecases/edit_vehicle.dart';
 import '../../domain/usecases/export_data.dart';
 import '../../domain/usecases/get_data_bundle_template.dart';
 import '../../domain/usecases/get_expenses.dart';
+import '../../domain/usecases/get_odometer_readings.dart';
 import '../../domain/usecases/get_service_due.dart';
 import '../../domain/usecases/get_service_log.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
@@ -18,6 +20,7 @@ import '../../domain/usecases/import_data.dart';
 import '../../domain/usecases/list_vehicles.dart';
 import '../../domain/usecases/load_fuel_catalog.dart';
 import '../../domain/usecases/log_expense.dart';
+import '../../domain/usecases/log_odometer_reading.dart';
 import '../../domain/usecases/log_refuel.dart';
 import '../../domain/usecases/log_service.dart';
 import '../../domain/usecases/run_auto_backup.dart';
@@ -44,11 +47,16 @@ ListVehicles listVehicles(Ref ref) =>
     ListVehicles(ref.watch(vehicleRepositoryProvider));
 
 @Riverpod(keepAlive: true)
-LogRefuel logRefuel(Ref ref) => LogRefuel(ref.watch(refuelRepositoryProvider));
+LogRefuel logRefuel(Ref ref) => LogRefuel(
+  ref.watch(refuelRepositoryProvider),
+  ref.watch(odometerReadingRepositoryProvider),
+);
 
 @Riverpod(keepAlive: true)
-EditRefuel editRefuel(Ref ref) =>
-    EditRefuel(ref.watch(refuelRepositoryProvider));
+EditRefuel editRefuel(Ref ref) => EditRefuel(
+  ref.watch(refuelRepositoryProvider),
+  ref.watch(odometerReadingRepositoryProvider),
+);
 
 @Riverpod(keepAlive: true)
 DeleteRefuel deleteRefuel(Ref ref) =>
@@ -64,6 +72,7 @@ GetVehicleStats getVehicleStats(Ref ref) => GetVehicleStats(
   ref.watch(refuelRepositoryProvider),
   ref.watch(expenseRepositoryProvider),
   ref.watch(serviceLogRepositoryProvider),
+  ref.watch(odometerReadingRepositoryProvider),
 );
 
 @Riverpod(keepAlive: true)
@@ -76,6 +85,7 @@ ExportData exportData(Ref ref) => ExportData(
   ref.watch(refuelRepositoryProvider),
   ref.watch(serviceLogRepositoryProvider),
   ref.watch(expenseRepositoryProvider),
+  ref.watch(odometerReadingRepositoryProvider),
   ref.watch(dataBundleCodecProvider),
 );
 
@@ -85,6 +95,7 @@ ImportData importData(Ref ref) => ImportData(
   ref.watch(logRefuelProvider),
   ref.watch(logServiceProvider),
   ref.watch(logExpenseProvider),
+  ref.watch(logOdometerReadingProvider),
   ref.watch(listVehiclesProvider),
   ref.watch(dataBundleCodecProvider),
   ref.watch(unitOfWorkProvider),
@@ -109,6 +120,7 @@ SyncServiceReminders syncServiceReminders(Ref ref) => SyncServiceReminders(
   ref.watch(reminderSchedulerProvider),
   ref.watch(refuelRepositoryProvider),
   ref.watch(serviceLogRepositoryProvider),
+  ref.watch(odometerReadingRepositoryProvider),
 );
 
 @Riverpod(keepAlive: true)
@@ -127,6 +139,7 @@ GetServiceLog getServiceLog(Ref ref) =>
 GetServiceDue getServiceDue(Ref ref) => GetServiceDue(
   ref.watch(refuelRepositoryProvider),
   ref.watch(serviceLogRepositoryProvider),
+  ref.watch(odometerReadingRepositoryProvider),
 );
 
 @Riverpod(keepAlive: true)
@@ -140,3 +153,17 @@ DeleteExpense deleteExpense(Ref ref) =>
 @Riverpod(keepAlive: true)
 GetExpenses getExpenses(Ref ref) =>
     GetExpenses(ref.watch(expenseRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+LogOdometerReading logOdometerReading(Ref ref) => LogOdometerReading(
+  ref.watch(odometerReadingRepositoryProvider),
+  ref.watch(refuelRepositoryProvider),
+);
+
+@Riverpod(keepAlive: true)
+DeleteOdometerReading deleteOdometerReading(Ref ref) =>
+    DeleteOdometerReading(ref.watch(odometerReadingRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+GetOdometerReadings getOdometerReadings(Ref ref) =>
+    GetOdometerReadings(ref.watch(odometerReadingRepositoryProvider));

@@ -3,14 +3,16 @@ import 'package:fpdart/fpdart.dart';
 import '../../core/failures.dart';
 import '../../core/typedefs.dart';
 import '../entities/refuel_entry.dart';
+import '../repositories/odometer_reading_repository.dart';
 import '../repositories/refuel_repository.dart';
 import '../validators/odometer_sequence_validator.dart';
 import '../validators/text_input_validator.dart';
 
 class EditRefuel {
-  const EditRefuel(this._repository);
+  const EditRefuel(this._repository, this._readingRepository);
 
   final RefuelRepository _repository;
+  final OdometerReadingRepository _readingRepository;
 
   Future<Result<RefuelEntry>> execute(RefuelEntry entry) async {
     if (entry.quantity <= 0) {
@@ -57,24 +59,25 @@ class EditRefuel {
     }
 
     final existing = await _repository.getForVehicle(entry.vehicleId);
-    return existing.match(
-      (failure) => Future<Result<RefuelEntry>>.value(left(failure)),
-      (entries) {
-        final index = entries.indexWhere((e) => e.id == entry.id);
-        if (index == -1) {
-          return Future<Result<RefuelEntry>>.value(
-            left(const NotFoundFailure('Entry does not exist.')),
-          );
-        }
-        final issue = OdometerSequenceValidator.check(
-          entry,
-          entries.where((e) => e.id != entry.id),
-        );
-        if (issue != null) {
-          return Future<Result<RefuelEntry>>.value(left(issue));
-        }
-        return _repository.update(entry);
-      },
+    final existingFailure = existing.getLeft().toNullable();
+    if (existingFailure != null) return left(existingFailure);
+    final entries = existing.getRight().toNullable()!;
+    if (!entries.any((e) => e.id == entry.id)) {
+      return left(const NotFoundFailure('Entry does not exist.'));
+    }
+
+    final readings = await _readingRepository.getForVehicle(entry.vehicleId);
+    final readingsFailure = readings.getLeft().toNullable();
+    if (readingsFailure != null) return left(readingsFailure);
+
+    final issue = OdometerSequenceValidator.check(
+      OdometerSequenceValidator.refuelPoint(entry),
+      OdometerSequenceValidator.pointsOf(
+        entries.where((e) => e.id != entry.id),
+        readings.getRight().toNullable()!,
+      ),
     );
+    if (issue != null) return left(issue);
+    return _repository.update(entry);
   }
 }

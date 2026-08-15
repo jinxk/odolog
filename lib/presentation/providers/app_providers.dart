@@ -5,6 +5,7 @@ import '../../domain/calculators/aggregate_calculator.dart';
 import '../../domain/calculators/mileage_calculator.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/fuel_variant.dart';
+import '../../domain/entities/odometer_reading.dart';
 import '../../domain/entities/service_log_entry.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
@@ -117,6 +118,16 @@ Future<List<ServiceLogEntry>> serviceLog(Ref ref, int vehicleId) async {
 @riverpod
 Future<List<Expense>> expenses(Ref ref, int vehicleId) async {
   final result = await ref.watch(getExpensesProvider).execute(vehicleId);
+  return _unwrap(result);
+}
+
+/// A vehicle's manual odometer readings, ordered by odometer then date, the
+/// same sequence the refuel history uses.
+@riverpod
+Future<List<OdometerReading>> odometerReadings(Ref ref, int vehicleId) async {
+  final result = await ref
+      .watch(getOdometerReadingsProvider)
+      .execute(vehicleId);
   return _unwrap(result);
 }
 

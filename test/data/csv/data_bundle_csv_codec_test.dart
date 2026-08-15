@@ -4,6 +4,7 @@ import 'package:odolog/core/typedefs.dart';
 import 'package:odolog/data/csv/data_bundle_csv_codec.dart';
 import 'package:odolog/domain/backup/data_bundle.dart';
 import 'package:odolog/domain/entities/expense.dart';
+import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
@@ -13,17 +14,19 @@ ValidationFailure failureOf(Result<DataBundle> result) {
 }
 
 /// A bundle literal with only the fields a given test cares about; the rest
-/// default to empty so most tests do not have to spell out all four sections.
+/// default to empty so most tests do not have to spell out every section.
 DataBundle bundle({
   List<Vehicle> vehicles = const [],
   List<RefuelEntry> entries = const [],
   List<ServiceLogEntry> serviceLog = const [],
   List<Expense> expenses = const [],
+  List<OdometerReading> odometerReadings = const [],
 }) => (
   vehicles: vehicles,
   entries: entries,
   serviceLog: serviceLog,
   expenses: expenses,
+  odometerReadings: odometerReadings,
 );
 
 void main() {

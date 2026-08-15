@@ -66,6 +66,7 @@ lib/
       fuel_variant.dart
       service_log_entry.dart
       expense.dart
+      odometer_reading.dart
     value_objects/
       window_mileage.dart
       vehicle_stats.dart
@@ -76,6 +77,7 @@ lib/
       catalog_repository.dart        // interface
       service_log_repository.dart    // interface
       expense_repository.dart        // interface
+      odometer_reading_repository.dart // interface
     reminders/
       reminder_scheduler.dart        // port, see Reminder scheduler port
     backup/
@@ -86,6 +88,7 @@ lib/
     calculators/
       mileage_calculator.dart      // pure full-tank window math
       aggregate_calculator.dart    // lifetime and monthly rollups
+      latest_odometer.dart         // highest reading across fills and manual readings
     usecases/
       add_vehicle.dart
       edit_vehicle.dart
@@ -106,6 +109,9 @@ lib/
       log_expense.dart
       get_expenses.dart
       delete_expense.dart
+      log_odometer_reading.dart
+      get_odometer_readings.dart
+      delete_odometer_reading.dart
       export_data.dart
       import_data.dart
       get_data_bundle_template.dart
@@ -119,17 +125,20 @@ lib/
       refuel_dao.dart
       service_log_dao.dart
       expense_dao.dart
+      odometer_reading_dao.dart
     models/
       vehicle_row.dart       // db row <-> entity mapping
       refuel_row.dart
       service_log_row.dart
       expense_row.dart
+      odometer_reading_row.dart
     repositories/
       vehicle_repository_impl.dart
       refuel_repository_impl.dart
       catalog_repository_impl.dart
       service_log_repository_impl.dart
       expense_repository_impl.dart
+      odometer_reading_repository_impl.dart
     catalog/
       catalog_loader.dart    // reads assets/fuel_catalog.json
     reminders/
@@ -231,6 +240,22 @@ class ServiceLogEntry {
 ```
 
 Logging an entry resets that template's due countdown: the calculator always reads the most recent entry per template as its new baseline. A service's cost, when recorded, lives only here. It is folded into total cost of ownership directly and never duplicated into an `Expense` row.
+
+### OdometerReading
+
+```dart
+class OdometerReading {
+  final int id;
+  final int vehicleId;
+  final double odometer;   // km
+  final DateTime recordedAt;
+  final String? note;      // optional
+}
+```
+
+A reading taken without a refuel. It carries no fuel, so it never enters the
+mileage math; it sets the vehicle's latest odometer, which the service
+countdown and the lifetime cost per km read.
 
 ### Expense
 
@@ -358,6 +383,11 @@ abstract class ExpenseRepository {
   Future<Result<Expense>> add(Expense expense);
   Future<Result<Unit>> delete(int id);
 }
+abstract class OdometerReadingRepository {
+  Future<Result<List<OdometerReading>>> getForVehicle(int vehicleId); // ordered by odometer then recordedAt
+  Future<Result<OdometerReading>> add(OdometerReading reading);
+  Future<Result<Unit>> delete(int id);
+}
 ```
 
 The domain calculators consume the plain ordered list from `getForVehicle` and produce the value objects above. Ordering is by odometer first, then timestamp: the window algorithm walks entries in the sequence they were driven, and the odometer is the source of truth for that order.
@@ -398,6 +428,8 @@ Each use case is a thin, single-responsibility class that orchestrates repositor
 - **LogExpense** validates and stores a non-fuel expense.
 - **GetExpenses** returns a vehicle's expenses, most recent first.
 - **DeleteExpense** removes an expense.
+- **LogOdometerReading** validates a manual reading (positive, not in the future, and in odometer order against the fills and readings dated either side of it) and stores it.
+- **DeleteOdometerReading** removes a manual reading.
 - **ExportData** assembles every vehicle and everything logged against it, then hands the bundle to the `DataBundleCodec` port to produce the backup file content.
 - **ImportData** decodes a backup file through `DataBundleCodec` and writes it into the repositories, returning the imported bundle so the caller can report what came in.
 - **GetDataBundleTemplate** returns a blank backup file from the same port, for a user to fill in externally and import back.
@@ -405,7 +437,7 @@ Each use case is a thin, single-responsibility class that orchestrates repositor
 
 ## SQLite schema
 
-Four tables. Money and quantities are stored as `REAL`; ids and flags as `INTEGER`. SQLite has no boolean, so flags are 0 or 1. Timestamps are epoch milliseconds.
+Five tables. Money and quantities are stored as `REAL`; ids and flags as `INTEGER`. SQLite has no boolean, so flags are 0 or 1. Timestamps are epoch milliseconds.
 
 ```sql
 CREATE TABLE vehicles (
@@ -470,9 +502,20 @@ CREATE TABLE expenses (
 );
 
 CREATE INDEX idx_expenses_vehicle ON expenses (vehicle_id);
+
+CREATE TABLE odometer_readings (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  vehicle_id    INTEGER NOT NULL,
+  odometer      REAL    NOT NULL,
+  recorded_at   INTEGER NOT NULL,   -- epoch millis
+  note          TEXT,
+  FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_odometer_readings_vehicle ON odometer_readings (vehicle_id);
 ```
 
-`ON DELETE CASCADE` handles vehicle deletion, and foreign keys are enabled per connection (`PRAGMA foreign_keys = ON`) since sqflite leaves them off by default. The composite index on `(vehicle_id, odometer)` backs the window walk; the timestamp index backs history and monthly grouping. `service_log` and `expenses` each get a single index on `vehicle_id`; both are only ever queried per vehicle.
+`ON DELETE CASCADE` handles vehicle deletion, and foreign keys are enabled per connection (`PRAGMA foreign_keys = ON`) since sqflite leaves them off by default. The composite index on `(vehicle_id, odometer)` backs the window walk; the timestamp index backs history and monthly grouping. `service_log`, `expenses`, and `odometer_readings` each get a single index on `vehicle_id`; all three are only ever queried per vehicle.
 
 ### Migration policy
 

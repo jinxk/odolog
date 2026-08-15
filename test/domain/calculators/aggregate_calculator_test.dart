@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:odolog/domain/calculators/aggregate_calculator.dart';
+import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 
 import '../../helpers/entry_builder.dart';
@@ -33,6 +34,67 @@ void main() {
       expect(stats.projectedRange, 525.0);
     },
   );
+
+  test('a reading beyond the last fill extends the lifetime distance', () {
+    final entries = <RefuelEntry>[
+      entry(id: 1, odometer: 10000, quantity: 30, pricePaid: 3000),
+      entry(id: 2, odometer: 10600, quantity: 25, pricePaid: 2515),
+    ];
+    final readings = [
+      OdometerReading(
+        id: 1,
+        vehicleId: 1,
+        odometer: 11000,
+        recordedAt: DateTime.now(),
+      ),
+    ];
+
+    final stats = calculator.lifetime(entries, readings: readings);
+
+    expect(stats.totalDistance, 1000);
+    // Fuel only figures do not move: the reading carries no litres.
+    expect(stats.totalQuantity, 55.0);
+    expect(stats.averageMileage, closeTo(24.0, 0.0001));
+    expect(stats.lastFillRange, 600);
+  });
+
+  test('a reading behind the last fill leaves the distance alone', () {
+    final entries = <RefuelEntry>[
+      entry(id: 1, odometer: 10000, quantity: 30, pricePaid: 3000),
+      entry(id: 2, odometer: 10600, quantity: 25, pricePaid: 2515),
+    ];
+    final readings = [
+      OdometerReading(
+        id: 1,
+        vehicleId: 1,
+        odometer: 10400,
+        recordedAt: DateTime.now(),
+      ),
+    ];
+
+    final stats = calculator.lifetime(entries, readings: readings);
+
+    expect(stats.totalDistance, 600);
+  });
+
+  test('cost per km of ownership follows the extended distance', () {
+    final entries = <RefuelEntry>[
+      entry(id: 1, odometer: 10000, quantity: 30, pricePaid: 3000),
+      entry(id: 2, odometer: 10600, quantity: 25, pricePaid: 1000),
+    ];
+    final readings = [
+      OdometerReading(
+        id: 1,
+        vehicleId: 1,
+        odometer: 11000,
+        recordedAt: DateTime.now(),
+      ),
+    ];
+
+    final stats = calculator.lifetime(entries, readings: readings);
+
+    expect(stats.costPerKmOfOwnership, closeTo(4.0, 0.0001));
+  });
 
   test('entries group by calendar month across a month boundary', () {
     final now = DateTime.now();

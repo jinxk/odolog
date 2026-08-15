@@ -1,4 +1,5 @@
 import '../entities/expense.dart';
+import '../entities/odometer_reading.dart';
 import '../entities/refuel_entry.dart';
 import '../entities/service_log_entry.dart';
 import '../value_objects/vehicle_stats.dart';
@@ -15,20 +16,24 @@ class AggregateCalculator {
   /// into [VehicleStats.nonFuelSpend] for the honest total cost of ownership
   /// figure. Leaving them out (the per month rollup does) yields a lifetime
   /// figure that is fuel only, same as before this existed.
+  ///
+  /// [readings] are the manual odometer updates. They carry no fuel, so km per
+  /// litre is untouched; they only extend the lifetime distance when the last
+  /// one is beyond the last fill, which keeps cost per km current between
+  /// fills.
   VehicleStats lifetime(
     List<RefuelEntry> entries, {
     double? tankCapacity,
     List<Expense> expenses = const [],
     List<ServiceLogEntry> serviceLog = const [],
+    List<OdometerReading> readings = const [],
   }) {
     const mileage = MileageCalculator();
     final closed = mileage.windows(entries);
     return VehicleStats(
       totalSpend: _sumSpend(entries),
       totalQuantity: _sumQuantity(entries),
-      totalDistance: entries.isEmpty
-          ? 0
-          : _scopeDistance(entries, 0, entries.length - 1),
+      totalDistance: entries.isEmpty ? 0 : _lifetimeDistance(entries, readings),
       averageMileage: _weightedMileage(closed),
       averageCostPerKm: _weightedCostPerKm(closed),
       latestWindow: mileage.latestWindow(entries),
@@ -81,6 +86,19 @@ class AggregateCalculator {
       );
     }
     return result;
+  }
+
+  // Lifetime distance runs from the first fill to the furthest point on record,
+  // which is a manual reading whenever one sits beyond the last fill.
+  double _lifetimeDistance(
+    List<RefuelEntry> entries,
+    List<OdometerReading> readings,
+  ) {
+    var furthest = entries.last.odometer;
+    for (final reading in readings) {
+      if (reading.odometer > furthest) furthest = reading.odometer;
+    }
+    return furthest - entries.first.odometer;
   }
 
   // Distance across a scope counts the drive into the scope's first fill: it is

@@ -15,6 +15,7 @@ import '../../core/typedefs.dart';
 import '../../domain/backup/data_bundle.dart';
 import '../../domain/backup/data_bundle_codec.dart';
 import '../../domain/entities/expense.dart';
+import '../../domain/entities/odometer_reading.dart';
 import '../../domain/entities/refuel_entry.dart';
 import '../../domain/entities/service_log_entry.dart';
 import '../../domain/entities/vehicle.dart';
@@ -28,15 +29,20 @@ abstract final class DataBundleJsonFormat {
   /// The version the writer emits. The reader accepts every version in
   /// [supportedVersions]. The count restarts at 1 because the JSON format has
   /// no version history to stay compatible with; the CSV versions belong to
-  /// the CSV reader.
-  static const schemaVersion = 1;
+  /// the CSV reader. Version 2 adds the odometer readings array; a version 1
+  /// file reads back with that array empty.
+  static const schemaVersion = 2;
 
-  static const supportedVersions = [1];
+  static const supportedVersions = [1, 2];
 
   static const vehiclesKey = 'vehicles';
   static const refuelsKey = 'refuels';
   static const serviceLogKey = 'serviceLog';
   static const expensesKey = 'expenses';
+  static const odometerReadingsKey = 'odometerReadings';
+
+  /// The first version that carries [odometerReadingsKey].
+  static const odometerReadingsSince = 2;
 }
 
 /// Raised by an item parser to unwind straight to [DataBundleJsonCodec.decode]
@@ -76,6 +82,10 @@ class DataBundleJsonCodec implements DataBundleCodec {
       DataBundleJsonFormat.expensesKey: [
         for (final expense in bundle.expenses) _expenseJson(expense),
       ],
+      DataBundleJsonFormat.odometerReadingsKey: [
+        for (final reading in bundle.odometerReadings)
+          _odometerReadingJson(reading),
+      ],
     });
   }
 
@@ -91,6 +101,7 @@ class DataBundleJsonCodec implements DataBundleCodec {
       entries: [_exampleEntry],
       serviceLog: [_exampleServiceLog],
       expenses: [_exampleExpense],
+      odometerReadings: [_exampleOdometerReading],
     ));
   }
 
@@ -151,6 +162,13 @@ class DataBundleJsonCodec implements DataBundleCodec {
         DataBundleJsonFormat.expensesKey,
         _parseExpense,
       ),
+      odometerReadings: version < DataBundleJsonFormat.odometerReadingsSince
+          ? const []
+          : _items(
+              decoded,
+              DataBundleJsonFormat.odometerReadingsKey,
+              _parseOdometerReading,
+            ),
     );
   }
 
@@ -217,6 +235,14 @@ class DataBundleJsonCodec implements DataBundleCodec {
     'odometer': entry.odometer,
     'cost': entry.cost,
     'note': entry.note,
+  };
+
+  static Map<String, Object?> _odometerReadingJson(OdometerReading reading) => {
+    'id': reading.id,
+    'vehicleId': reading.vehicleId,
+    'odometer': reading.odometer,
+    'recordedAt': reading.recordedAt.toIso8601String(),
+    'note': reading.note,
   };
 
   static Map<String, Object?> _expenseJson(Expense expense) => {
@@ -298,6 +324,19 @@ class DataBundleJsonCodec implements DataBundleCodec {
       date: _requiredDateTime(item, 'date', where),
       odometer: _optionalDouble(item, 'odometer', where),
       category: category,
+    );
+  }
+
+  static OdometerReading _parseOdometerReading(
+    Map<String, Object?> item,
+    String where,
+  ) {
+    return OdometerReading(
+      id: _id(item, where),
+      vehicleId: _requiredInt(item, 'vehicleId', where),
+      odometer: _requiredDouble(item, 'odometer', where),
+      recordedAt: _requiredDateTime(item, 'recordedAt', where),
+      note: _optionalString(item, 'note', where),
     );
   }
 
@@ -461,6 +500,14 @@ class DataBundleJsonCodec implements DataBundleCodec {
     odometer: 12000,
     cost: 450,
     note: 'Full synthetic',
+  );
+
+  static final _exampleOdometerReading = OdometerReading(
+    id: 1,
+    vehicleId: 1,
+    odometer: 12700,
+    recordedAt: DateTime(2026, 1, 25, 8, 0),
+    note: 'Checked before the service booking',
   );
 
   static final _exampleExpense = Expense(

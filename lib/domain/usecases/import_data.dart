@@ -8,6 +8,7 @@ import '../backup/unit_of_work.dart';
 import 'add_vehicle.dart';
 import 'list_vehicles.dart';
 import 'log_expense.dart';
+import 'log_odometer_reading.dart';
 import 'log_refuel.dart';
 import 'log_service.dart';
 
@@ -24,6 +25,7 @@ class ImportData {
     this._logRefuel,
     this._logService,
     this._logExpense,
+    this._logOdometerReading,
     this._listVehicles,
     this._codec,
     this._unitOfWork,
@@ -33,6 +35,7 @@ class ImportData {
   final LogRefuel _logRefuel;
   final LogService _logService;
   final LogExpense _logExpense;
+  final LogOdometerReading _logOdometerReading;
   final ListVehicles _listVehicles;
   final DataBundleCodec _codec;
   final UnitOfWork _unitOfWork;
@@ -77,6 +80,12 @@ class ImportData {
       final result = await _logExpense.execute(bundle.expenses[i]);
       _abortOnLeft(result, 'expenses[$i]');
     }
+    for (var i = 0; i < bundle.odometerReadings.length; i++) {
+      final result = await _logOdometerReading.execute(
+        bundle.odometerReadings[i],
+      );
+      _abortOnLeft(result, 'odometerReadings[$i]');
+    }
   }
 
   /// Turns a rejected write into a throw, the only way out of a unit of work
@@ -113,6 +122,10 @@ class ImportData {
     for (var i = 0; i < bundle.expenses.length; i++) {
       final id = bundle.expenses[i].vehicleId;
       if (!known.contains(id)) return _orphan(id, 'expenses[$i]');
+    }
+    for (var i = 0; i < bundle.odometerReadings.length; i++) {
+      final id = bundle.odometerReadings[i].vehicleId;
+      if (!known.contains(id)) return _orphan(id, 'odometerReadings[$i]');
     }
     return null;
   }

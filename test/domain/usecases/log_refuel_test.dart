@@ -1,13 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:odolog/core/failures.dart';
+import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/usecases/log_refuel.dart';
 
 import '../../helpers/entry_builder.dart';
+import '../../helpers/fake_odometer_reading_repository.dart';
 import '../../helpers/fake_refuel_repository.dart';
 
 void main() {
+  LogRefuel logRefuel(
+    FakeRefuelRepository repo, [
+    FakeOdometerReadingRepository? readings,
+  ]) => LogRefuel(repo, readings ?? FakeOdometerReadingRepository());
+
   ValidationFailure validationOf(Either<Failure, RefuelEntry> result) {
     return result.getLeft().toNullable()! as ValidationFailure;
   }
@@ -16,7 +23,7 @@ void main() {
     final repo = FakeRefuelRepository([
       entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
     ]);
-    final result = await LogRefuel(
+    final result = await logRefuel(
       repo,
     ).execute(entry(id: 0, odometer: 1000, quantity: 20, pricePaid: 2000));
 
@@ -28,7 +35,7 @@ void main() {
     final repo = FakeRefuelRepository([
       entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
     ]);
-    final result = await LogRefuel(repo).execute(
+    final result = await logRefuel(repo).execute(
       entry(
         id: 0,
         odometer: 900,
@@ -58,7 +65,7 @@ void main() {
         filledAt: DateTime.utc(2020, 1, 20),
       ),
     ]);
-    final result = await LogRefuel(repo).execute(
+    final result = await logRefuel(repo).execute(
       entry(
         id: 0,
         odometer: 1500,
@@ -82,7 +89,7 @@ void main() {
         filledAt: DateTime.utc(2020, 1, 20),
       ),
     ]);
-    final result = await LogRefuel(repo).execute(
+    final result = await logRefuel(repo).execute(
       entry(
         id: 0,
         odometer: 1200,
@@ -97,7 +104,7 @@ void main() {
   });
 
   test('zero quantity is rejected', () async {
-    final result = await LogRefuel(
+    final result = await logRefuel(
       FakeRefuelRepository(),
     ).execute(entry(id: 0, odometer: 1000, quantity: 0, pricePaid: 2000));
 
@@ -105,7 +112,7 @@ void main() {
   });
 
   test('negative quantity is rejected', () async {
-    final result = await LogRefuel(
+    final result = await logRefuel(
       FakeRefuelRepository(),
     ).execute(entry(id: 0, odometer: 1000, quantity: -5, pricePaid: 2000));
 
@@ -113,7 +120,7 @@ void main() {
   });
 
   test('zero price is rejected', () async {
-    final result = await LogRefuel(
+    final result = await logRefuel(
       FakeRefuelRepository(),
     ).execute(entry(id: 0, odometer: 1000, quantity: 20, pricePaid: 0));
 
@@ -121,7 +128,7 @@ void main() {
   });
 
   test('negative price is rejected', () async {
-    final result = await LogRefuel(
+    final result = await logRefuel(
       FakeRefuelRepository(),
     ).execute(entry(id: 0, odometer: 1000, quantity: 20, pricePaid: -100));
 
@@ -129,7 +136,7 @@ void main() {
   });
 
   test('a fill dated in the future is rejected', () async {
-    final result = await LogRefuel(FakeRefuelRepository()).execute(
+    final result = await logRefuel(FakeRefuelRepository()).execute(
       entry(
         id: 0,
         odometer: 1000,
@@ -143,7 +150,7 @@ void main() {
   });
 
   test('notes containing a quote mark are rejected', () async {
-    final result = await LogRefuel(FakeRefuelRepository()).execute(
+    final result = await logRefuel(FakeRefuelRepository()).execute(
       entry(
         id: 0,
         odometer: 1000,
@@ -159,7 +166,7 @@ void main() {
     final repo = FakeRefuelRepository([
       entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
     ]);
-    final result = await LogRefuel(repo).execute(
+    final result = await logRefuel(repo).execute(
       entry(
         id: 0,
         odometer: 500,
@@ -175,7 +182,7 @@ void main() {
 
   test('a valid fill is stored and given an id', () async {
     final repo = FakeRefuelRepository();
-    final result = await LogRefuel(
+    final result = await logRefuel(
       repo,
     ).execute(entry(id: 0, odometer: 1000, quantity: 20, pricePaid: 2000));
 
@@ -183,5 +190,83 @@ void main() {
     expect(stored.id, 1);
     expect(repo.entries, hasLength(1));
     expect(repo.entries.single.odometer, 1000);
+  });
+
+  test('a fill dated after a manual reading must read higher', () async {
+    final now = DateTime.now();
+    final repo = FakeRefuelRepository();
+    final readings = FakeOdometerReadingRepository([
+      OdometerReading(
+        id: 1,
+        vehicleId: 1,
+        odometer: 1400,
+        recordedAt: now.subtract(const Duration(days: 2)),
+      ),
+    ]);
+
+    final result = await logRefuel(repo, readings).execute(
+      entry(
+        id: 0,
+        odometer: 1300,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: now,
+      ),
+    );
+
+    expect(validationOf(result).field, 'odometer');
+    expect(repo.entries, isEmpty);
+  });
+
+  test('a fill above the manual reading before it is stored', () async {
+    final now = DateTime.now();
+    final repo = FakeRefuelRepository();
+    final readings = FakeOdometerReadingRepository([
+      OdometerReading(
+        id: 1,
+        vehicleId: 1,
+        odometer: 1400,
+        recordedAt: now.subtract(const Duration(days: 2)),
+      ),
+    ]);
+
+    final result = await logRefuel(repo, readings).execute(
+      entry(
+        id: 0,
+        odometer: 1500,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: now,
+      ),
+    );
+
+    expect(result.isRight(), isTrue);
+    expect(repo.entries, hasLength(1));
+  });
+
+  test('the override still lets a fill past a manual reading', () async {
+    final now = DateTime.now();
+    final repo = FakeRefuelRepository();
+    final readings = FakeOdometerReadingRepository([
+      OdometerReading(
+        id: 1,
+        vehicleId: 1,
+        odometer: 1400,
+        recordedAt: now.subtract(const Duration(days: 2)),
+      ),
+    ]);
+
+    final result = await logRefuel(repo, readings).execute(
+      entry(
+        id: 0,
+        odometer: 900,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: now,
+        odometerOverride: true,
+      ),
+    );
+
+    expect(result.isRight(), isTrue);
   });
 }
