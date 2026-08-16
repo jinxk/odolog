@@ -23,6 +23,7 @@ import '../common/error_view.dart';
 import '../common/stat_card.dart';
 import '../common/trend_delta_chip.dart';
 import '../common/vehicle_switcher.dart';
+import '../odometer/odometer_sheet.dart';
 import '../providers/app_providers.dart';
 import '../providers/reminder_nudge_provider.dart';
 import '../providers/settings_provider.dart';
@@ -349,21 +350,48 @@ class _HeroMessage extends StatelessWidget {
 /// The one taught primary action. The amber fill marks add refuel as the
 /// thing to do here; history, stats, and vehicles are reached from the bottom
 /// navigation and settings instead, so this card has no other pull on the eye.
-class _PrimaryActions extends StatelessWidget {
+class _PrimaryActions extends ConsumerWidget {
   const _PrimaryActions({required this.vehicle});
 
   final Vehicle vehicle;
 
+  /// Width the two buttons need side by side at the default text size. Below
+  /// it they stack, so a long label never has to shrink or clip.
+  static const _sideBySideWidth = 320.0;
+
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: () => _openAddRefuel(context, vehicle),
-        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-        icon: const Icon(Icons.add),
-        label: const Text('Add refuel'),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final refuel = FilledButton.icon(
+      onPressed: () => _openAddRefuel(context, vehicle),
+      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+      icon: const Icon(Icons.add),
+      label: const Text('Add refuel'),
+    );
+    final odometer = OutlinedButton.icon(
+      onPressed: () => showOdometerSheet(context, ref, vehicle),
+      // Height only: this one sits unstretched beside the refuel button, so an
+      // infinite minimum width would have nothing to clamp it.
+      style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56)),
+      icon: const Icon(Icons.speed),
+      label: const Text('Update odometer'),
+    );
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < _sideBySideWidth * scale) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [refuel, const SizedBox(height: 12), odometer],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: refuel),
+            const SizedBox(width: 12),
+            odometer,
+          ],
+        );
+      },
     );
   }
 

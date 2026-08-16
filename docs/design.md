@@ -50,7 +50,7 @@ This is the screen the user sees most. Top to bottom:
 - **Quick actions row.** Four small tiles: Add refuel, Vehicles, History, Stats.
 - **Card sections below.** Last fill summary (date, quantity, price, price per unit, distance since previous), and this month's spend and distance. The mileage trend lives on Stats.
 
-Add refuel is also reachable from the bottom navigation.
+Add refuel is also reachable from the bottom navigation. Beside it sits an outlined **Update odometer** action that records a reading without a fill. On a narrow screen the two actions stack.
 
 ### Add refuel
 
@@ -67,6 +67,8 @@ A running hint under the price field shows the derived price per unit as the use
 ### History
 
 A reverse-chronological timeline of fills for the active vehicle. Each row shows date, quantity, price, and, where computable, the per-window mileage and cost per kilometre. Full and partial fills are visually distinct. A partial fill is marked and does not close a mileage window on its own. Tapping a row opens the entry detail.
+
+A manual odometer reading sits in the same timeline as its own compact row, in date order among the fills, showing the reading and its note where there is one. Tapping it does nothing; a long press deletes it after a confirmation.
 
 ### Entry detail
 
@@ -90,8 +92,8 @@ List of vehicles with add, edit, and delete. Deleting a vehicle warns that its r
 
 - **Theme:** system, light, or dark.
 - **Units display:** the fuel unit follows the vehicle's category automatically (litres vs kg); currency is rupees by default with a symbol setting for users elsewhere.
-- **Export data:** writes every vehicle, refuel, service log entry, and expense to one JSON file, pretty printed so it stays readable and editable by hand.
-- **Import data:** reads that JSON back, with a validation pass so a malformed item does not silently corrupt the log. Backups written by the CSV format that 1.0 used still restore.
+- **Export data:** writes every vehicle, refuel, service log entry, expense, and odometer reading to one JSON file, pretty printed so it stays readable and editable by hand. The format is at version 2, which added the `odometerReadings` array.
+- **Import data:** reads that JSON back, with a validation pass so a malformed item does not silently corrupt the log. A version 1 file restores with no odometer readings, and backups written by the CSV format that 1.0 used still restore.
 - **Download template:** a blank JSON file with every section and one example item each, to fill in externally and import back.
 - **Automatic backup:** a daily copy of the full JSON bundle written to Downloads/OdoLog, keeping the last seven days. Shared storage survives an uninstall, which app-private data does not. On by default behind a one-time consent prompt, with the last-backed-up time shown on the toggle. The welcome screen offers a restore path so a reinstall can import the backup before any vehicle exists.
 - **About:** version, licence (MIT), and a link to the source.

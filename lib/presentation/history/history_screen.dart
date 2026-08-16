@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/colors.dart';
 import '../../app/theme/spacing.dart';
+import '../../domain/entities/odometer_reading.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
 import '../../domain/value_objects/window_mileage.dart';
@@ -13,8 +16,11 @@ import '../common/formatting.dart';
 import '../common/motion.dart';
 import '../common/vehicle_switcher.dart';
 import '../expenses/expenses_tab.dart';
+import '../odometer/odometer_sheet.dart';
 import '../providers/app_providers.dart';
+import '../providers/auto_backup_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/usecases.dart';
 import '../service/service_log_tab.dart';
 
 /// Every log the app keeps, in one place, split by a segment control: the
@@ -145,6 +151,9 @@ class _HistoryList extends ConsumerWidget {
     final windows =
         ref.watch(vehicleWindowsProvider(vehicle.id)).value ??
         const <WindowMileage>[];
+    final readings =
+        ref.watch(odometerReadingsProvider(vehicle.id)).value ??
+        const <OdometerReading>[];
     final currency = ref.watch(settingsProvider).value?.currencySymbol ?? 'Rs';
     final byClosing = {for (final w in windows) w.closingEntryId: w};
 
@@ -155,14 +164,14 @@ class _HistoryList extends ConsumerWidget {
         onRetry: () => ref.invalidate(historyProvider(vehicle.id)),
       ),
       data: (items) {
-        if (items.isEmpty) {
+        if (items.isEmpty && readings.isEmpty) {
           return const EmptyState(
             icon: Icons.local_gas_station_outlined,
             title: 'No fills yet',
             message: 'Log your first refuel to start the timeline.',
           );
         }
-        final reversed = items.reversed.toList();
+        final rows = _timeline(items, readings);
         // Each row carries its own month header when the month changes, so the
         // list builds lazily instead of laying out every group up front.
         return ListView.builder(
@@ -171,18 +180,15 @@ class _HistoryList extends ConsumerWidget {
             right: AppSpacing.screenH,
             bottom: 88,
           ),
-          itemCount: reversed.length,
+          itemCount: rows.length,
           itemBuilder: (context, index) {
-            final item = reversed[index];
-            final month = DateTime(
-              item.entry.filledAt.year,
-              item.entry.filledAt.month,
-            );
-            final previous = index == 0 ? null : reversed[index - 1].entry;
+            final row = rows[index];
+            final month = DateTime(row.at.year, row.at.month);
+            final previous = index == 0 ? null : rows[index - 1].at;
             final newMonth =
                 previous == null ||
-                month !=
-                    DateTime(previous.filledAt.year, previous.filledAt.month);
+                month != DateTime(previous.year, previous.month);
+            final item = row.item;
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -202,12 +208,15 @@ class _HistoryList extends ConsumerWidget {
                   // Inset hairline between rows in the same month, stopping
                   // short of the row edges rather than cutting fully across.
                   Divider(height: 1, color: roles.hairline),
-                _HistoryRow(
-                  vehicle: vehicle,
-                  item: item,
-                  window: byClosing[item.entry.id],
-                  currency: currency,
-                ),
+                if (item != null)
+                  _HistoryRow(
+                    vehicle: vehicle,
+                    item: item,
+                    window: byClosing[item.entry.id],
+                    currency: currency,
+                  )
+                else
+                  _ReadingRow(vehicle: vehicle, reading: row.reading!),
               ],
             );
           },
@@ -215,7 +224,48 @@ class _HistoryList extends ConsumerWidget {
       },
     );
   }
+
+  /// The fills and the manual readings as one list, most recent first. The
+  /// fills keep the order the history use case put them in and the readings
+  /// slot in by date, so a reading appears between the two fills it sits
+  /// between.
+  List<_TimelineRow> _timeline(
+    List<HistoryItem> items,
+    List<OdometerReading> readings,
+  ) {
+    final fills = items.reversed.toList();
+    final sortedReadings = List<OdometerReading>.of(readings)
+      ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
+    final rows = <_TimelineRow>[];
+    var f = 0;
+    var r = 0;
+    while (f < fills.length || r < sortedReadings.length) {
+      final takeFill =
+          r == sortedReadings.length ||
+          (f < fills.length &&
+              !fills[f].entry.filledAt.isBefore(sortedReadings[r].recordedAt));
+      if (takeFill) {
+        rows.add((at: fills[f].entry.filledAt, item: fills[f], reading: null));
+        f++;
+      } else {
+        rows.add((
+          at: sortedReadings[r].recordedAt,
+          item: null,
+          reading: sortedReadings[r],
+        ));
+        r++;
+      }
+    }
+    return rows;
+  }
 }
+
+/// One line of the fuel timeline: either a fill or a manual odometer reading.
+typedef _TimelineRow = ({
+  DateTime at,
+  HistoryItem? item,
+  OdometerReading? reading,
+});
 
 /// The left aligned large title that anchors the screen.
 class _ScreenTitle extends StatelessWidget {
@@ -317,6 +367,58 @@ class _HistoryRow extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// A manual odometer reading in the timeline. Compact next to a fill row: no
+/// figures to derive, just what the odometer read and when. A long press
+/// deletes it, the only action it has.
+class _ReadingRow extends ConsumerWidget {
+  const _ReadingRow({required this.vehicle, required this.reading});
+
+  final Vehicle vehicle;
+  final OdometerReading reading;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final note = reading.note;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: const Icon(Icons.speed),
+      title: const Text('Odometer update'),
+      subtitle: Text(
+        note == null
+            ? formatDistance(reading.odometer)
+            : '${formatDistance(reading.odometer)}\n$note',
+      ),
+      isThreeLine: note != null,
+      trailing: Text(formatDate(reading.recordedAt)),
+      onLongPress: () => _confirmDelete(context, ref),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this reading?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(deleteOdometerReadingProvider).execute(reading.id);
+    refreshOdometerReaders(ref, vehicle);
+    unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
   }
 }
 
