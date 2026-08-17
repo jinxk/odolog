@@ -296,6 +296,47 @@ final class DeleteRefuelProvider
 
 String _$deleteRefuelHash() => r'60a0c24f5fa996c4c609e00f1ebc8d0ef99423c0';
 
+@ProviderFor(restoreRefuel)
+final restoreRefuelProvider = RestoreRefuelProvider._();
+
+final class RestoreRefuelProvider
+    extends $FunctionalProvider<RestoreRefuel, RestoreRefuel, RestoreRefuel>
+    with $Provider<RestoreRefuel> {
+  RestoreRefuelProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'restoreRefuelProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$restoreRefuelHash();
+
+  @$internal
+  @override
+  $ProviderElement<RestoreRefuel> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  RestoreRefuel create(Ref ref) {
+    return restoreRefuel(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RestoreRefuel value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RestoreRefuel>(value),
+    );
+  }
+}
+
+String _$restoreRefuelHash() => r'2dc3ad2f965fc578f6b9f89b86ad85c18f9827f0';
+
 @ProviderFor(getVehicleHistory)
 final getVehicleHistoryProvider = GetVehicleHistoryProvider._();
 
@@ -776,6 +817,54 @@ final class DeleteServiceProvider
 
 String _$deleteServiceHash() => r'8d044be35acab01e8ca0f0ceb97296fb4659b952';
 
+@ProviderFor(restoreServiceEntry)
+final restoreServiceEntryProvider = RestoreServiceEntryProvider._();
+
+final class RestoreServiceEntryProvider
+    extends
+        $FunctionalProvider<
+          RestoreServiceEntry,
+          RestoreServiceEntry,
+          RestoreServiceEntry
+        >
+    with $Provider<RestoreServiceEntry> {
+  RestoreServiceEntryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'restoreServiceEntryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$restoreServiceEntryHash();
+
+  @$internal
+  @override
+  $ProviderElement<RestoreServiceEntry> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  RestoreServiceEntry create(Ref ref) {
+    return restoreServiceEntry(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RestoreServiceEntry value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RestoreServiceEntry>(value),
+    );
+  }
+}
+
+String _$restoreServiceEntryHash() =>
+    r'c146bb58059b7e1fb2fd8b61ba60d7b873d44909';
+
 @ProviderFor(getServiceLog)
 final getServiceLogProvider = GetServiceLogProvider._();
 
@@ -940,6 +1029,47 @@ final class DeleteExpenseProvider
 
 String _$deleteExpenseHash() => r'e1824161ae308c5c5d21cc9183d8f757b912e511';
 
+@ProviderFor(restoreExpense)
+final restoreExpenseProvider = RestoreExpenseProvider._();
+
+final class RestoreExpenseProvider
+    extends $FunctionalProvider<RestoreExpense, RestoreExpense, RestoreExpense>
+    with $Provider<RestoreExpense> {
+  RestoreExpenseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'restoreExpenseProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$restoreExpenseHash();
+
+  @$internal
+  @override
+  $ProviderElement<RestoreExpense> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  RestoreExpense create(Ref ref) {
+    return restoreExpense(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RestoreExpense value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RestoreExpense>(value),
+    );
+  }
+}
+
+String _$restoreExpenseHash() => r'840ac5c838df33513dfbd45d49031b73ff0ba050';
+
 @ProviderFor(getExpenses)
 final getExpensesProvider = GetExpensesProvider._();
 
@@ -1076,6 +1206,54 @@ final class DeleteOdometerReadingProvider
 
 String _$deleteOdometerReadingHash() =>
     r'd208a587df42ed8248ab64c792c063fe2bac54aa';
+
+@ProviderFor(restoreOdometerReading)
+final restoreOdometerReadingProvider = RestoreOdometerReadingProvider._();
+
+final class RestoreOdometerReadingProvider
+    extends
+        $FunctionalProvider<
+          RestoreOdometerReading,
+          RestoreOdometerReading,
+          RestoreOdometerReading
+        >
+    with $Provider<RestoreOdometerReading> {
+  RestoreOdometerReadingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'restoreOdometerReadingProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$restoreOdometerReadingHash();
+
+  @$internal
+  @override
+  $ProviderElement<RestoreOdometerReading> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  RestoreOdometerReading create(Ref ref) {
+    return restoreOdometerReading(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RestoreOdometerReading value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RestoreOdometerReading>(value),
+    );
+  }
+}
+
+String _$restoreOdometerReadingHash() =>
+    r'b5a8322a8bdc894b9a1e28578b69633cf91e6f91';
 
 @ProviderFor(getOdometerReadings)
 final getOdometerReadingsProvider = GetOdometerReadingsProvider._();

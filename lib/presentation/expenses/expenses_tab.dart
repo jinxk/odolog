@@ -152,38 +152,61 @@ class _ExpenseRow extends ConsumerWidget {
           IconButton(
             tooltip: 'Delete ${expense.category}',
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmDelete(context, ref),
+            onPressed: () => _delete(context, ref),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete this expense?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+  /// Deletes at once and offers undo on a snack bar. The messenger and the
+  /// provider container are grabbed up front: the row is gone from the tree
+  /// by the time the undo action can fire, so its own `ref` is not usable
+  /// there any more.
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final container = ProviderScope.containerOf(context, listen: false);
+    messenger.hideCurrentSnackBar();
     await ref.read(deleteExpenseProvider).execute(expense.id);
     ref.invalidate(expensesProvider(vehicle.id));
     ref.invalidate(vehicleStatsProvider(vehicle.id));
     unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Expense deleted'),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _restore(messenger, container),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _restore(
+    ScaffoldMessengerState messenger,
+    ProviderContainer container,
+  ) async {
+    final result = await container
+        .read(restoreExpenseProvider)
+        .execute(expense);
+    result.match(
+      (failure) => messenger.showSnackBar(
+        SnackBar(content: Text(_restoreFailureMessage(failure))),
+      ),
+      (_) {
+        container.invalidate(expensesProvider(vehicle.id));
+        container.invalidate(vehicleStatsProvider(vehicle.id));
+      },
+    );
   }
 }
+
+String _restoreFailureMessage(Failure failure) => switch (failure) {
+  ValidationFailure(:final reason) => reason,
+  NotFoundFailure(:final message) => message,
+  DatabaseFailure(:final message) => message,
+};
 
 /// A compact bottom sheet form: amount, date, an optional odometer, and the
 /// category as free text backed by suggestion chips rather than a fixed enum,

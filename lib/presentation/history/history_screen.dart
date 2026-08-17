@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/colors.dart';
 import '../../app/theme/spacing.dart';
+import '../../core/failures.dart';
 import '../../domain/entities/odometer_reading.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
@@ -372,7 +373,7 @@ class _HistoryRow extends StatelessWidget {
 
 /// A manual odometer reading in the timeline. Compact next to a fill row: no
 /// figures to derive, just what the odometer read and when. A long press
-/// deletes it, the only action it has.
+/// deletes it at once, with undo on a snack bar, the only action it has.
 class _ReadingRow extends ConsumerWidget {
   const _ReadingRow({required this.vehicle, required this.reading});
 
@@ -393,34 +394,59 @@ class _ReadingRow extends ConsumerWidget {
       ),
       isThreeLine: note != null,
       trailing: Text(formatDate(reading.recordedAt)),
-      onLongPress: () => _confirmDelete(context, ref),
+      onLongPress: () => _delete(context, ref),
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete this reading?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+  /// Deletes at once and offers undo on a snack bar. The messenger and the
+  /// provider container are grabbed up front: the row is gone from the tree
+  /// by the time the undo action can fire, so its own `ref` is not usable
+  /// there any more.
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final container = ProviderScope.containerOf(context, listen: false);
+    messenger.hideCurrentSnackBar();
     await ref.read(deleteOdometerReadingProvider).execute(reading.id);
     refreshOdometerReaders(ref, vehicle);
     unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Reading deleted'),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _restore(messenger, container),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _restore(
+    ScaffoldMessengerState messenger,
+    ProviderContainer container,
+  ) async {
+    final result = await container
+        .read(restoreOdometerReadingProvider)
+        .execute(reading);
+    result.match(
+      (failure) => messenger.showSnackBar(
+        SnackBar(content: Text(_restoreFailureMessage(failure))),
+      ),
+      (_) {
+        container.invalidate(odometerReadingsProvider(vehicle.id));
+        container.invalidate(vehicleStatsProvider(vehicle.id));
+        container.invalidate(historyProvider(vehicle.id));
+        container.invalidate(serviceDueProvider(vehicle));
+      },
+    );
   }
 }
+
+String _restoreFailureMessage(Failure failure) => switch (failure) {
+  ValidationFailure(:final reason) => reason,
+  NotFoundFailure(:final message) => message,
+  DatabaseFailure(:final message) => message,
+};
 
 /// A small teal pill marking a partial fill, which does not close a window.
 class _PartialPill extends StatelessWidget {

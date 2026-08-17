@@ -104,4 +104,29 @@ void main() {
 
     expect(find.text('Amount must be greater than zero.'), findsOneWidget);
   });
+
+  testWidgets('deleting an expense at once offers undo', (tester) async {
+    final repo = await pumpScreen(tester);
+
+    await tester.tap(find.text('Log expense'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('expenseAmountField')), '800');
+    await tester.tap(find.widgetWithText(ActionChip, 'Tyre'));
+    await tester.tap(find.byKey(const Key('saveExpenseButton')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Delete Tyre'));
+    await tester.pumpAndSettle();
+
+    expect(repo.expenses, isEmpty);
+    expect(find.text('No expenses yet'), findsOneWidget);
+    expect(find.text('Expense deleted'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    expect(repo.expenses, hasLength(1));
+    expect(repo.expenses.single.category, 'Tyre');
+    expect(find.text('No expenses yet'), findsNothing);
+  });
 }

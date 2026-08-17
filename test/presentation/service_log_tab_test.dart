@@ -102,4 +102,31 @@ void main() {
 
     expect(find.text('Odometer must be greater than zero.'), findsOneWidget);
   });
+
+  testWidgets('deleting a service entry at once offers undo', (tester) async {
+    final repo = await pumpScreen(tester);
+
+    await tester.tap(find.text('Log service'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('serviceOdometerField')),
+      '10500',
+    );
+    await tester.tap(find.byKey(const Key('saveServiceButton')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Delete Engine oil'));
+    await tester.pumpAndSettle();
+
+    expect(repo.entries, isEmpty);
+    expect(find.text('No services logged yet.'), findsOneWidget);
+    expect(find.text('Service deleted'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    expect(repo.entries, hasLength(1));
+    expect(repo.entries.single.odometer, 10500);
+    expect(find.text('No services logged yet.'), findsNothing);
+  });
 }

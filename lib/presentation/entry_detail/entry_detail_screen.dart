@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/failures.dart';
 import '../../domain/entities/fuel_variant.dart';
+import '../../domain/entities/refuel_entry.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
 import '../../domain/value_objects/window_mileage.dart';
@@ -17,8 +19,8 @@ import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 
 /// The full record for one fill: every stored field plus the derived values
-/// that involve it. Edit reopens the refuel form seeded with this entry; delete
-/// asks for confirmation first.
+/// that involve it. Edit reopens the refuel form seeded with this entry;
+/// delete removes it at once and offers undo on a snack bar.
 class EntryDetailScreen extends ConsumerWidget {
   const EntryDetailScreen({
     super.key,
@@ -47,7 +49,7 @@ class EntryDetailScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Delete refuel',
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmDelete(context, ref),
+            onPressed: () => _delete(context, ref),
           ),
         ],
       ),
@@ -95,34 +97,63 @@ class EntryDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete this refuel?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+  /// Deletes at once and offers undo on a snack bar. The messenger and the
+  /// provider container are grabbed before the pop below, since the undo
+  /// action can fire well after this screen and its `ref` are gone.
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final items = ref.read(historyProvider(vehicle.id)).value ?? const [];
+    final match = items.where((i) => i.entry.id == entryId).firstOrNull;
+    if (match == null) return;
+    final entry = match.entry;
+    final messenger = ScaffoldMessenger.of(context);
+    final container = ProviderScope.containerOf(context, listen: false);
+    messenger.hideCurrentSnackBar();
     await ref.read(deleteRefuelProvider).execute(entryId);
     ref.invalidate(historyProvider(vehicle.id));
     ref.invalidate(vehicleStatsProvider(vehicle.id));
     ref.invalidate(vehicleWindowsProvider(vehicle.id));
     ref.invalidate(vehicleMonthlyProvider(vehicle.id));
+    ref.invalidate(serviceDueProvider(vehicle));
     unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Refuel deleted'),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _restore(messenger, container, entry),
+        ),
+      ),
+    );
     if (context.mounted && context.canPop()) context.pop();
   }
+
+  Future<void> _restore(
+    ScaffoldMessengerState messenger,
+    ProviderContainer container,
+    RefuelEntry entry,
+  ) async {
+    final result = await container.read(restoreRefuelProvider).execute(entry);
+    result.match(
+      (failure) => messenger.showSnackBar(
+        SnackBar(content: Text(_restoreFailureMessage(failure))),
+      ),
+      (_) {
+        container.invalidate(historyProvider(vehicle.id));
+        container.invalidate(vehicleStatsProvider(vehicle.id));
+        container.invalidate(vehicleWindowsProvider(vehicle.id));
+        container.invalidate(vehicleMonthlyProvider(vehicle.id));
+        container.invalidate(serviceDueProvider(vehicle));
+      },
+    );
+  }
 }
+
+String _restoreFailureMessage(Failure failure) => switch (failure) {
+  ValidationFailure(:final reason) => reason,
+  NotFoundFailure(:final message) => message,
+  DatabaseFailure(:final message) => message,
+};
 
 class _Detail extends StatelessWidget {
   const _Detail({

@@ -23,6 +23,10 @@ import '../../domain/usecases/log_expense.dart';
 import '../../domain/usecases/log_odometer_reading.dart';
 import '../../domain/usecases/log_refuel.dart';
 import '../../domain/usecases/log_service.dart';
+import '../../domain/usecases/restore_expense.dart';
+import '../../domain/usecases/restore_odometer_reading.dart';
+import '../../domain/usecases/restore_refuel.dart';
+import '../../domain/usecases/restore_service_entry.dart';
 import '../../domain/usecases/run_auto_backup.dart';
 import '../../domain/usecases/sync_document_reminders.dart';
 import '../../domain/usecases/sync_service_reminders.dart';
@@ -61,6 +65,10 @@ EditRefuel editRefuel(Ref ref) => EditRefuel(
 @Riverpod(keepAlive: true)
 DeleteRefuel deleteRefuel(Ref ref) =>
     DeleteRefuel(ref.watch(refuelRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+RestoreRefuel restoreRefuel(Ref ref) =>
+    RestoreRefuel(ref.watch(refuelRepositoryProvider));
 
 @Riverpod(keepAlive: true)
 GetVehicleHistory getVehicleHistory(Ref ref) =>
@@ -132,6 +140,10 @@ DeleteService deleteService(Ref ref) =>
     DeleteService(ref.watch(serviceLogRepositoryProvider));
 
 @Riverpod(keepAlive: true)
+RestoreServiceEntry restoreServiceEntry(Ref ref) =>
+    RestoreServiceEntry(ref.watch(serviceLogRepositoryProvider));
+
+@Riverpod(keepAlive: true)
 GetServiceLog getServiceLog(Ref ref) =>
     GetServiceLog(ref.watch(serviceLogRepositoryProvider));
 
@@ -151,6 +163,10 @@ DeleteExpense deleteExpense(Ref ref) =>
     DeleteExpense(ref.watch(expenseRepositoryProvider));
 
 @Riverpod(keepAlive: true)
+RestoreExpense restoreExpense(Ref ref) =>
+    RestoreExpense(ref.watch(expenseRepositoryProvider));
+
+@Riverpod(keepAlive: true)
 GetExpenses getExpenses(Ref ref) =>
     GetExpenses(ref.watch(expenseRepositoryProvider));
 
@@ -163,6 +179,10 @@ LogOdometerReading logOdometerReading(Ref ref) => LogOdometerReading(
 @Riverpod(keepAlive: true)
 DeleteOdometerReading deleteOdometerReading(Ref ref) =>
     DeleteOdometerReading(ref.watch(odometerReadingRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+RestoreOdometerReading restoreOdometerReading(Ref ref) =>
+    RestoreOdometerReading(ref.watch(odometerReadingRepositoryProvider));
 
 @Riverpod(keepAlive: true)
 GetOdometerReadings getOdometerReadings(Ref ref) =>

@@ -68,7 +68,7 @@ A running hint under the price field shows the derived price per unit as the use
 
 A reverse-chronological timeline of fills for the active vehicle. Each row shows date, quantity, price, and, where computable, the per-window mileage and cost per kilometre. Full and partial fills are visually distinct. A partial fill is marked and does not close a mileage window on its own. Tapping a row opens the entry detail.
 
-A manual odometer reading sits in the same timeline as its own compact row, in date order among the fills, showing the reading and its note where there is one. Tapping it does nothing; a long press deletes it after a confirmation.
+A manual odometer reading sits in the same timeline as its own compact row, in date order among the fills, showing the reading and its note where there is one. Tapping it does nothing; a long press deletes it at once, with an undo option on a snack bar for five seconds.
 
 ### Entry detail
 
