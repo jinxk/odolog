@@ -250,6 +250,23 @@ class _DataSectionState extends ConsumerState<_DataSection> {
           enabled: !_busy,
           onTap: _downloadTemplate,
         ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          leading: Icon(
+            Icons.delete_forever,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          title: Text(
+            'Delete all data',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+          subtitle: const Text(
+            'Removes every vehicle, refuel, service, expense and reading '
+            'from this phone',
+          ),
+          enabled: !_busy,
+          onTap: _confirmDeleteAllData,
+        ),
       ],
     );
   }
@@ -348,11 +365,31 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     );
   }
 
-  String _message(Failure failure) => switch (failure) {
-    ValidationFailure(:final reason) => reason,
-    NotFoundFailure(:final message) => message,
-    DatabaseFailure(:final message) => message,
-  };
+  String _message(Failure failure) => _failureMessage(failure);
+
+  Future<void> _confirmDeleteAllData() async {
+    final deleted = await showDialog<bool>(
+      context: context,
+      builder: (context) => const _DeleteAllDataDialog(),
+    );
+    if (deleted != true || !mounted) return;
+    // Whole families, not single ids: every vehicle is gone, so nothing keyed
+    // to a specific vehicleId is worth keeping around either.
+    ref.invalidate(vehicleListProvider);
+    ref.invalidate(vehicleStatsProvider);
+    ref.invalidate(vehicleWindowsProvider);
+    ref.invalidate(vehicleMonthlyProvider);
+    ref.invalidate(historyProvider);
+    ref.invalidate(expensesProvider);
+    ref.invalidate(serviceLogProvider);
+    ref.invalidate(serviceDueProvider);
+    ref.read(activeVehicleIdProvider.notifier).select(null);
+    // Waiting for the list to resolve empty lets the router's own listener
+    // pick up the change first, so the redirect does not bounce this back.
+    await ref.read(vehicleListProvider.future);
+    if (!mounted) return;
+    context.go('/onboarding');
+  }
 
   /// "1 vehicle", "2 vehicles". Every noun in the import summary takes a plain
   /// -s plural.
@@ -363,6 +400,111 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+/// The same failure to message mapping [_DataSectionState] uses for export
+/// and import, shared with the delete all data dialog below.
+String _failureMessage(Failure failure) => switch (failure) {
+  ValidationFailure(:final reason) => reason,
+  NotFoundFailure(:final message) => message,
+  DatabaseFailure(:final message) => message,
+};
+
+/// Confirms the delete all data action: the field only accepts the dialog
+/// once the typed text matches [_confirmWord] exactly, and the dialog stays
+/// open on failure so the message shows next to the field instead of behind
+/// a second alert.
+class _DeleteAllDataDialog extends ConsumerStatefulWidget {
+  const _DeleteAllDataDialog();
+
+  @override
+  ConsumerState<_DeleteAllDataDialog> createState() =>
+      _DeleteAllDataDialogState();
+}
+
+class _DeleteAllDataDialogState extends ConsumerState<_DeleteAllDataDialog> {
+  static const _confirmWord = 'DELETE';
+
+  final _controller = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final canDelete = !_busy && _controller.text == _confirmWord;
+    return AlertDialog(
+      title: const Text('Delete all data?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'This removes everything OdoLog has stored on this phone. '
+            'Backups you exported are not affected. Type DELETE to continue.',
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            autocorrect: false,
+            textCapitalization: TextCapitalization.characters,
+            enabled: !_busy,
+            onChanged: (_) => setState(() {}),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: scheme.error)),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: scheme.error,
+            foregroundColor: scheme.onError,
+          ),
+          onPressed: canDelete ? _delete : null,
+          child: _busy
+              ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: scheme.onError,
+                  ),
+                )
+              : const Text('Delete'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _delete() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final result = await ref.read(resetAllDataProvider).execute();
+    if (!mounted) return;
+    result.match(
+      (failure) => setState(() {
+        _busy = false;
+        _error = _failureMessage(failure);
+      }),
+      (_) => Navigator.of(context).pop(true),
+    );
   }
 }
 

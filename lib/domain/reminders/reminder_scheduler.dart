@@ -21,4 +21,10 @@ abstract interface class ReminderScheduler {
   /// the document expiry category [sync] manages. Best effort, same contract
   /// as [sync].
   Future<void> syncServiceReminders(List<ServiceReminder> reminders);
+
+  /// Cancels every scheduled notification in both categories. Used when
+  /// there is nothing left on the device for either category to reconcile
+  /// against, such as after the delete all data feature runs. Best effort,
+  /// same contract as [sync].
+  Future<void> cancelAll();
 }

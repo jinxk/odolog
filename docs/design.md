@@ -95,6 +95,7 @@ List of vehicles with add, edit, and delete. Deleting a vehicle warns that its r
 - **Export data:** writes every vehicle, refuel, service log entry, expense, and odometer reading to one JSON file, pretty printed so it stays readable and editable by hand. The format is at version 2, which added the `odometerReadings` array.
 - **Import data:** reads that JSON back, with a validation pass so a malformed item does not silently corrupt the log. A version 1 file restores with no odometer readings, and backups written by the CSV format that 1.0 used still restore.
 - **Download template:** a blank JSON file with every section and one example item each, to fill in externally and import back.
+- **Delete all data:** removes every vehicle, refuel, service log entry, expense, and odometer reading from the phone. Asks for the word DELETE typed into a field first, and does not touch a backup already exported.
 - **Automatic backup:** a daily copy of the full JSON bundle written to Downloads/OdoLog, keeping the last seven days. Shared storage survives an uninstall, which app-private data does not. On by default behind a one-time consent prompt, with the last-backed-up time shown on the toggle. The welcome screen offers a restore path so a reinstall can import the backup before any vehicle exists.
 - **About:** version, licence (MIT), and a link to the source.
 

@@ -8,6 +8,7 @@ import '../../data/daos/odometer_reading_dao.dart';
 import '../../data/daos/refuel_dao.dart';
 import '../../data/daos/service_log_dao.dart';
 import '../../data/daos/vehicle_dao.dart';
+import '../../data/db/sqflite_data_eraser.dart';
 import '../../data/db/sqflite_unit_of_work.dart';
 import '../../data/json/data_bundle_json_codec.dart';
 import '../../data/reminders/local_notification_scheduler.dart';
@@ -19,6 +20,7 @@ import '../../data/repositories/service_log_repository_impl.dart';
 import '../../data/repositories/vehicle_repository_impl.dart';
 import '../../domain/backup/auto_backup_writer.dart';
 import '../../domain/backup/data_bundle_codec.dart';
+import '../../domain/backup/data_eraser.dart';
 import '../../domain/backup/unit_of_work.dart';
 import '../../domain/reminders/reminder_scheduler.dart';
 import '../../domain/repositories/catalog_repository.dart';
@@ -70,6 +72,13 @@ ExpenseRepository expenseRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 UnitOfWork unitOfWork(Ref ref) =>
     SqfliteUnitOfWork(ref.watch(databaseProvider));
+
+/// Permanently erases every vehicle and everything logged against it, for the
+/// delete all data feature. Shares the same open database as the
+/// repositories.
+@Riverpod(keepAlive: true)
+DataEraser dataEraser(Ref ref) =>
+    SqfliteDataEraser(ref.watch(databaseProvider));
 
 /// The platform notification scheduler. Widget tests can override this with a
 /// no-op, though the real one already stands down off Android.

@@ -598,6 +598,47 @@ final class GetDataBundleTemplateProvider
 String _$getDataBundleTemplateHash() =>
     r'd7f74409beb67d21c6020eeb4c0cf3ff53688db3';
 
+@ProviderFor(resetAllData)
+final resetAllDataProvider = ResetAllDataProvider._();
+
+final class ResetAllDataProvider
+    extends $FunctionalProvider<ResetAllData, ResetAllData, ResetAllData>
+    with $Provider<ResetAllData> {
+  ResetAllDataProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'resetAllDataProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$resetAllDataHash();
+
+  @$internal
+  @override
+  $ProviderElement<ResetAllData> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ResetAllData create(Ref ref) {
+    return resetAllData(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ResetAllData value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ResetAllData>(value),
+    );
+  }
+}
+
+String _$resetAllDataHash() => r'd030492243a608fe6624b00a25be6248e9208114';
+
 @ProviderFor(runAutoBackup)
 final runAutoBackupProvider = RunAutoBackupProvider._();
 

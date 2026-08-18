@@ -23,6 +23,7 @@ import '../../domain/usecases/log_expense.dart';
 import '../../domain/usecases/log_odometer_reading.dart';
 import '../../domain/usecases/log_refuel.dart';
 import '../../domain/usecases/log_service.dart';
+import '../../domain/usecases/reset_all_data.dart';
 import '../../domain/usecases/restore_expense.dart';
 import '../../domain/usecases/restore_odometer_reading.dart';
 import '../../domain/usecases/restore_refuel.dart';
@@ -112,6 +113,12 @@ ImportData importData(Ref ref) => ImportData(
 @Riverpod(keepAlive: true)
 GetDataBundleTemplate getDataBundleTemplate(Ref ref) =>
     GetDataBundleTemplate(ref.watch(dataBundleCodecProvider));
+
+@Riverpod(keepAlive: true)
+ResetAllData resetAllData(Ref ref) => ResetAllData(
+  ref.watch(dataEraserProvider),
+  ref.watch(reminderSchedulerProvider),
+);
 
 @Riverpod(keepAlive: true)
 RunAutoBackup runAutoBackup(Ref ref) => RunAutoBackup(

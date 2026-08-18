@@ -395,6 +395,58 @@ final class UnitOfWorkProvider
 
 String _$unitOfWorkHash() => r'97b1b5472e14279e71df536df8fcd84dc1372837';
 
+/// Permanently erases every vehicle and everything logged against it, for the
+/// delete all data feature. Shares the same open database as the
+/// repositories.
+
+@ProviderFor(dataEraser)
+final dataEraserProvider = DataEraserProvider._();
+
+/// Permanently erases every vehicle and everything logged against it, for the
+/// delete all data feature. Shares the same open database as the
+/// repositories.
+
+final class DataEraserProvider
+    extends $FunctionalProvider<DataEraser, DataEraser, DataEraser>
+    with $Provider<DataEraser> {
+  /// Permanently erases every vehicle and everything logged against it, for the
+  /// delete all data feature. Shares the same open database as the
+  /// repositories.
+  DataEraserProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dataEraserProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dataEraserHash();
+
+  @$internal
+  @override
+  $ProviderElement<DataEraser> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DataEraser create(Ref ref) {
+    return dataEraser(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DataEraser value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DataEraser>(value),
+    );
+  }
+}
+
+String _$dataEraserHash() => r'59db72e5af52739a9e750fa315789c7ec0d227dc';
+
 /// The platform notification scheduler. Widget tests can override this with a
 /// no-op, though the real one already stands down off Android.
 

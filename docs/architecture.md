@@ -85,6 +85,8 @@ lib/
       data_bundle_codec.dart          // port the backup format codec implements
       auto_backup_writer.dart         // port for uninstall-surviving storage
       auto_backup_policy.dart         // naming, once-a-day debounce, retention
+      unit_of_work.dart               // port that runs several writes as one transaction
+      data_eraser.dart                // port that deletes every table, for delete all data
     calculators/
       mileage_calculator.dart      // pure full-tank window math
       aggregate_calculator.dart    // lifetime and monthly rollups

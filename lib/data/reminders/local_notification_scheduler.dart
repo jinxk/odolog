@@ -77,6 +77,17 @@ class LocalNotificationScheduler implements ReminderScheduler {
     }
   }
 
+  @override
+  Future<void> cancelAll() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _ensureReady();
+      await _plugin.cancelAll();
+    } catch (_) {
+      // Best effort, same contract as sync.
+    }
+  }
+
   /// Cancels only the currently scheduled notifications whose id [matches],
   /// so reconciling one category (document expiries or service due dates)
   /// leaves the other alone. The reminders in a category are all future
