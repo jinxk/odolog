@@ -55,6 +55,15 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
   /// renders against the input it came from.
   Map<String, String> _fieldErrors = const {};
 
+  /// Fields that live inside the collapsed "More details" section. A failure
+  /// on one of these arrives with the section still collapsed unless the save
+  /// path expands it, so the message would otherwise never be seen.
+  static const _moreDetailsFields = {
+    'registrationNo',
+    'tankCapacity',
+    'claimedMileage',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +115,15 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
     super.dispose();
   }
 
+  /// Parses [text] as a double, treating a result that is NaN or infinite the
+  /// same as an empty field: a run of digits long enough to overflow a double
+  /// still passes the single decimal point formatter.
+  double? _parseFinite(String text) {
+    final value = double.tryParse(text.trim());
+    if (value == null || value.isNaN || value.isInfinite) return null;
+    return value;
+  }
+
   Future<void> _save() async {
     setState(() {
       _saving = true;
@@ -119,7 +137,7 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
       registrationNo: _registration.text.trim().isEmpty
           ? null
           : _registration.text.trim(),
-      tankCapacity: double.tryParse(_tankCapacity.text.trim()),
+      tankCapacity: _parseFinite(_tankCapacity.text),
       claimedMileage: double.tryParse(_claimedMileage.text.trim()),
       insuranceExpiry: _docDates[VehicleDocument.insurance],
       pucExpiry: _docDates[VehicleDocument.puc],
@@ -142,6 +160,7 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
           _saving = false;
           if (failure is ValidationFailure) {
             _fieldErrors = {failure.field: failure.reason};
+            if (_moreDetailsFields.contains(failure.field)) _showMore = true;
           }
         });
       },
@@ -239,6 +258,7 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
               labelText: 'Tank capacity',
               hintText: 'Optional',
               suffixText: unitLabel(_category),
+              errorText: _fieldErrors['tankCapacity'],
             ),
           ),
           const SizedBox(height: 20),

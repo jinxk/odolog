@@ -168,6 +168,82 @@ void main() {
     expect(name.decoration!.errorText, isNull);
   });
 
+  testWidgets(
+    'a zero tank capacity reports on the tank capacity field and reopens '
+    'the collapsed More details section',
+    (tester) async {
+      await pumpVehicleForm(tester);
+
+      await tester.enterText(find.byType(TextField).first, 'Activa');
+      await tester.tap(find.text('More details'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.ancestor(
+          of: find.text('Tank capacity'),
+          matching: find.byType(TextField),
+        ),
+        '0',
+      );
+      // Collapse the section again before saving, so the test exercises the
+      // mechanism that reopens it to show the error rather than the error
+      // simply being visible because the section was left open.
+      await tester.tap(find.text('More details'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tank capacity'), findsNothing);
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tank capacity'), findsOneWidget);
+      expect(
+        find.text('Tank capacity must be greater than zero.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('a positive tank capacity saves without error', (tester) async {
+    final repo = FakeVehicleRepository();
+    Vehicle? saved;
+    // An open "More details" section is taller than the default test surface,
+    // so give it room rather than scrolling to find Save.
+    tester.view.physicalSize = const Size(1000, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [vehicleRepositoryProvider.overrideWithValue(repo)],
+        child: MaterialApp(
+          home: Scaffold(
+            body: VehicleForm(
+              saveLabel: 'Save',
+              onSaved: (value) => saved = value,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Activa');
+    await tester.tap(find.text('More details'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.ancestor(
+        of: find.text('Tank capacity'),
+        matching: find.byType(TextField),
+      ),
+      '35',
+    );
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(saved, isNotNull);
+    expect(saved!.tankCapacity, 35);
+  });
+
   testWidgets('a document quick-set fills a date without auto-filling others', (
     tester,
   ) async {

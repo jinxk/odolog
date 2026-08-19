@@ -39,6 +39,17 @@ class EditVehicle {
         );
       }
     }
+    final tankCapacity = vehicle.tankCapacity;
+    if (tankCapacity != null && tankCapacity <= 0) {
+      return Future.value(
+        left(
+          const ValidationFailure(
+            field: 'tankCapacity',
+            reason: 'Tank capacity must be greater than zero.',
+          ),
+        ),
+      );
+    }
     return _repository.update(vehicle);
   }
 }

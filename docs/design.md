@@ -37,7 +37,7 @@ OdoLog is built for ordinary Indian vehicle owners who care about running costs:
 
 ### Onboarding and first vehicle
 
-First launch drops straight into "add your first vehicle". No sign-up wall, no tour. The screen asks for a name (for example "Activa" or "Swift"), a vehicle type (car, motorcycle, scooter, other), and a fuel category (petrol, diesel, CNG, LPG). Registration number and tank capacity are optional and sit below a "more details" divider.
+First launch drops straight into "add your first vehicle". No sign-up wall, no tour. The screen asks for a name (for example "Activa" or "Swift"), a vehicle type (car, motorcycle, scooter, other), and a fuel category (petrol, diesel, CNG, LPG). Registration number and tank capacity are optional and sit below a "more details" divider. A tank capacity, when entered, must be greater than zero.
 
 Once saved, the app lands on the home dashboard for that vehicle, showing an empty state that invites the first refuel. There is no separate starting-odometer step; the first refuel entry carries it.
 
@@ -63,6 +63,8 @@ The form is ordered for speed. Three large, keypad-friendly fields first, in the
 Below those, a collapsed "optional details" section holds: fuel variant (dropdown from the catalog), date and time (defaults to now), full tank toggle (defaults on), station name, and notes. Most fills never expand this section.
 
 A running hint under the price field shows the derived price per unit as the user types, so a wrong entry is obvious immediately. Save validates (see validation rules) and returns to where the user came from.
+
+When the vehicle has a tank capacity and the quantity typed exceeds it by more than ten percent, an advisory warning appears under the quantity field with a button that fills in the estimated top-up instead; it does not block saving.
 
 ### History
 

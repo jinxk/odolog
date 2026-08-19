@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/shapes.dart';
+import '../../domain/calculators/top_up_estimator.dart';
 import '../../domain/entities/fuel_variant.dart';
 import '../../domain/entities/refuel_entry.dart';
 import '../../domain/entities/vehicle.dart';
@@ -19,6 +20,11 @@ import '../providers/settings_provider.dart';
 
 const _otherVariant = '__other__';
 const _noneVariant = '__none__';
+
+/// A number for display with no trailing ".0" on a whole value.
+String _plainNumber(double value) => value == value.roundToDouble()
+    ? value.toStringAsFixed(0)
+    : value.toString();
 
 /// The speed first refuel form. Three large numeric fields come first in the
 /// order they are read off the pump and dashboard: odometer, quantity, price. A
@@ -80,10 +86,6 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     });
   }
 
-  String _plainNumber(double value) => value == value.roundToDouble()
-      ? value.toStringAsFixed(0)
-      : value.toString();
-
   @override
   void dispose() {
     _odometer.dispose();
@@ -129,6 +131,16 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     _price.text = amount;
     _price.selection = TextSelection.collapsed(offset: amount.length);
     _controller.setPrice(amount);
+  }
+
+  /// The "Use n L" button on the tank capacity warning: drops the estimated
+  /// top-up straight into the quantity field, the same path typing it would
+  /// take.
+  void _applyQuantity(double value) {
+    final text = _plainNumber(value);
+    _quantity.text = text;
+    _quantity.selection = TextSelection.collapsed(offset: text.length);
+    _controller.setQuantity(text);
   }
 
   Future<void> _pickDateTime(DateTime current) async {
@@ -180,15 +192,51 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
         : 'Last price $currency ${lastPrice.toStringAsFixed(2)}'
               '${perUnitLabel(category)}';
 
+    final items = ref.watch(historyProvider(widget.vehicle.id)).value;
+
     // The last odometer reading removes the single largest source of at-pump
     // typing, but only as a hint: silently pre-filling the value is not
     // approved, and an edit already carries its own reading.
     String? odometerHint;
-    if (!isEdit) {
-      final items = ref.watch(historyProvider(widget.vehicle.id)).value;
-      if (items != null && items.isNotEmpty) {
-        odometerHint = 'Last: ${formatDistance(items.last.entry.odometer)}';
+    if (!isEdit && items != null && items.isNotEmpty) {
+      odometerHint = 'Last: ${formatDistance(items.last.entry.odometer)}';
+    }
+
+    // The tank capacity warning is advisory only: Save stays enabled and
+    // LogRefuel never rejects the fill on it. The estimated top-up falls back
+    // to the capacity itself when the last full fill or the average mileage
+    // is not known.
+    final tankCapacity = widget.vehicle.tankCapacity;
+    double? estimatedTopUp;
+    var showCapacityWarning = false;
+    if (tankCapacity != null) {
+      RefuelEntry? lastFullFill;
+      if (items != null) {
+        for (final item in items.reversed) {
+          if (item.entry.fullTank) {
+            lastFullFill = item.entry;
+            break;
+          }
+        }
       }
+      final typedOdometer = double.tryParse(state.odometer);
+      final distanceSinceLastFullFill =
+          lastFullFill != null && typedOdometer != null
+          ? typedOdometer - lastFullFill.odometer
+          : null;
+      final averageMileage = ref
+          .watch(vehicleStatsProvider(widget.vehicle.id))
+          .value
+          ?.averageMileage;
+      estimatedTopUp = const TopUpEstimator().estimate(
+        tankCapacity: tankCapacity,
+        distanceSinceLastFullFill: distanceSinceLastFullFill,
+        averageMileage: averageMileage,
+      );
+      final typedQuantity = double.tryParse(state.quantity);
+      showCapacityWarning =
+          typedQuantity != null &&
+          const TopUpEstimator().exceedsCapacity(typedQuantity, tankCapacity);
     }
 
     return PopScope(
@@ -247,6 +295,16 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
               error: state.fieldErrors['quantity'],
               onChanged: _controller.setQuantity,
             ),
+            if (showCapacityWarning)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: _CapacityWarningRow(
+                  tankCapacity: tankCapacity!,
+                  category: category,
+                  estimatedTopUp: estimatedTopUp!,
+                  onUseEstimate: () => _applyQuantity(estimatedTopUp!),
+                ),
+              ),
             const SizedBox(height: 20),
             _numberField(
               key: const Key('priceField'),
@@ -592,6 +650,44 @@ class _AmountChips extends StatelessWidget {
             label: Text(amount),
             onPressed: () => onAmount(amount),
           ),
+      ],
+    );
+  }
+}
+
+/// The advisory row under the quantity field once it exceeds the vehicle's
+/// tank capacity: the warning text, and a button that drops the estimated
+/// top-up into the quantity field. Save stays enabled either way.
+class _CapacityWarningRow extends StatelessWidget {
+  const _CapacityWarningRow({
+    required this.tankCapacity,
+    required this.category,
+    required this.estimatedTopUp,
+    required this.onUseEstimate,
+  });
+
+  final double tankCapacity;
+  final FuelCategory category;
+  final double estimatedTopUp;
+  final VoidCallback onUseEstimate;
+
+  @override
+  Widget build(BuildContext context) {
+    final unit = unitLabel(category);
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'More than the ${_plainNumber(tankCapacity)} $unit tank',
+            key: const Key('capacityWarningText'),
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ),
+        TextButton(
+          key: const Key('useEstimateButton'),
+          onPressed: onUseEstimate,
+          child: Text('Use ${_plainNumber(estimatedTopUp)} $unit'),
+        ),
       ],
     );
   }

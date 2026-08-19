@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/entry_builder.dart';
 import '../helpers/fake_catalog_repository.dart';
+import '../helpers/fake_expense_repository.dart';
 import '../helpers/fake_odometer_reading_repository.dart';
 import '../helpers/fake_refuel_repository.dart';
 import '../helpers/fake_service_log_repository.dart';
@@ -27,9 +28,19 @@ const _vehicle = Vehicle(
   fuelCategory: FuelCategory.petrol,
 );
 
+/// Same vehicle, with a tank capacity, for the capacity warning tests.
+const _vehicleWithCapacity = Vehicle(
+  id: 1,
+  name: 'Swift',
+  type: VehicleType.car,
+  fuelCategory: FuelCategory.petrol,
+  tankCapacity: 35,
+);
+
 Future<FakeRefuelRepository> pumpForm(
   WidgetTester tester, {
   List<RefuelEntry> seed = const [],
+  Vehicle vehicle = _vehicle,
 }) async {
   final refuelRepo = FakeRefuelRepository(seed);
   final router = GoRouter(
@@ -42,7 +53,7 @@ Future<FakeRefuelRepository> pumpForm(
       ),
       GoRoute(
         path: '/add',
-        builder: (context, state) => const AddRefuelScreen(vehicle: _vehicle),
+        builder: (context, state) => AddRefuelScreen(vehicle: vehicle),
       ),
     ],
   );
@@ -50,7 +61,7 @@ Future<FakeRefuelRepository> pumpForm(
     ProviderScope(
       overrides: [
         vehicleRepositoryProvider.overrideWithValue(
-          FakeVehicleRepository([_vehicle]),
+          FakeVehicleRepository([vehicle]),
         ),
         refuelRepositoryProvider.overrideWithValue(refuelRepo),
         catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
@@ -60,6 +71,7 @@ Future<FakeRefuelRepository> pumpForm(
         odometerReadingRepositoryProvider.overrideWithValue(
           FakeOdometerReadingRepository(),
         ),
+        expenseRepositoryProvider.overrideWithValue(FakeExpenseRepository()),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -329,5 +341,73 @@ void main() {
     expect(find.text('Could not save. Try again.'), findsOneWidget);
     expect(find.textContaining('sqlite'), findsNothing);
     expect(find.text('home'), findsNothing);
+  });
+
+  testWidgets('a quantity above the tank capacity shows the advisory warning', (
+    tester,
+  ) async {
+    await pumpForm(tester, vehicle: _vehicleWithCapacity);
+
+    await tester.enterText(find.byKey(const Key('quantityField')), '40');
+    await tester.pump();
+
+    expect(find.text('More than the 35 L tank'), findsOneWidget);
+  });
+
+  testWidgets('the warning is gone once the quantity is at capacity', (
+    tester,
+  ) async {
+    await pumpForm(tester, vehicle: _vehicleWithCapacity);
+
+    await tester.enterText(find.byKey(const Key('quantityField')), '40');
+    await tester.pump();
+    expect(find.text('More than the 35 L tank'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('quantityField')), '35');
+    await tester.pump();
+
+    expect(find.text('More than the 35 L tank'), findsNothing);
+  });
+
+  testWidgets(
+    'the use estimate button sets the quantity to the estimated top-up',
+    (tester) async {
+      await pumpForm(tester, vehicle: _vehicleWithCapacity);
+
+      await tester.enterText(find.byKey(const Key('quantityField')), '40');
+      await tester.pump();
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('useEstimateButton')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      // No full-tank history to derive a distance from, so the estimate falls
+      // back to the tank capacity itself.
+      await tester.tap(find.byKey(const Key('useEstimateButton')));
+      await tester.pump();
+
+      expect(_state(tester).quantity, '35');
+      final quantity = tester.widget<TextField>(
+        find.byKey(const Key('quantityField')),
+      );
+      expect(quantity.controller!.text, '35');
+    },
+  );
+
+  testWidgets('save still succeeds with a quantity above the tank capacity', (
+    tester,
+  ) async {
+    final refuelRepo = await pumpForm(tester, vehicle: _vehicleWithCapacity);
+
+    await tester.enterText(find.byKey(const Key('odometerField')), '12000');
+    await tester.enterText(find.byKey(const Key('quantityField')), '40');
+    await tester.enterText(find.byKey(const Key('priceField')), '4000');
+    await tester.tap(find.text('Save refuel'));
+    await tester.pumpAndSettle();
+
+    expect(refuelRepo.entries, hasLength(1));
+    expect(refuelRepo.entries.single.quantity, 40);
+    expect(find.text('home'), findsOneWidget);
   });
 }
