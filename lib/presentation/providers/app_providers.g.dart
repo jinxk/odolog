@@ -988,11 +988,112 @@ final class ServiceDueFamily extends $Family
   String toString() => r'serviceDueProvider';
 }
 
+/// The reminders that are scheduled right now, for the settings list. It runs
+/// the same planning the sync notifiers run, so what the user reads is what
+/// was handed to the scheduler. A category that is switched off contributes
+/// nothing.
+
+@ProviderFor(scheduledReminders)
+final scheduledRemindersProvider = ScheduledRemindersProvider._();
+
+/// The reminders that are scheduled right now, for the settings list. It runs
+/// the same planning the sync notifiers run, so what the user reads is what
+/// was handed to the scheduler. A category that is switched off contributes
+/// nothing.
+
+final class ScheduledRemindersProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ScheduledReminder>>,
+          List<ScheduledReminder>,
+          FutureOr<List<ScheduledReminder>>
+        >
+    with
+        $FutureModifier<List<ScheduledReminder>>,
+        $FutureProvider<List<ScheduledReminder>> {
+  /// The reminders that are scheduled right now, for the settings list. It runs
+  /// the same planning the sync notifiers run, so what the user reads is what
+  /// was handed to the scheduler. A category that is switched off contributes
+  /// nothing.
+  ScheduledRemindersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'scheduledRemindersProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$scheduledRemindersHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<ScheduledReminder>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<ScheduledReminder>> create(Ref ref) {
+    return scheduledReminders(ref);
+  }
+}
+
+String _$scheduledRemindersHash() =>
+    r'2044291e9ce0f60e615c962c3749d80890d1ebd7';
+
+/// Whether the platform will show the app's notifications. Null when that
+/// cannot be answered, which is every platform but Android.
+
+@ProviderFor(notificationsEnabled)
+final notificationsEnabledProvider = NotificationsEnabledProvider._();
+
+/// Whether the platform will show the app's notifications. Null when that
+/// cannot be answered, which is every platform but Android.
+
+final class NotificationsEnabledProvider
+    extends $FunctionalProvider<AsyncValue<bool?>, bool?, FutureOr<bool?>>
+    with $FutureModifier<bool?>, $FutureProvider<bool?> {
+  /// Whether the platform will show the app's notifications. Null when that
+  /// cannot be answered, which is every platform but Android.
+  NotificationsEnabledProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'notificationsEnabledProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$notificationsEnabledHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<bool?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<bool?> create(Ref ref) {
+    return notificationsEnabled(ref);
+  }
+}
+
+String _$notificationsEnabledHash() =>
+    r'd04c44b186ba50737965208d828575da6925db63';
+
 /// Keeps the scheduled document reminders in step with the vehicles. Watched
 /// once by the app so it stays alive; it fires immediately on start and again
 /// whenever the vehicle list changes (a saved edit invalidates that list), so
 /// a newly entered or cleared expiry date reschedules without any extra call
-/// site. The sync itself is best effort and a no-op off Android.
+/// site. Flipping the settings switch re-runs it too, which is what cancels
+/// the category: an empty vehicle list plans no reminders, and the sync then
+/// reconciles the device down to nothing. The sync itself is best effort and
+/// a no-op off Android.
 
 @ProviderFor(DocumentReminderSync)
 final documentReminderSyncProvider = DocumentReminderSyncProvider._();
@@ -1001,14 +1102,20 @@ final documentReminderSyncProvider = DocumentReminderSyncProvider._();
 /// once by the app so it stays alive; it fires immediately on start and again
 /// whenever the vehicle list changes (a saved edit invalidates that list), so
 /// a newly entered or cleared expiry date reschedules without any extra call
-/// site. The sync itself is best effort and a no-op off Android.
+/// site. Flipping the settings switch re-runs it too, which is what cancels
+/// the category: an empty vehicle list plans no reminders, and the sync then
+/// reconciles the device down to nothing. The sync itself is best effort and
+/// a no-op off Android.
 final class DocumentReminderSyncProvider
     extends $NotifierProvider<DocumentReminderSync, void> {
   /// Keeps the scheduled document reminders in step with the vehicles. Watched
   /// once by the app so it stays alive; it fires immediately on start and again
   /// whenever the vehicle list changes (a saved edit invalidates that list), so
   /// a newly entered or cleared expiry date reschedules without any extra call
-  /// site. The sync itself is best effort and a no-op off Android.
+  /// site. Flipping the settings switch re-runs it too, which is what cancels
+  /// the category: an empty vehicle list plans no reminders, and the sync then
+  /// reconciles the device down to nothing. The sync itself is best effort and
+  /// a no-op off Android.
   DocumentReminderSyncProvider._()
     : super(
         from: null,
@@ -1037,13 +1144,16 @@ final class DocumentReminderSyncProvider
 }
 
 String _$documentReminderSyncHash() =>
-    r'cf5a7212e034fa7136d0766adb7537bb815aa269';
+    r'51bad6c5fdc99d10d7068aa9c417159365914fcd';
 
 /// Keeps the scheduled document reminders in step with the vehicles. Watched
 /// once by the app so it stays alive; it fires immediately on start and again
 /// whenever the vehicle list changes (a saved edit invalidates that list), so
 /// a newly entered or cleared expiry date reschedules without any extra call
-/// site. The sync itself is best effort and a no-op off Android.
+/// site. Flipping the settings switch re-runs it too, which is what cancels
+/// the category: an empty vehicle list plans no reminders, and the sync then
+/// reconciles the device down to nothing. The sync itself is best effort and
+/// a no-op off Android.
 
 abstract class _$DocumentReminderSync extends $Notifier<void> {
   void build();
@@ -1064,29 +1174,23 @@ abstract class _$DocumentReminderSync extends $Notifier<void> {
 }
 
 /// Keeps the scheduled service due reminders in step with the vehicles, the
-/// same pattern [DocumentReminderSync] uses: it fires on start and again
-/// whenever the vehicle list changes, so an edited interval reschedules
-/// without an extra call site. Logging a service does not change the vehicle
-/// list, so the service log screen also calls
-/// `syncServiceRemindersProvider` directly after a save.
+/// same pattern [DocumentReminderSync] uses, switch included. Logging a
+/// service does not change the vehicle list, so the service log screen also
+/// calls `syncServiceRemindersProvider` directly after a save.
 
 @ProviderFor(ServiceReminderSync)
 final serviceReminderSyncProvider = ServiceReminderSyncProvider._();
 
 /// Keeps the scheduled service due reminders in step with the vehicles, the
-/// same pattern [DocumentReminderSync] uses: it fires on start and again
-/// whenever the vehicle list changes, so an edited interval reschedules
-/// without an extra call site. Logging a service does not change the vehicle
-/// list, so the service log screen also calls
-/// `syncServiceRemindersProvider` directly after a save.
+/// same pattern [DocumentReminderSync] uses, switch included. Logging a
+/// service does not change the vehicle list, so the service log screen also
+/// calls `syncServiceRemindersProvider` directly after a save.
 final class ServiceReminderSyncProvider
     extends $NotifierProvider<ServiceReminderSync, void> {
   /// Keeps the scheduled service due reminders in step with the vehicles, the
-  /// same pattern [DocumentReminderSync] uses: it fires on start and again
-  /// whenever the vehicle list changes, so an edited interval reschedules
-  /// without an extra call site. Logging a service does not change the vehicle
-  /// list, so the service log screen also calls
-  /// `syncServiceRemindersProvider` directly after a save.
+  /// same pattern [DocumentReminderSync] uses, switch included. Logging a
+  /// service does not change the vehicle list, so the service log screen also
+  /// calls `syncServiceRemindersProvider` directly after a save.
   ServiceReminderSyncProvider._()
     : super(
         from: null,
@@ -1115,14 +1219,12 @@ final class ServiceReminderSyncProvider
 }
 
 String _$serviceReminderSyncHash() =>
-    r'67088510300a5e23bf645242e2d49423733154ba';
+    r'43506366adea46a5f3a43f8e59f1b1c385f144a0';
 
 /// Keeps the scheduled service due reminders in step with the vehicles, the
-/// same pattern [DocumentReminderSync] uses: it fires on start and again
-/// whenever the vehicle list changes, so an edited interval reschedules
-/// without an extra call site. Logging a service does not change the vehicle
-/// list, so the service log screen also calls
-/// `syncServiceRemindersProvider` directly after a save.
+/// same pattern [DocumentReminderSync] uses, switch included. Logging a
+/// service does not change the vehicle list, so the service log screen also
+/// calls `syncServiceRemindersProvider` directly after a save.
 
 abstract class _$ServiceReminderSync extends $Notifier<void> {
   void build();

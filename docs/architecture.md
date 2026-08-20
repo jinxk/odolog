@@ -71,6 +71,7 @@ lib/
       window_mileage.dart
       vehicle_stats.dart
       entry_derived.dart
+      scheduled_reminder.dart
     repositories/
       vehicle_repository.dart        // interface
       refuel_repository.dart         // interface
@@ -80,6 +81,7 @@ lib/
       odometer_reading_repository.dart // interface
     reminders/
       reminder_scheduler.dart        // port, see Reminder scheduler port
+      reminder_planning.dart         // runs both planners, shared by the sync and list use cases
     backup/
       data_bundle.dart                // the DataBundle typedef
       data_bundle_codec.dart          // port the backup format codec implements
@@ -108,6 +110,7 @@ lib/
       get_service_due.dart
       delete_service.dart
       sync_service_reminders.dart
+      get_scheduled_reminders.dart
       log_expense.dart
       get_expenses.dart
       delete_expense.dart
@@ -427,6 +430,7 @@ Each use case is a thin, single-responsibility class that orchestrates repositor
 - **GetServiceDue** runs `ServiceDueCalculator` to report where each maintenance template stands for a vehicle.
 - **DeleteService** removes a service log entry.
 - **SyncServiceReminders** replans every service due reminder against the current vehicles and their history, through the same `ReminderScheduler` port.
+- **GetScheduledReminders** runs the same planning both sync use cases run and returns it as a flat list of `ScheduledReminder`, for the reminders section in settings.
 - **LogExpense** validates and stores a non-fuel expense.
 - **GetExpenses** returns a vehicle's expenses, most recent first.
 - **DeleteExpense** removes an expense.

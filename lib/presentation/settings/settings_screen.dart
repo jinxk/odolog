@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/theme/spacing.dart';
 import '../../app/version.dart';
 import '../../core/failures.dart';
+import '../../domain/value_objects/scheduled_reminder.dart';
 import '../common/error_view.dart';
 import '../common/formatting.dart';
 import '../common/grouped_list.dart';
@@ -18,6 +19,7 @@ import '../common/motion.dart';
 import '../common/section_header.dart';
 import '../providers/app_providers.dart';
 import '../providers/auto_backup_provider.dart';
+import '../providers/repositories.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 import 'currency_catalog.dart';
@@ -74,6 +76,12 @@ class SettingsScreen extends ConsumerWidget {
               const _DataSection(),
               const SizedBox(height: 8),
               const _AutoBackupRow(),
+              const SizedBox(height: AppSpacing.betweenSections),
+              const SectionHeader('Reminders'),
+              _RemindersSection(
+                documentsEnabled: settings.documentRemindersEnabled,
+                servicesEnabled: settings.serviceRemindersEnabled,
+              ),
               const SizedBox(height: AppSpacing.betweenSections),
               const SectionHeader('About'),
               GroupedList(
@@ -566,5 +574,104 @@ class _AutoBackupRow extends ConsumerWidget {
     final at = state.lastBackupAt;
     if (at == null) return 'On. Last backed up: not yet.';
     return 'On. Last backed up ${formatDateTime(at)}.';
+  }
+}
+
+/// The reminders section: the two category switches, what each one currently
+/// has scheduled, and a row that fires one notification right now so the user
+/// can confirm reminders arrive on this phone. The scheduled rows come from
+/// the same planning the sync notifiers hand to the scheduler.
+/// One group per subject and vehicle, in the order of each group's soonest
+/// reminder. A document expiry schedules four notifications; the list shows
+/// it once.
+List<List<ScheduledReminder>> _groupReminders(List<ScheduledReminder> sorted) {
+  final groups = <String, List<ScheduledReminder>>{};
+  for (final reminder in sorted) {
+    groups
+        .putIfAbsent('${reminder.title}|${reminder.vehicleName}', () => [])
+        .add(reminder);
+  }
+  return groups.values.toList();
+}
+
+class _RemindersSection extends ConsumerWidget {
+  const _RemindersSection({
+    required this.documentsEnabled,
+    required this.servicesEnabled,
+  });
+
+  final bool documentsEnabled;
+  final bool servicesEnabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final blocked = ref.watch(notificationsEnabledProvider).value == false;
+    final scheduled = ref.watch(scheduledRemindersProvider).value;
+    return GroupedList(
+      rows: [
+        if (blocked)
+          const ListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 16),
+            leading: Icon(Icons.notifications_off_outlined),
+            title: Text('Notifications are off for OdoLog in Android settings'),
+            subtitle: Text('Reminders cannot show until you turn them on'),
+          ),
+        SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          secondary: const Icon(Icons.event_outlined),
+          title: const Text('Document reminders'),
+          subtitle: const Text('Insurance, PUC, RC and fitness expiry dates'),
+          value: documentsEnabled,
+          onChanged: (value) => ref
+              .read(settingsProvider.notifier)
+              .setDocumentRemindersEnabled(value),
+        ),
+        SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          secondary: const Icon(Icons.build_outlined),
+          title: const Text('Service reminders'),
+          subtitle: const Text('Oil change and general service'),
+          value: servicesEnabled,
+          onChanged: (value) => ref
+              .read(settingsProvider.notifier)
+              .setServiceRemindersEnabled(value),
+        ),
+        if (scheduled != null) ...[
+          if (scheduled.isEmpty && documentsEnabled && servicesEnabled)
+            const ListTile(
+              contentPadding: EdgeInsets.symmetric(horizontal: 16),
+              leading: Icon(Icons.schedule),
+              title: Text('Nothing scheduled'),
+              subtitle: Text('Add an expiry date or a service to a vehicle'),
+            )
+          else
+            for (final group in _groupReminders(scheduled))
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: const Icon(Icons.schedule),
+                title: Text('${group.first.title}, ${group.first.vehicleName}'),
+                subtitle: Text(
+                  group.length == 1
+                      ? formatDateTime(group.first.fireAt)
+                      : '${formatDateTime(group.first.fireAt)}, '
+                            'then ${group.length - 1} more',
+                ),
+              ),
+        ],
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          leading: const Icon(Icons.notifications_active_outlined),
+          title: const Text('Send a test reminder'),
+          subtitle: const Text('Shows a notification right now'),
+          onTap: () => _sendTest(context, ref),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _sendTest(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(reminderSchedulerProvider).showTest();
+    messenger.showSnackBar(const SnackBar(content: Text('Test reminder sent')));
   }
 }

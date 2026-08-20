@@ -680,6 +680,57 @@ final class RunAutoBackupProvider
 
 String _$runAutoBackupHash() => r'8a3db7eb37d244e680e8108d13730a050e1c6c41';
 
+/// The shared planning both sync use cases and the settings list read from.
+
+@ProviderFor(reminderPlanning)
+final reminderPlanningProvider = ReminderPlanningProvider._();
+
+/// The shared planning both sync use cases and the settings list read from.
+
+final class ReminderPlanningProvider
+    extends
+        $FunctionalProvider<
+          ReminderPlanning,
+          ReminderPlanning,
+          ReminderPlanning
+        >
+    with $Provider<ReminderPlanning> {
+  /// The shared planning both sync use cases and the settings list read from.
+  ReminderPlanningProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'reminderPlanningProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$reminderPlanningHash();
+
+  @$internal
+  @override
+  $ProviderElement<ReminderPlanning> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ReminderPlanning create(Ref ref) {
+    return reminderPlanning(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ReminderPlanning value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ReminderPlanning>(value),
+    );
+  }
+}
+
+String _$reminderPlanningHash() => r'9dd7bb12121f2ebdf8b39f0b4e89e1b729028312';
+
 @ProviderFor(syncDocumentReminders)
 final syncDocumentRemindersProvider = SyncDocumentRemindersProvider._();
 
@@ -726,7 +777,7 @@ final class SyncDocumentRemindersProvider
 }
 
 String _$syncDocumentRemindersHash() =>
-    r'a1c382486f2833431be496dd4a6d5b4ecbdefa69';
+    r'2c8a0f62a6abb75fb8fd91c7bb5b8a46a8388625';
 
 @ProviderFor(syncServiceReminders)
 final syncServiceRemindersProvider = SyncServiceRemindersProvider._();
@@ -774,7 +825,55 @@ final class SyncServiceRemindersProvider
 }
 
 String _$syncServiceRemindersHash() =>
-    r'923cf2046c082c4b8aa6a9314792a6c0c13c5f34';
+    r'1e0aecbe3c7713a1c4f4767d33a0d37775ab9db1';
+
+@ProviderFor(getScheduledReminders)
+final getScheduledRemindersProvider = GetScheduledRemindersProvider._();
+
+final class GetScheduledRemindersProvider
+    extends
+        $FunctionalProvider<
+          GetScheduledReminders,
+          GetScheduledReminders,
+          GetScheduledReminders
+        >
+    with $Provider<GetScheduledReminders> {
+  GetScheduledRemindersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getScheduledRemindersProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getScheduledRemindersHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetScheduledReminders> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetScheduledReminders create(Ref ref) {
+    return getScheduledReminders(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetScheduledReminders value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetScheduledReminders>(value),
+    );
+  }
+}
+
+String _$getScheduledRemindersHash() =>
+    r'7828dd9947384951a835879951993ad5a0ee4c02';
 
 @ProviderFor(logService)
 final logServiceProvider = LogServiceProvider._();

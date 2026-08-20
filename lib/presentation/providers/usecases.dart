@@ -9,9 +9,11 @@ import '../../domain/usecases/delete_vehicle.dart';
 import '../../domain/usecases/edit_refuel.dart';
 import '../../domain/usecases/edit_vehicle.dart';
 import '../../domain/usecases/export_data.dart';
+import '../../domain/reminders/reminder_planning.dart';
 import '../../domain/usecases/get_data_bundle_template.dart';
 import '../../domain/usecases/get_expenses.dart';
 import '../../domain/usecases/get_odometer_readings.dart';
+import '../../domain/usecases/get_scheduled_reminders.dart';
 import '../../domain/usecases/get_service_due.dart';
 import '../../domain/usecases/get_service_log.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
@@ -126,17 +128,29 @@ RunAutoBackup runAutoBackup(Ref ref) => RunAutoBackup(
   ref.watch(autoBackupWriterProvider),
 );
 
+/// The shared planning both sync use cases and the settings list read from.
 @Riverpod(keepAlive: true)
-SyncDocumentReminders syncDocumentReminders(Ref ref) =>
-    SyncDocumentReminders(ref.watch(reminderSchedulerProvider));
-
-@Riverpod(keepAlive: true)
-SyncServiceReminders syncServiceReminders(Ref ref) => SyncServiceReminders(
-  ref.watch(reminderSchedulerProvider),
+ReminderPlanning reminderPlanning(Ref ref) => ReminderPlanning(
   ref.watch(refuelRepositoryProvider),
   ref.watch(serviceLogRepositoryProvider),
   ref.watch(odometerReadingRepositoryProvider),
 );
+
+@Riverpod(keepAlive: true)
+SyncDocumentReminders syncDocumentReminders(Ref ref) => SyncDocumentReminders(
+  ref.watch(reminderSchedulerProvider),
+  ref.watch(reminderPlanningProvider),
+);
+
+@Riverpod(keepAlive: true)
+SyncServiceReminders syncServiceReminders(Ref ref) => SyncServiceReminders(
+  ref.watch(reminderSchedulerProvider),
+  ref.watch(reminderPlanningProvider),
+);
+
+@Riverpod(keepAlive: true)
+GetScheduledReminders getScheduledReminders(Ref ref) =>
+    GetScheduledReminders(ref.watch(reminderPlanningProvider));
 
 @Riverpod(keepAlive: true)
 LogService logService(Ref ref) =>

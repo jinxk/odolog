@@ -99,6 +99,7 @@ List of vehicles with add, edit, and delete. Deleting a vehicle warns that its r
 - **Download template:** a blank JSON file with every section and one example item each, to fill in externally and import back.
 - **Delete all data:** removes every vehicle, refuel, service log entry, expense, and odometer reading from the phone. Asks for the word DELETE typed into a field first, and does not touch a backup already exported.
 - **Automatic backup:** a daily copy of the full JSON bundle written to Downloads/OdoLog, keeping the last seven days. Shared storage survives an uninstall, which app-private data does not. On by default behind a one-time consent prompt, with the last-backed-up time shown on the toggle. The welcome screen offers a restore path so a reinstall can import the backup before any vehicle exists.
+- **Reminders:** switches for document reminders (insurance, PUC, RC, fitness) and service reminders (oil change, general service), both on by default. Below them, what is scheduled in the categories that are on: one row per document or service and vehicle, with the next fire date and time and how many more follow, soonest first. A test row fires one notification straight away so the user can check reminders arrive on the phone, and a line appears when notifications are switched off for OdoLog in Android settings.
 - **About:** version, licence (MIT), and a link to the source.
 
 ## Calculations

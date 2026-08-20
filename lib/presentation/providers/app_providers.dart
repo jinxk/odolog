@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/typedefs.dart';
@@ -9,9 +11,12 @@ import '../../domain/entities/odometer_reading.dart';
 import '../../domain/entities/service_log_entry.dart';
 import '../../domain/entities/vehicle.dart';
 import '../../domain/usecases/get_vehicle_history.dart';
+import '../../domain/value_objects/scheduled_reminder.dart';
 import '../../domain/value_objects/service_due_status.dart';
 import '../../domain/value_objects/vehicle_stats.dart';
 import '../../domain/value_objects/window_mileage.dart';
+import 'repositories.dart';
+import 'settings_provider.dart';
 import 'usecases.dart';
 
 part 'app_providers.g.dart';
@@ -139,37 +144,87 @@ Future<List<ServiceDueStatus>> serviceDue(Ref ref, Vehicle vehicle) async {
   return _unwrap(result);
 }
 
+/// The reminders that are scheduled right now, for the settings list. It runs
+/// the same planning the sync notifiers run, so what the user reads is what
+/// was handed to the scheduler. A category that is switched off contributes
+/// nothing.
+@riverpod
+Future<List<ScheduledReminder>> scheduledReminders(Ref ref) async {
+  final vehicles = await ref.watch(vehicleListProvider.future);
+  final settings = await ref.watch(settingsProvider.future);
+  return ref
+      .watch(getScheduledRemindersProvider)
+      .execute(
+        vehicles,
+        documents: settings.documentRemindersEnabled,
+        services: settings.serviceRemindersEnabled,
+      );
+}
+
+/// Whether the platform will show the app's notifications. Null when that
+/// cannot be answered, which is every platform but Android.
+@riverpod
+Future<bool?> notificationsEnabled(Ref ref) =>
+    ref.watch(reminderSchedulerProvider).notificationsEnabled();
+
 /// Keeps the scheduled document reminders in step with the vehicles. Watched
 /// once by the app so it stays alive; it fires immediately on start and again
 /// whenever the vehicle list changes (a saved edit invalidates that list), so
 /// a newly entered or cleared expiry date reschedules without any extra call
-/// site. The sync itself is best effort and a no-op off Android.
+/// site. Flipping the settings switch re-runs it too, which is what cancels
+/// the category: an empty vehicle list plans no reminders, and the sync then
+/// reconciles the device down to nothing. The sync itself is best effort and
+/// a no-op off Android.
 @Riverpod(keepAlive: true)
 class DocumentReminderSync extends _$DocumentReminderSync {
   @override
   void build() {
     ref.listen(vehicleListProvider, (previous, next) {
-      final vehicles = next.value;
-      if (vehicles == null) return;
-      ref.read(syncDocumentRemindersProvider).execute(vehicles);
+      if (next.value != null) unawaited(_run());
     }, fireImmediately: true);
+    ref.listen(settingsProvider, (previous, next) {
+      final before = previous?.value?.documentRemindersEnabled;
+      final after = next.value?.documentRemindersEnabled;
+      if (before == null || after == null || before == after) return;
+      unawaited(_run());
+    });
+  }
+
+  Future<void> _run() async {
+    final vehicles = ref.read(vehicleListProvider).value;
+    if (vehicles == null) return;
+    final settings = await ref.read(settingsProvider.future);
+    await ref
+        .read(syncDocumentRemindersProvider)
+        .execute(settings.documentRemindersEnabled ? vehicles : const []);
   }
 }
 
 /// Keeps the scheduled service due reminders in step with the vehicles, the
-/// same pattern [DocumentReminderSync] uses: it fires on start and again
-/// whenever the vehicle list changes, so an edited interval reschedules
-/// without an extra call site. Logging a service does not change the vehicle
-/// list, so the service log screen also calls
-/// `syncServiceRemindersProvider` directly after a save.
+/// same pattern [DocumentReminderSync] uses, switch included. Logging a
+/// service does not change the vehicle list, so the service log screen also
+/// calls `syncServiceRemindersProvider` directly after a save.
 @Riverpod(keepAlive: true)
 class ServiceReminderSync extends _$ServiceReminderSync {
   @override
   void build() {
     ref.listen(vehicleListProvider, (previous, next) {
-      final vehicles = next.value;
-      if (vehicles == null) return;
-      ref.read(syncServiceRemindersProvider).execute(vehicles);
+      if (next.value != null) unawaited(_run());
     }, fireImmediately: true);
+    ref.listen(settingsProvider, (previous, next) {
+      final before = previous?.value?.serviceRemindersEnabled;
+      final after = next.value?.serviceRemindersEnabled;
+      if (before == null || after == null || before == after) return;
+      unawaited(_run());
+    });
+  }
+
+  Future<void> _run() async {
+    final vehicles = ref.read(vehicleListProvider).value;
+    if (vehicles == null) return;
+    final settings = await ref.read(settingsProvider.future);
+    await ref
+        .read(syncServiceRemindersProvider)
+        .execute(settings.serviceRemindersEnabled ? vehicles : const []);
   }
 }

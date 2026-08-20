@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:odolog/domain/backup/auto_backup_policy.dart';
+import 'package:odolog/domain/entities/service_log_entry.dart';
+import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/domain/usecases/reset_all_data.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
 import 'package:odolog/presentation/providers/usecases.dart';
@@ -11,7 +13,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/fake_auto_backup_writer.dart';
 import '../helpers/fake_data_eraser.dart';
+import '../helpers/fake_odometer_reading_repository.dart';
+import '../helpers/fake_refuel_repository.dart';
 import '../helpers/fake_reminder_scheduler.dart';
+import '../helpers/fake_service_log_repository.dart';
 import '../helpers/fake_vehicle_repository.dart';
 
 GoRouter _settingsRouter() => GoRouter(
@@ -20,6 +25,53 @@ GoRouter _settingsRouter() => GoRouter(
     GoRoute(path: '/', builder: (context, state) => const SettingsScreen()),
   ],
 );
+
+final _now = DateTime.now();
+
+/// A vehicle with an insurance date and a logged general service, so both
+/// reminder categories have something to list.
+final _activa = Vehicle(
+  id: 1,
+  name: 'Activa',
+  type: VehicleType.scooter,
+  fuelCategory: FuelCategory.petrol,
+  insuranceExpiry: _now.add(const Duration(days: 60)),
+);
+
+Future<void> _pumpSettings(
+  WidgetTester tester,
+  FakeReminderScheduler scheduler,
+) async {
+  await tester.binding.setSurfaceSize(const Size(1200, 4000));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        vehicleRepositoryProvider.overrideWithValue(
+          FakeVehicleRepository([_activa]),
+        ),
+        refuelRepositoryProvider.overrideWithValue(FakeRefuelRepository()),
+        serviceLogRepositoryProvider.overrideWithValue(
+          FakeServiceLogRepository([
+            ServiceLogEntry(
+              id: 1,
+              vehicleId: _activa.id,
+              template: ServiceTemplate.generalService,
+              performedAt: _now.subtract(const Duration(days: 10)),
+              odometer: 5000,
+            ),
+          ]),
+        ),
+        odometerReadingRepositoryProvider.overrideWithValue(
+          FakeOdometerReadingRepository(),
+        ),
+        reminderSchedulerProvider.overrideWithValue(scheduler),
+      ],
+      child: MaterialApp.router(routerConfig: _settingsRouter()),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -37,7 +89,12 @@ void main() {
       ],
     );
     await tester.pumpWidget(
-      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+      ProviderScope(
+        overrides: [
+          vehicleRepositoryProvider.overrideWithValue(FakeVehicleRepository()),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -62,6 +119,9 @@ void main() {
           overrides: [
             autoBackupWriterProvider.overrideWithValue(
               FakeAutoBackupWriter(available: false),
+            ),
+            vehicleRepositoryProvider.overrideWithValue(
+              FakeVehicleRepository(),
             ),
           ],
           child: MaterialApp.router(routerConfig: _settingsRouter()),
@@ -88,16 +148,16 @@ void main() {
           autoBackupWriterProvider.overrideWithValue(
             FakeAutoBackupWriter(available: true),
           ),
+          vehicleRepositoryProvider.overrideWithValue(FakeVehicleRepository()),
         ],
         child: MaterialApp.router(routerConfig: _settingsRouter()),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(SwitchListTile), findsOneWidget);
     expect(find.textContaining('survives an uninstall'), findsOneWidget);
 
-    await tester.tap(find.byType(SwitchListTile));
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Automatic backup'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('On.'), findsOneWidget);
@@ -186,5 +246,58 @@ void main() {
     expect(scheduler.cancelledAll, isTrue);
     expect(find.text('onboarding'), findsOneWidget);
     expect(find.byType(SettingsScreen), findsNothing);
+  });
+
+  testWidgets('the reminders section lists what is scheduled', (tester) async {
+    await _pumpSettings(tester, FakeReminderScheduler(enabled: true));
+
+    expect(find.text('Document reminders'), findsOneWidget);
+    expect(find.text('Service reminders'), findsOneWidget);
+    expect(find.text('Insurance expiry, Activa'), findsOneWidget);
+    expect(find.textContaining('then 3 more'), findsOneWidget);
+    expect(find.text('General service, Activa'), findsOneWidget);
+    expect(find.text('Nothing scheduled'), findsNothing);
+  });
+
+  testWidgets('turning off document reminders hides and persists', (
+    tester,
+  ) async {
+    await _pumpSettings(tester, FakeReminderScheduler(enabled: true));
+
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Document reminders'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Insurance expiry, Activa'), findsNothing);
+    expect(find.text('General service, Activa'), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('settings.documentReminders'), isFalse);
+  });
+
+  testWidgets('the test row sends one reminder and confirms it', (
+    tester,
+  ) async {
+    final scheduler = FakeReminderScheduler(enabled: true);
+    await _pumpSettings(tester, scheduler);
+
+    await tester.tap(find.widgetWithText(ListTile, 'Send a test reminder'));
+    await tester.pumpAndSettle();
+
+    expect(scheduler.shownTest, isTrue);
+    expect(find.text('Test reminder sent'), findsOneWidget);
+  });
+
+  testWidgets('the blocked line shows only when notifications are off', (
+    tester,
+  ) async {
+    const blocked = 'Notifications are off for OdoLog in Android settings';
+
+    await _pumpSettings(tester, FakeReminderScheduler(enabled: false));
+    expect(find.text(blocked), findsOneWidget);
+
+    await _pumpSettings(tester, FakeReminderScheduler(enabled: true));
+    expect(find.text(blocked), findsNothing);
+
+    await _pumpSettings(tester, FakeReminderScheduler());
+    expect(find.text(blocked), findsNothing);
   });
 }

@@ -42,6 +42,10 @@ class LocalNotificationScheduler implements ReminderScheduler {
   /// other one.
   static const _serviceIdOffset = 1000000;
 
+  /// The id the test notification takes, above every id either category can
+  /// produce, so firing one never cancels or overwrites a real reminder.
+  static const _testId = 2000000;
+
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
 
@@ -85,6 +89,45 @@ class LocalNotificationScheduler implements ReminderScheduler {
       await _plugin.cancelAll();
     } catch (_) {
       // Best effort, same contract as sync.
+    }
+  }
+
+  @override
+  Future<void> showTest() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _ensureReady();
+      await _plugin.show(
+        id: _testId,
+        title: 'OdoLog test reminder',
+        body: 'Reminders are working on this phone.',
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _documentChannelId,
+            _documentChannelName,
+            channelDescription: _documentChannelDescription,
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    } catch (_) {
+      // Best effort, same contract as sync.
+    }
+  }
+
+  @override
+  Future<bool?> notificationsEnabled() async {
+    if (!Platform.isAndroid) return null;
+    try {
+      await _ensureReady();
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      return await android?.areNotificationsEnabled();
+    } catch (_) {
+      return null;
     }
   }
 

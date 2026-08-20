@@ -27,4 +27,15 @@ abstract interface class ReminderScheduler {
   /// against, such as after the delete all data feature runs. Best effort,
   /// same contract as [sync].
   Future<void> cancelAll();
+
+  /// Posts one notification immediately so the user can see for themselves
+  /// that reminders arrive on this phone. Its id sits outside both category
+  /// ranges, so it never displaces a scheduled reminder. Best effort, same
+  /// contract as [sync].
+  Future<void> showTest();
+
+  /// Whether the platform will show the app's notifications: false once the
+  /// user has turned them off for the app, null when that cannot be answered,
+  /// which covers every platform but Android.
+  Future<bool?> notificationsEnabled();
 }
