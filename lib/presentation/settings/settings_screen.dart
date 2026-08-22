@@ -671,6 +671,7 @@ class _RemindersSection extends ConsumerWidget {
 
   Future<void> _sendTest(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    await ref.read(reminderSchedulerProvider).requestPermission();
     await ref.read(reminderSchedulerProvider).showTest();
     messenger.showSnackBar(const SnackBar(content: Text('Test reminder sent')));
   }

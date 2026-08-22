@@ -3,9 +3,9 @@ import 'package:odolog/domain/value_objects/document_reminder.dart';
 import 'package:odolog/domain/value_objects/service_reminder.dart';
 
 /// In-memory [ReminderScheduler] for tests. Records the reminders it was last
-/// asked to sync, whether [cancelAll] and [showTest] ran, and answers
-/// [notificationsEnabled] with whatever the test set, with no plugin behind
-/// it.
+/// asked to sync, whether [cancelAll], [showTest], and [requestPermission]
+/// ran, and answers [notificationsEnabled] with whatever the test set, with
+/// no plugin behind it.
 class FakeReminderScheduler implements ReminderScheduler {
   FakeReminderScheduler({this.enabled});
 
@@ -17,6 +17,7 @@ class FakeReminderScheduler implements ReminderScheduler {
   List<ServiceReminder> syncedServiceReminders = [];
   bool cancelledAll = false;
   bool shownTest = false;
+  bool permissionRequested = false;
 
   @override
   Future<void> sync(List<DocumentReminder> reminders) async {
@@ -40,4 +41,9 @@ class FakeReminderScheduler implements ReminderScheduler {
 
   @override
   Future<bool?> notificationsEnabled() async => enabled;
+
+  @override
+  Future<void> requestPermission() async {
+    permissionRequested = true;
+  }
 }

@@ -282,6 +282,7 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'Send a test reminder'));
     await tester.pumpAndSettle();
 
+    expect(scheduler.permissionRequested, isTrue);
     expect(scheduler.shownTest, isTrue);
     expect(find.text('Test reminder sent'), findsOneWidget);
   });

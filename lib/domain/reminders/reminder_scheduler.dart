@@ -38,4 +38,10 @@ abstract interface class ReminderScheduler {
   /// user has turned them off for the app, null when that cannot be answered,
   /// which covers every platform but Android.
   Future<bool?> notificationsEnabled();
+
+  /// Asks the platform for permission to show notifications. Called only
+  /// once there is something worth reminding about, not at app start. Best
+  /// effort, same contract as [sync]; a repeat call once permission is
+  /// already granted returns at once.
+  Future<void> requestPermission();
 }

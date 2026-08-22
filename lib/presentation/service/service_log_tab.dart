@@ -18,6 +18,7 @@ import '../common/single_decimal_formatter.dart';
 import '../common/stat_card.dart';
 import '../providers/app_providers.dart';
 import '../providers/auto_backup_provider.dart';
+import '../providers/repositories.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 
@@ -56,6 +57,8 @@ class ServiceLogTab extends ConsumerWidget {
     WidgetRef ref,
     Vehicle vehicle,
   ) async {
+    final hadNoServicesBefore =
+        (ref.read(serviceLogProvider(vehicle.id)).value ?? const []).isEmpty;
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -65,6 +68,9 @@ class ServiceLogTab extends ConsumerWidget {
     ref.invalidate(serviceLogProvider(vehicle.id));
     ref.invalidate(serviceDueProvider(vehicle));
     ref.invalidate(vehicleStatsProvider(vehicle.id));
+    if (hadNoServicesBefore) {
+      await ref.read(reminderSchedulerProvider).requestPermission();
+    }
     // Logging a service does not change the vehicle list, so the reminder
     // sync that listens for that has nothing to react to; replan explicitly.
     final vehicles = ref.read(vehicleListProvider).value;

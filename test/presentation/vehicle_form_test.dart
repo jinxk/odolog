@@ -6,6 +6,7 @@ import 'package:odolog/presentation/providers/repositories.dart';
 import 'package:odolog/presentation/vehicles/vehicle_form.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/fake_reminder_scheduler.dart';
 import '../helpers/fake_vehicle_repository.dart';
 
 Future<Vehicle?> pumpVehicleForm(WidgetTester tester) async {
@@ -266,4 +267,72 @@ void main() {
     // The set row gains a clear button; no other row does.
     expect(find.byIcon(Icons.close), findsOneWidget);
   });
+
+  testWidgets(
+    'saving with a document expiry date requests notification permission',
+    (tester) async {
+      // The expanded Documents section is taller than the default test
+      // surface, so give it room rather than scrolling to find Save.
+      tester.view.physicalSize = const Size(1000, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final scheduler = FakeReminderScheduler();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            vehicleRepositoryProvider.overrideWithValue(
+              FakeVehicleRepository(),
+            ),
+            reminderSchedulerProvider.overrideWithValue(scheduler),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: VehicleForm(saveLabel: 'Save', onSaved: (_) {}),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'Activa');
+      await tester.tap(find.text('Documents'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('+1 yr'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(scheduler.permissionRequested, isTrue);
+    },
+  );
+
+  testWidgets(
+    'saving without a document expiry date does not request notification '
+    'permission',
+    (tester) async {
+      final scheduler = FakeReminderScheduler();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            vehicleRepositoryProvider.overrideWithValue(
+              FakeVehicleRepository(),
+            ),
+            reminderSchedulerProvider.overrideWithValue(scheduler),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: VehicleForm(saveLabel: 'Save', onSaved: (_) {}),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'Activa');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(scheduler.permissionRequested, isFalse);
+    },
+  );
 }

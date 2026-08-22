@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../helpers/entry_builder.dart';
 import '../helpers/fake_odometer_reading_repository.dart';
 import '../helpers/fake_refuel_repository.dart';
+import '../helpers/fake_reminder_scheduler.dart';
 import '../helpers/fake_service_log_repository.dart';
 import '../helpers/fake_vehicle_repository.dart';
 
@@ -19,7 +20,10 @@ const _vehicle = Vehicle(
   fuelCategory: FuelCategory.petrol,
 );
 
-Future<FakeServiceLogRepository> pumpScreen(WidgetTester tester) async {
+Future<FakeServiceLogRepository> pumpScreen(
+  WidgetTester tester, {
+  FakeReminderScheduler? scheduler,
+}) async {
   final serviceLogRepo = FakeServiceLogRepository();
   await tester.pumpWidget(
     ProviderScope(
@@ -35,6 +39,9 @@ Future<FakeServiceLogRepository> pumpScreen(WidgetTester tester) async {
         serviceLogRepositoryProvider.overrideWithValue(serviceLogRepo),
         odometerReadingRepositoryProvider.overrideWithValue(
           FakeOdometerReadingRepository(),
+        ),
+        reminderSchedulerProvider.overrideWithValue(
+          scheduler ?? FakeReminderScheduler(),
         ),
       ],
       child: const MaterialApp(home: ServiceLogTab()),
@@ -128,5 +135,23 @@ void main() {
     expect(repo.entries, hasLength(1));
     expect(repo.entries.single.odometer, 10500);
     expect(find.text('No services logged yet.'), findsNothing);
+  });
+
+  testWidgets('the first logged service requests notification permission', (
+    tester,
+  ) async {
+    final scheduler = FakeReminderScheduler();
+    await pumpScreen(tester, scheduler: scheduler);
+
+    await tester.tap(find.text('Log service'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('serviceOdometerField')),
+      '10500',
+    );
+    await tester.tap(find.byKey(const Key('saveServiceButton')));
+    await tester.pumpAndSettle();
+
+    expect(scheduler.permissionRequested, isTrue);
   });
 }

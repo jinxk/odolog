@@ -131,6 +131,21 @@ class LocalNotificationScheduler implements ReminderScheduler {
     }
   }
 
+  @override
+  Future<void> requestPermission() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _ensureReady();
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await android?.requestNotificationsPermission();
+    } catch (_) {
+      // Best effort, same contract as sync.
+    }
+  }
+
   /// Cancels only the currently scheduled notifications whose id [matches],
   /// so reconciling one category (document expiries or service due dates)
   /// leaves the other alone. The reminders in a category are all future
@@ -154,11 +169,6 @@ class LocalNotificationScheduler implements ReminderScheduler {
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
     );
     await _plugin.initialize(settings: settings);
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    await android?.requestNotificationsPermission();
     _ready = true;
   }
 

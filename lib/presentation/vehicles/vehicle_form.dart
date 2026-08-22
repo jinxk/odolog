@@ -11,6 +11,7 @@ import '../common/formatting.dart';
 import '../common/single_decimal_formatter.dart';
 import '../providers/app_providers.dart';
 import '../providers/auto_backup_provider.dart';
+import '../providers/repositories.dart';
 import '../providers/usecases.dart';
 
 /// The add and edit vehicle form, shared by onboarding and vehicle management.
@@ -166,12 +167,22 @@ class _VehicleFormState extends ConsumerState<VehicleForm> {
       },
       (saved) {
         ref.invalidate(vehicleListProvider);
+        final hadNoExpiryBefore =
+            widget.initial == null || !_hasExpiry(widget.initial!);
+        if (hadNoExpiryBefore && _hasExpiry(saved)) {
+          unawaited(ref.read(reminderSchedulerProvider).requestPermission());
+        }
         unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
         setState(() => _saving = false);
         widget.onSaved(saved);
       },
     );
   }
+
+  /// Whether [vehicle] has a set expiry date for any document.
+  bool _hasExpiry(Vehicle vehicle) => VehicleDocument.values.any(
+    (document) => vehicle.expiryFor(document) != null,
+  );
 
   /// Opens a date picker for [document], seeded at its current value or today.
   /// The range reaches five years back so an already lapsed paper can be
