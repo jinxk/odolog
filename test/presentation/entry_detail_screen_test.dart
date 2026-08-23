@@ -60,7 +60,7 @@ Future<FakeRefuelRepository> pumpEntryDetail(WidgetTester tester) async {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('deleting a refuel at once offers undo and pops the screen', (
+  testWidgets('deleting a refuel offers undo and pops, undo brings it back', (
     tester,
   ) async {
     final repo = await pumpEntryDetail(tester);
@@ -72,13 +72,6 @@ void main() {
     expect(find.text('home'), findsOneWidget);
     expect(find.text('Refuel deleted'), findsOneWidget);
     expect(find.text('Undo'), findsOneWidget);
-  });
-
-  testWidgets('tapping undo brings the deleted refuel back', (tester) async {
-    final repo = await pumpEntryDetail(tester);
-
-    await tester.tap(find.byTooltip('Delete refuel'));
-    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();

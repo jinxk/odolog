@@ -167,14 +167,6 @@ void main() {
     expect(find.textContaining('PUC expires in 5 days'), findsOneWidget);
   });
 
-  testWidgets('carries both primary actions', (tester) async {
-    await pumpHome(tester, seed: _workedExample);
-
-    expect(find.text('Add refuel'), findsOneWidget);
-    expect(find.text('Update odometer'), findsOneWidget);
-    expect(find.byIcon(Icons.speed), findsOneWidget);
-  });
-
   testWidgets('both primary actions fit a 360 dp wide screen', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;

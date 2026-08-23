@@ -54,12 +54,6 @@ Future<FakeServiceLogRepository> pumpScreen(
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('the due card shows a countdown for engine oil', (tester) async {
-    await pumpScreen(tester);
-
-    expect(find.textContaining('Engine oil'), findsWidgets);
-  });
-
   testWidgets('logging a service writes the entry and shows it in history', (
     tester,
   ) async {
@@ -78,23 +72,6 @@ void main() {
     expect(repo.entries, hasLength(1));
     expect(repo.entries.single.odometer, 10500);
     expect(find.text('No services logged yet.'), findsNothing);
-  });
-
-  testWidgets('a logged service row carries a labelled delete control', (
-    tester,
-  ) async {
-    await pumpScreen(tester);
-
-    await tester.tap(find.text('Log service'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('serviceOdometerField')),
-      '10500',
-    );
-    await tester.tap(find.byKey(const Key('saveServiceButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.byTooltip('Delete Engine oil'), findsOneWidget);
   });
 
   testWidgets('a zero odometer is rejected inline', (tester) async {

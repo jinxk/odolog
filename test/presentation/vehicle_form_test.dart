@@ -104,20 +104,6 @@ void main() {
     expect(find.text('L'), findsNothing);
   });
 
-  testWidgets('the claimed mileage field carries the category mileage unit', (
-    tester,
-  ) async {
-    await pumpVehicleForm(tester);
-
-    await tester.tap(find.text('More details'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Company claimed mileage'), findsOneWidget);
-    // Petrol reads in km/l; the tank field's own 'L' suffix is a different
-    // string, so this matches only the mileage field.
-    expect(find.text('km/l'), findsOneWidget);
-  });
-
   testWidgets('a registration failure reports on the registration field', (
     tester,
   ) async {

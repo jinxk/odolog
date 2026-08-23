@@ -82,7 +82,7 @@ void main() {
     expect(find.textContaining('Before the service booking'), findsOneWidget);
   });
 
-  testWidgets('a long press deletes the reading at once and offers undo', (
+  testWidgets('a long press deletes the reading at once, undo brings it back', (
     tester,
   ) async {
     final readingRepo = await pumpHistory(
@@ -99,18 +99,6 @@ void main() {
     expect(find.text('Odometer update'), findsNothing);
     expect(find.text('Reading deleted'), findsOneWidget);
     expect(find.text('Undo'), findsOneWidget);
-  });
-
-  testWidgets('tapping undo brings the deleted reading back', (tester) async {
-    final readingRepo = await pumpHistory(
-      tester,
-      readings: [
-        OdometerReading(id: 1, vehicleId: 1, odometer: 10400, recordedAt: _now),
-      ],
-    );
-
-    await tester.longPress(find.text('Odometer update'));
-    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();

@@ -100,20 +100,18 @@ void main() {
     expect(fetched.tankCapacity, 40);
   });
 
-  test('getById on a missing id is a NotFoundFailure', () async {
+  test('getById and update on a missing id are a NotFoundFailure', () async {
     final result = await repository.getById(999);
     expect(result.getLeft().toNullable(), isA<NotFoundFailure>());
-  });
 
-  test('update on a missing id is a NotFoundFailure', () async {
     const ghost = Vehicle(
       id: 999,
       name: 'Ghost',
       type: VehicleType.car,
       fuelCategory: FuelCategory.petrol,
     );
-    final result = await repository.update(ghost);
-    expect(result.getLeft().toNullable(), isA<NotFoundFailure>());
+    final updateResult = await repository.update(ghost);
+    expect(updateResult.getLeft().toNullable(), isA<NotFoundFailure>());
   });
 
   test('deleting a vehicle cascades its refuel entries', () async {

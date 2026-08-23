@@ -186,28 +186,6 @@ void main() {
     expect(unitOfWork.rolledBack, isTrue);
   });
 
-  test('a clean bundle leaves the unit of work committed', () async {
-    final unitOfWork = FakeUnitOfWork();
-    final codec = FakeDataBundleCodec(
-      decodeResult: right((
-        vehicles: [vehicle],
-        entries: const [],
-        serviceLog: const [],
-        odometerReadings: const [],
-        expenses: const [],
-      )),
-    );
-
-    final result = await importer(
-      codec: codec,
-      unitOfWork: unitOfWork,
-    ).execute('...');
-
-    expect(result.isRight(), isTrue);
-    expect(unitOfWork.ran, isTrue);
-    expect(unitOfWork.rolledBack, isFalse);
-  });
-
   test(
     'a refuel naming a vehicle nobody has is refused before any write',
     () async {

@@ -33,6 +33,7 @@ void main() {
       expect(status.remainingKm, 2000);
       expect(status.remainingDays, isNull);
       expect(status.overdue, isFalse);
+      expect(status.projectedDueDate, isNull);
     });
 
     test(
@@ -119,22 +120,6 @@ void main() {
       expect(status.remainingDays, 150);
       expect(status.overdue, isTrue);
     });
-
-    test(
-      'a distance dimension with no refuel history yields no projected date',
-      () {
-        final status = calculator.statusFor(
-          template: ServiceTemplate.engineOil,
-          kmInterval: 3000,
-          baselineOdometer: 10000,
-          latestOdometer: 11000,
-          now: now,
-        );
-
-        expect(status.remainingKm, 2000);
-        expect(status.projectedDueDate, isNull);
-      },
-    );
 
     test('neither dimension set yields an empty status', () {
       final status = calculator.statusFor(

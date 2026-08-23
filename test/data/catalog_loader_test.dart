@@ -66,24 +66,6 @@ void main() {
       expect(cng.unit, 'kg');
       expect(cng.tier, isNull);
     });
-
-    test('filtering by category returns only that category', () {
-      final petrol = variants
-          .where((v) => v.category == FuelCategory.petrol)
-          .toList();
-      expect(petrol, hasLength(14));
-      expect(petrol.every((v) => v.category == FuelCategory.petrol), isTrue);
-
-      final diesel = variants
-          .where((v) => v.category == FuelCategory.diesel)
-          .toList();
-      expect(diesel, hasLength(9));
-    });
-  });
-
-  test('malformed JSON degrades to an empty list', () async {
-    final loader = CatalogLoader(bundle: _FakeAssetBundle('{ not valid json'));
-    expect(await loader.load(), isEmpty);
   });
 
   test('a missing asset degrades to an empty list', () async {

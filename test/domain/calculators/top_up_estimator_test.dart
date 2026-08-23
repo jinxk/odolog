@@ -22,16 +22,14 @@ void main() {
     );
 
     expect(result, 33.3);
-  });
 
-  test('a clean division rounds to one decimal with no drift', () {
-    final result = estimator.estimate(
+    final cleanResult = estimator.estimate(
       tankCapacity: 35,
       distanceSinceLastFullFill: 333,
       averageMileage: 30,
     );
 
-    expect(result, 11.1);
+    expect(cleanResult, 11.1);
   });
 
   test(
@@ -65,10 +63,6 @@ void main() {
     );
 
     expect(result, 35.0);
-  });
-
-  test('a quantity at the nominal capacity does not exceed it', () {
-    expect(estimator.exceedsCapacity(35, 35), isFalse);
   });
 
   test('a quantity at capacity plus the warning margin does not exceed it', () {

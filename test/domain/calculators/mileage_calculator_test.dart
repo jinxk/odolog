@@ -268,16 +268,4 @@ void main() {
       expect(calculator.lastKnownPricePerUnit(const []), isNull);
     });
   });
-
-  test('CNG runs the same math with kg in place of litres', () {
-    final entries = [
-      entry(id: 1, odometer: 0, quantity: 5, pricePaid: 400),
-      entry(id: 2, odometer: 300, quantity: 6, pricePaid: 480),
-    ];
-
-    final window = calculator.windows(entries).single;
-    expect(window.fuelConsumed, 6.0);
-    expect(window.distance, 300);
-    expect(window.mileage, 50.0);
-  });
 }

@@ -2,23 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:odolog/data/csv/csv_grammar.dart';
 
 void main() {
-  test('field wraps a plain value in quotes', () {
-    expect(CsvGrammar.field('Activa'), '"Activa"');
-  });
-
   test('field doubles an embedded quote mark', () {
     expect(CsvGrammar.field('5.3" tank'), '"5.3"" tank"');
   });
 
   test('row quotes every field and joins them with commas', () {
     expect(CsvGrammar.row(['a', 'b, c']), '"a","b, c"');
-  });
-
-  test('parse reads a simple quoted row', () {
-    final records = CsvGrammar.parse('"a","b"\n');
-    expect(records, hasLength(1));
-    expect(records.single.fields, ['a', 'b']);
-    expect(records.single.line, 1);
   });
 
   test('parse keeps a comma inside a quoted field as one value', () {

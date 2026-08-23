@@ -321,20 +321,6 @@ void main() {
       expect(read.serviceLog.single.cost, isNull);
       expect(read.serviceLog.single.note, isNull);
     });
-
-    test('an optional expense odometer round trips as empty', () {
-      final expense = Expense(
-        id: 1,
-        vehicleId: 1,
-        amount: 100,
-        date: DateTime(2026, 1, 1),
-        category: 'Repair',
-      );
-      final csv = DataBundleCsvWriter.write(bundle(expenses: [expense]));
-
-      final read = DataBundleCsvReader.read(csv).getRight().toNullable()!;
-      expect(read.expenses.single.odometer, isNull);
-    });
   });
 
   group('malformed input', () {

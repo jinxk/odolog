@@ -96,7 +96,7 @@ void main() {
     expect(stats.costPerKmOfOwnership, closeTo(4.0, 0.0001));
   });
 
-  test('entries group by calendar month across a month boundary', () {
+  test('distance into a month first fill is counted in that month', () {
     final now = DateTime.now();
     final thisMonth = DateTime(now.year, now.month, 15);
     final lastMonth = DateTime(now.year, now.month - 1, 15);
@@ -139,47 +139,6 @@ void main() {
     expect(months.keys, [lastKey, thisKey]);
     expect(months[lastKey]!.totalSpend, 4500.0);
     expect(months[thisKey]!.totalSpend, 5800.0);
-  });
-
-  test('distance into a month first fill is counted in that month', () {
-    final now = DateTime.now();
-    final thisMonth = DateTime(now.year, now.month, 15);
-    final lastMonth = DateTime(now.year, now.month - 1, 15);
-
-    final entries = <RefuelEntry>[
-      entry(
-        id: 1,
-        odometer: 1000,
-        quantity: 20,
-        pricePaid: 2000,
-        filledAt: DateTime(lastMonth.year, lastMonth.month, 10),
-      ),
-      entry(
-        id: 2,
-        odometer: 1300,
-        quantity: 25,
-        pricePaid: 2500,
-        filledAt: DateTime(lastMonth.year, lastMonth.month, 20),
-      ),
-      entry(
-        id: 3,
-        odometer: 1700,
-        quantity: 30,
-        pricePaid: 3000,
-        filledAt: DateTime(thisMonth.year, thisMonth.month, 5),
-      ),
-      entry(
-        id: 4,
-        odometer: 2000,
-        quantity: 28,
-        pricePaid: 2800,
-        filledAt: DateTime(thisMonth.year, thisMonth.month, 15),
-      ),
-    ];
-
-    final months = calculator.monthly(entries);
-    final lastKey = DateTime(lastMonth.year, lastMonth.month);
-    final thisKey = DateTime(thisMonth.year, thisMonth.month);
 
     // Last month has no earlier entry, so it measures from its own first fill.
     expect(months[lastKey]!.totalDistance, 300);

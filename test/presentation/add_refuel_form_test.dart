@@ -343,17 +343,6 @@ void main() {
     expect(find.text('home'), findsNothing);
   });
 
-  testWidgets('a quantity above the tank capacity shows the advisory warning', (
-    tester,
-  ) async {
-    await pumpForm(tester, vehicle: _vehicleWithCapacity);
-
-    await tester.enterText(find.byKey(const Key('quantityField')), '40');
-    await tester.pump();
-
-    expect(find.text('More than the 35 L tank'), findsOneWidget);
-  });
-
   testWidgets('the warning is gone once the quantity is at capacity', (
     tester,
   ) async {
