@@ -30,13 +30,13 @@ It is 100% offline. No account, no cloud, no ads, no analytics. Your data lives 
 
 Present today (early development):
 
-- Add and manage multiple vehicles.
+- Add and manage multiple vehicles. Update the odometer without a refuel so service countdowns and cost per km stay current.
 - Log every refuel: quantity, amount paid, odometer reading. Amount chips (100, 200, 500) and litres derived from your last price cover the "300 ka daal do" fill in a few taps.
 - Optional per refuel: fuel variant (XP95, Shell V-Power, and the rest), station, notes, and a full or partial tank flag.
 - Real mileage computed full tank to full tank (km/l, or km/kg for CNG).
 - Cost per kilometre, range per tank, monthly spend, and a mileage trend chart, one point per full tank window.
 - Company claimed mileage shown next to the real figure.
-- Document expiry reminders for insurance, PUC, RC, and fitness, delivered as local notifications at 30, 15, 7, and 1 days out.
+- Document expiry reminders for insurance, PUC, RC, and fitness, delivered as local notifications at 30, 15, 7, and 1 days out. Settings lists what is scheduled and can send a test one.
 - Service log with due reminders: engine oil by distance, general service by date, whichever comes first.
 - Non-fuel expenses (service, tyres, repairs, insurance) folded into a total cost of ownership figure.
 - JSON export and import, plus a blank template to fill in and import back. The export is your backup. CSV backups from 1.0 still restore.
@@ -107,7 +107,8 @@ The domain layer has no Flutter imports, so the mileage math can be tested witho
 - **v0.1**: vehicles, refuel log, and the core stats (mileage, cost per km, range per tank, monthly spend). Done.
 - **v1.0**: visual overhaul, mileage trend, CSV backup and restore, claimed mileage comparison, document expiry reminders, service log with due reminders, and non-fuel expense tracking.
 - **v1.1**: history tab that folds in the service log and expenses, JSON backup format (CSV backups still restore), automatic daily backups that survive an uninstall, restore from the welcome screen, rupee-first entry with amount chips, screen reader labels throughout, and a round of fixes from on-phone use.
-- **v1.2** (current): import runs as one transaction and refuses rows that name a vehicle it cannot find, error states with a retry, the vehicle switcher on every tab, and a shorter start-up sweep.
+- **v1.2**: import runs as one transaction and refuses rows that name a vehicle it cannot find, error states with a retry, the vehicle switcher on every tab, and a shorter start-up sweep.
+- **v1.3** (current): manual odometer updates, undo after a delete, delete all data from Settings, a warning for fills past the tank capacity, a reminders section in Settings, and the notification prompt only when there is something to remind about.
 - **Later**: more locales and fuel presets beyond India, a running-cost share card, and an iOS release once it is properly tested.
 
 ## Contributing
