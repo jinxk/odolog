@@ -93,4 +93,4 @@ A good first contribution. The app is Indian by default and the mileage math wor
 
 ## Code of conduct
 
-Be kind. Assume good faith, keep it civil, and remember there is a person on the other end of every issue and review.
+Be kind. Assume good faith, keep it civil, and remember there is a person on the other end of every issue and review. The full version is in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
