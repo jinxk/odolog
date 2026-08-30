@@ -9,7 +9,7 @@ A fuel log for your vehicles. Log every refuel, see your real mileage and runnin
 
 OdoLog tells you what your vehicles cost to run. You add a vehicle, log each refuel at the pump (quantity, amount paid, odometer), and the app works out your real mileage, cost per kilometre, range per tank, and monthly spend. Mileage is measured full tank to full tank.
 
-It is 100% offline. No account, no cloud, no ads, no analytics. Your data lives in a local SQLite database on the device and nowhere else.
+It is 100% offline. No account, no cloud, no ads, no analytics. Your data lives in a local SQLite database on the device and nowhere else. The app declares no internet permission, so it cannot make a network call even by mistake. See [Privacy](docs/privacy.md).
 
 ## Screenshots
 
@@ -104,12 +104,7 @@ The domain layer has no Flutter imports, so the mileage math can be tested witho
 
 ## Roadmap
 
-- **v0.1**: vehicles, refuel log, and the core stats (mileage, cost per km, range per tank, monthly spend). Done.
-- **v1.0**: visual overhaul, mileage trend, CSV backup and restore, claimed mileage comparison, document expiry reminders, service log with due reminders, and non-fuel expense tracking.
-- **v1.1**: history tab that folds in the service log and expenses, JSON backup format (CSV backups still restore), automatic daily backups that survive an uninstall, restore from the welcome screen, rupee-first entry with amount chips, screen reader labels throughout, and a round of fixes from on-phone use.
-- **v1.2**: import runs as one transaction and refuses rows that name a vehicle it cannot find, error states with a retry, the vehicle switcher on every tab, and a shorter start-up sweep.
-- **v1.3** (current): manual odometer updates, undo after a delete, delete all data from Settings, a warning for fills past the tank capacity, a reminders section in Settings, and the notification prompt only when there is something to remind about.
-- **Later**: more locales and fuel presets beyond India, a running-cost share card, and an iOS release once it is properly tested.
+Shipped, planned, and turned down, with the reasons: [docs/roadmap.md](docs/roadmap.md). Release by release detail is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 
@@ -120,3 +115,5 @@ Fuel presets for other countries are a good first pull request.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+I use AI assistants while coding, debugging, and tidying docs and code.
