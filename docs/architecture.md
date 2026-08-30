@@ -67,11 +67,18 @@ lib/
       service_log_entry.dart
       expense.dart
       odometer_reading.dart
+    validators/
+      odometer_sequence_validator.dart   // one odometer order rule shared by fills and readings
+      text_input_validator.dart
     value_objects/
       window_mileage.dart
       vehicle_stats.dart
       entry_derived.dart
       scheduled_reminder.dart
+      document_reminder.dart
+      document_alert.dart
+      service_due_status.dart
+      service_reminder.dart
     repositories/
       vehicle_repository.dart        // interface
       refuel_repository.dart         // interface
@@ -93,6 +100,10 @@ lib/
       mileage_calculator.dart      // pure full-tank window math
       aggregate_calculator.dart    // lifetime and monthly rollups
       latest_odometer.dart         // highest reading across fills and manual readings
+      service_due_calculator.dart  // where each maintenance template stands
+      document_reminder_planner.dart
+      service_reminder_planner.dart
+      top_up_estimator.dart        // over capacity warning and the top-up estimate
     usecases/
       add_vehicle.dart
       edit_vehicle.dart
@@ -121,10 +132,18 @@ lib/
       import_data.dart
       get_data_bundle_template.dart
       run_auto_backup.dart
+      reset_all_data.dart
+      restore_refuel.dart
+      restore_service_entry.dart
+      restore_expense.dart
+      restore_odometer_reading.dart
   data/
     db/
       app_database.dart      // sqflite open, onCreate, onUpgrade
       migrations.dart
+      sqflite_unit_of_work.dart  // UnitOfWork over db.transaction
+      transaction_zone.dart      // the executor the DAOs resolve per call
+      sqflite_data_eraser.dart   // DataEraser, for delete all data
     daos/
       vehicle_dao.dart
       refuel_dao.dart
@@ -155,7 +174,6 @@ lib/
       csv_grammar.dart
     backup/
       media_store_auto_backup_writer.dart  // AutoBackupWriter over a MethodChannel
-      data_bundle_codec_impl.dart  // DataBundleCodec fronting the writer and reader
   presentation/
     home/
     add_refuel/
@@ -164,6 +182,12 @@ lib/
     stats/
     vehicles/
     settings/
+    service/
+    expenses/
+    odometer/
+    onboarding/
+    splash/
+    providers/
     common/                  // shared widgets: stat card, empty states
 assets/
   fuel_catalog.json
@@ -405,6 +429,10 @@ Document expiry reminders and service due reminders both end at a local notifica
 abstract interface class ReminderScheduler {
   Future<void> sync(List<DocumentReminder> reminders);
   Future<void> syncServiceReminders(List<ServiceReminder> reminders);
+  Future<void> cancelAll();
+  Future<void> showTest();
+  Future<bool?> notificationsEnabled();
+  Future<void> requestPermission();
 }
 ```
 
@@ -436,10 +464,12 @@ Each use case is a thin, single-responsibility class that orchestrates repositor
 - **DeleteExpense** removes an expense.
 - **LogOdometerReading** validates a manual reading (positive, not in the future, and in odometer order against the fills and readings dated either side of it) and stores it.
 - **DeleteOdometerReading** removes a manual reading.
+- **RestoreRefuel**, **RestoreServiceEntry**, **RestoreExpense** and **RestoreOdometerReading** each write a deleted row back with its original id, which is what undo on the delete snack bar calls.
 - **ExportData** assembles every vehicle and everything logged against it, then hands the bundle to the `DataBundleCodec` port to produce the backup file content.
 - **ImportData** decodes a backup file through `DataBundleCodec` and writes it into the repositories, returning the imported bundle so the caller can report what came in.
 - **GetDataBundleTemplate** returns a blank backup file from the same port, for a user to fill in externally and import back.
 - **RunAutoBackup** reuses `ExportData` for the bundle, writes it under today's dated name through the `AutoBackupWriter` port, then prunes the folder to the newest seven. The once-a-day debounce and the consent gate live in the presentation coordinator that calls it, not here.
+- **ResetAllData** clears every table through the `DataEraser` port and cancels every scheduled reminder, for delete all data.
 
 ## SQLite schema
 
@@ -521,11 +551,15 @@ CREATE TABLE odometer_readings (
 CREATE INDEX idx_odometer_readings_vehicle ON odometer_readings (vehicle_id);
 ```
 
+The schema version is 4. Version 2 added the document expiry columns, version 3 added `service_log` and `expenses`, version 4 added `odometer_readings`. Each has a test that opens a database at the previous version, upgrades it, and asserts the data survived.
+
 `ON DELETE CASCADE` handles vehicle deletion, and foreign keys are enabled per connection (`PRAGMA foreign_keys = ON`) since sqflite leaves them off by default. The composite index on `(vehicle_id, odometer)` backs the window walk; the timestamp index backs history and monthly grouping. `service_log`, `expenses`, and `odometer_readings` each get a single index on `vehicle_id`; all three are only ever queried per vehicle.
 
 ### Migration policy
 
 The database carries a schema `version` integer. `onCreate` builds the tables above at the current version. `onUpgrade` receives `oldVersion` and `newVersion` and applies ordered, forward-only steps, one `if (oldVersion < N)` block per version bump, each an additive migration where possible (add a column, add a table, add an index). Destructive changes get a data-preserving path rather than a drop. Every migration ships with a test that opens a database at the old version, runs the upgrade, and asserts the data survived.
+
+The backup file format carries its own version, separate from the schema version. The JSON writer emits version 2, which adds the odometer readings array; the reader accepts 1 and 2, and the CSV reader still takes pre-1.1 files.
 
 ## Fuel catalog asset
 
@@ -539,6 +573,10 @@ Riverpod with codegen, one provider layer per screen:
 - Screen providers (dashboard stats, history list, stats page) are auto-disposed by default, so leaving a screen frees its state and re-entering recomputes from the source of truth.
 - The add and edit refuel form uses a `keepAlive` form-state provider scoped to the flow, so half-typed input survives a navigation away. It is disposed explicitly on save or cancel.
 - Calculators are pure functions invoked inside providers, not providers themselves. The stat math is unit testable outside Riverpod.
+
+## Launch splash
+
+`presentation/splash/launch_splash.dart` runs once on a cold start: a gauge sweep of about 420 ms, a 140 ms hold, and a 140 ms fade. It is opaque and dismisses on tap, so it never stands between the user and the pump.
 
 ## Error handling
 

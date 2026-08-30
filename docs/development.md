@@ -126,3 +126,11 @@ fix/partial-fill-mileage
 ```
 
 Keep a branch focused on one change. Do not reformat unrelated files or rename things you were not asked to touch in the same pull request.
+
+## Releases
+
+Each GitHub release carries the release APK and a `.sha256` file next to it. To check a download:
+
+```bash
+sha256sum -c odolog-<version>.apk.sha256
+```
