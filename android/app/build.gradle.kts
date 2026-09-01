@@ -50,6 +50,12 @@ android {
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             // Upload keystore when key.properties is present, debug keys
             // otherwise so `flutter run --release` still works on a fresh clone.
             signingConfig = if (keystorePropertiesFile.exists()) {
