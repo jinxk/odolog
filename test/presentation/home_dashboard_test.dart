@@ -176,10 +176,6 @@ void main() {
 
     expect(find.text('Add refuel'), findsOneWidget);
     expect(find.text('Update odometer'), findsOneWidget);
-    // The hero card already overflows at this width, which is not what this
-    // test is about. Consume that one and assert nothing else overflowed, so
-    // the action row is what is being judged here.
-    expect(tester.takeException(), isNotNull);
     expect(tester.takeException(), isNull);
   });
 

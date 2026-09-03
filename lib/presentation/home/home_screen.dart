@@ -293,11 +293,17 @@ class _HeroCard extends ConsumerWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            CountUpText(
-              value: window.costPerKm,
-              format: (v) => '$currency ${v.toStringAsFixed(2)}',
-              style: theme.textTheme.displaySmall!.copyWith(
-                color: AppColors.offWhite,
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.bottomLeft,
+                child: CountUpText(
+                  value: window.costPerKm,
+                  format: (v) => '$currency ${v.toStringAsFixed(2)}',
+                  style: theme.textTheme.displaySmall!.copyWith(
+                    color: AppColors.offWhite,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 4),
