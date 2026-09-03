@@ -131,4 +131,27 @@ void main() {
 
     expect(scheduler.permissionRequested, isTrue);
   });
+
+  testWidgets('the due card counts down from the last service odometer', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+
+    // No service logged yet, so the countdown runs from the first fill at
+    // 10000 over the 3000 km default interval.
+    expect(find.text('Engine oil due in about 3000 km'), findsOneWidget);
+
+    await tester.tap(find.text('Log service'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('serviceOdometerField')),
+      '10500',
+    );
+    await tester.tap(find.byKey(const Key('saveServiceButton')));
+    await tester.pumpAndSettle();
+
+    // Logging a service moves the baseline to its odometer, so the interval
+    // restarts from 10500 while the latest reading is still 10000.
+    expect(find.text('Engine oil due in about 3500 km'), findsOneWidget);
+  });
 }
