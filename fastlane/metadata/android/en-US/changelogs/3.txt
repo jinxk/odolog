@@ -1,0 +1,1 @@
+History tab folds in the service log and expenses. JSON backup format, CSV backups still restore. Automatic daily backup to Downloads/OdoLog that survives an uninstall. Rupee first entry with amount chips. Screen reader labels throughout.

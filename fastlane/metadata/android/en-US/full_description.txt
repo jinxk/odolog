@@ -1,0 +1,19 @@
+OdoLog tells you what your vehicles cost to run. You add a vehicle, log each refuel at the pump (quantity, amount paid, odometer), and the app works out your real mileage, cost per kilometre, range per tank, and monthly spend. Mileage is measured full tank to full tank.
+
+It is 100 percent offline. No account, no cloud, no ads, no analytics. Your data lives in a local SQLite database on the device and nowhere else. The app declares no internet permission, so it cannot make a network call even by mistake.
+
+What it does:
+
+- Multiple vehicles, each with its own fuel type and history. Update the odometer without a refuel so service countdowns and cost per km stay current.
+- Refuel entry in a few taps. Amount chips (100, 200, 500) and litres derived from your last price cover the "300 ka daal do" fill.
+- Optional per refuel: fuel variant, station, notes, and a full or partial tank flag.
+- Real mileage computed full tank to full tank, in km/l or km/kg for CNG, with your company claimed figure beside it.
+- Cost per kilometre, range per tank, monthly spend, and a mileage trend, one point per full tank.
+- Document expiry reminders for insurance, PUC, RC and fitness, as local notifications at 30, 15, 7 and 1 days out.
+- Service log with due reminders: engine oil by distance, general service by date, whichever comes first.
+- Non-fuel expenses folded into a total cost of ownership figure.
+- JSON export and import, plus a blank template. Automatic daily backup to Downloads/OdoLog, which survives an uninstall.
+- India first fuel presets: IOCL, BPCL, HPCL, Shell, Nayara, Jio-bp, CNG and Auto LPG. Free text entry and a currency picker cover other countries.
+- Material 3 interface with dark and light themes.
+
+Free and open source under the MIT licence. No ads, no paid tier, no feature behind a wall.

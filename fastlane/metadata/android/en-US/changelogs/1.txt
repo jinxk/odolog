@@ -1,0 +1,1 @@
+First release. Vehicles, the refuel log, and the core stats: mileage between full tanks, cost per km, range per tank, and monthly spend.

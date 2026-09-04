@@ -1,0 +1,1 @@
+Update the odometer without a refuel. Undo after deleting a refuel, service, expense or reading. Delete all data from Settings. A warning for fills past the tank capacity. A reminders section in Settings with a test send. The notification prompt now waits until there is something to remind about.

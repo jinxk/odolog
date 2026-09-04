@@ -1,0 +1,1 @@
+Smaller release build with unused code and resources stripped. Privacy page, public roadmap and changelog. Dependency updates. The mileage card no longer overflows on a 360 dp screen.

@@ -1,0 +1,1 @@
+Restoring a backup runs as one transaction and rolls back whole if a row fails. Rows naming an unknown vehicle are refused instead of being attached to the wrong one. Error states with a retry. The vehicle switcher on every tab. A shorter start-up sweep.
