@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 - 2026-09-04
+
+- Release builds are minified and have unused code and resources stripped.
+- A privacy page, a public roadmap, this changelog, issue and pull request templates, a security policy, and a code of conduct.
+- Dependency updates.
+- The mileage card no longer overflows on a 360 dp wide screen.
+
 ## 1.3.0 - 2026-08-29
 
 - Update the odometer without logging a refuel, from Home or from the history list, so the service countdown and cost per km stay current between fills.
