@@ -1,5 +1,7 @@
 # Privacy
 
+Effective date: 5 September 2026.
+
 OdoLog collects nothing.
 
 There is no account and no login. There is no analytics, no telemetry, and no crash reporter. The app declares no internet permission, so it cannot make a network call even by mistake.
@@ -12,6 +14,8 @@ Two copies can exist outside that database, and you control both:
 
 - A backup file you export yourself, saved wherever you choose to put it.
 - The automatic daily backup, if you turned it on, written to Downloads/OdoLog and kept to the last seven days. Files there survive an uninstall.
+
+The backup files in Downloads/OdoLog include each vehicle's registration number, if you entered one.
 
 Android's own automatic backup may also keep a copy of the app's data in your Google account, the same way it does for other apps on the phone. Turn it off in Android's settings, under Backup, if you would rather it did not.
 
@@ -28,3 +32,7 @@ Uninstalling the app removes the database with it, and also leaves the files in 
 - Vibrate, which the notification library declares so a reminder can buzz the phone.
 
 That is the whole list.
+
+## Contact
+
+OdoLog is developed by Aniket Kotkar. Questions about privacy go to aniket.kotkar.w@gmail.com.
