@@ -28,7 +28,7 @@ It is 100% offline. No account, no cloud, no ads, no analytics. Your data lives 
 
 ## Features
 
-Present today (early development):
+Present today:
 
 - Add and manage multiple vehicles. Update the odometer without a refuel so service countdowns and cost per km stay current.
 - Log every refuel: quantity, amount paid, odometer reading. Amount chips (100, 200, 500) and litres derived from your last price cover the "300 ka daal do" fill in a few taps.
@@ -43,6 +43,8 @@ Present today (early development):
 - Automatic daily backup to Downloads/OdoLog, kept to the last seven days. Files there survive an uninstall. On by default after a one-time consent, and restorable from the welcome screen.
 - India-first fuel presets: IOCL, BPCL, HPCL, Shell, Nayara, Jio-bp variants, CNG, and Auto LPG. Free text entry and a currency picker cover other countries.
 - Material 3 interface with dark and light themes.
+
+Known limits: after an odometer rollover, the latest fill, last price and lifetime distance can read wrong. A fix is planned.
 
 Fuel variant is remembered per vehicle, so most refuels are just quantity, amount, odometer, save.
 
