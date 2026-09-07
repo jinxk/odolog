@@ -12,7 +12,7 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 } else if (gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }) {
-    logger.warn("warning: android/key.properties not found, this release build is signed with the debug key.")
+    logger.quiet("warning: android/key.properties not found, this release build is signed with the debug key.")
 }
 
 android {
