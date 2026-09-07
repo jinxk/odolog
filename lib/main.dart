@@ -9,11 +9,15 @@ import 'presentation/providers/repositories.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // The app's own MIT licence, shown on the licence page ahead of the
-  // package notices Flutter bundles on its own.
+  // The app's own MIT licence and the Inter font licence, shown on the
+  // licence page ahead of the package notices Flutter bundles on its own.
   LicenseRegistry.addLicense(() async* {
     final text = await rootBundle.loadString('LICENSE');
     yield LicenseEntryWithLineBreaks(const ['OdoLog'], text);
+  });
+  LicenseRegistry.addLicense(() async* {
+    final text = await rootBundle.loadString('assets/fonts/OFL.txt');
+    yield LicenseEntryWithLineBreaks(const ['Inter'], text);
   });
   final database = await AppDatabase.open();
   runApp(

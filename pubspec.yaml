@@ -75,6 +75,7 @@ flutter:
   assets:
     - assets/fuel_catalog.json
     - LICENSE
+    - assets/fonts/OFL.txt
 
   fonts:
     # Inter is bundled as static TTFs (no runtime download) under the SIL Open
