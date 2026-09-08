@@ -32,3 +32,33 @@ class GroupedList extends StatelessWidget {
     );
   }
 }
+
+/// The sliver form of [GroupedList] for long lists: same surface and dividers,
+/// but rows are built only as they scroll into view.
+class GroupedSliverList extends StatelessWidget {
+  const GroupedSliverList({
+    super.key,
+    required this.itemCount,
+    required this.itemBuilder,
+  });
+
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    final hairline = Theme.of(context).extension<AppColorRoles>()?.hairline;
+    return DecoratedSliver(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(AppShapes.cardRadius),
+      ),
+      sliver: SliverList.separated(
+        itemCount: itemCount,
+        itemBuilder: itemBuilder,
+        separatorBuilder: (context, index) =>
+            Divider(height: 1, indent: 56, endIndent: 16, color: hairline),
+      ),
+    );
+  }
+}

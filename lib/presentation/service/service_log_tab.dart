@@ -90,45 +90,60 @@ class _ServiceLogBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final due = ref.watch(serviceDueProvider(vehicle));
     final log = ref.watch(serviceLogProvider(vehicle.id));
-    return ListView(
-      padding: const EdgeInsets.only(
-        left: AppSpacing.screenH,
-        right: AppSpacing.screenH,
-        top: 8,
-        bottom: 88,
-      ),
-      children: [
-        const SectionHeader('Due'),
-        due.when(
-          loading: () => const SectionCard(child: Text('Loading...')),
-          error: (error, _) => SectionCard(
-            child: ErrorView(
-              error: error,
-              compact: true,
-              onRetry: () => ref.invalidate(serviceDueProvider(vehicle)),
-            ),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.screenH,
+            right: AppSpacing.screenH,
+            top: 8,
+            bottom: 88,
           ),
-          data: (statuses) => _DueCard(statuses: statuses),
-        ),
-        const SectionHeader('History'),
-        log.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => ErrorView(
-            error: error,
-            compact: true,
-            onRetry: () => ref.invalidate(serviceLogProvider(vehicle.id)),
-          ),
-          data: (entries) => entries.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('No services logged yet.'),
-                )
-              : GroupedList(
-                  rows: [
-                    for (final entry in entries)
-                      _ServiceLogRow(vehicle: vehicle, entry: entry),
-                  ],
+          sliver: SliverMainAxisGroup(
+            slivers: [
+              const SliverToBoxAdapter(child: SectionHeader('Due')),
+              SliverToBoxAdapter(
+                child: due.when(
+                  loading: () => const SectionCard(child: Text('Loading...')),
+                  error: (error, _) => SectionCard(
+                    child: ErrorView(
+                      error: error,
+                      compact: true,
+                      onRetry: () =>
+                          ref.invalidate(serviceDueProvider(vehicle)),
+                    ),
+                  ),
+                  data: (statuses) => _DueCard(statuses: statuses),
                 ),
+              ),
+              const SliverToBoxAdapter(child: SectionHeader('History')),
+              log.when(
+                loading: () => const SliverToBoxAdapter(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (error, _) => SliverToBoxAdapter(
+                  child: ErrorView(
+                    error: error,
+                    compact: true,
+                    onRetry: () =>
+                        ref.invalidate(serviceLogProvider(vehicle.id)),
+                  ),
+                ),
+                data: (entries) => entries.isEmpty
+                    ? const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('No services logged yet.'),
+                        ),
+                      )
+                    : GroupedSliverList(
+                        itemCount: entries.length,
+                        itemBuilder: (context, i) =>
+                            _ServiceLogRow(vehicle: vehicle, entry: entries[i]),
+                      ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -215,10 +230,10 @@ class _ServiceLogRow extends ConsumerWidget {
     final container = ProviderScope.containerOf(context, listen: false);
     messenger.hideCurrentSnackBar();
     await ref.read(deleteServiceProvider).execute(entry.id);
-    ref.invalidate(serviceLogProvider(vehicle.id));
-    ref.invalidate(serviceDueProvider(vehicle));
-    ref.invalidate(vehicleStatsProvider(vehicle.id));
-    unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
+    container.invalidate(serviceLogProvider(vehicle.id));
+    container.invalidate(serviceDueProvider(vehicle));
+    container.invalidate(vehicleStatsProvider(vehicle.id));
+    unawaited(container.read(autoBackupProvider.notifier).runIfDue());
     messenger.showSnackBar(
       SnackBar(
         content: const Text('Service deleted'),

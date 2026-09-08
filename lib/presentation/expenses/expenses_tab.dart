@@ -95,23 +95,23 @@ class _ExpensesBody extends ConsumerWidget {
             message: 'Log a tyre change, a repair, or anything else non-fuel.',
           );
         }
-        return ListView(
-          padding: const EdgeInsets.only(
-            left: AppSpacing.screenH,
-            right: AppSpacing.screenH,
-            top: 8,
-            bottom: 88,
-          ),
-          children: [
-            GroupedList(
-              rows: [
-                for (final expense in list)
-                  _ExpenseRow(
-                    vehicle: vehicle,
-                    expense: expense,
-                    currency: currency,
-                  ),
-              ],
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.only(
+                left: AppSpacing.screenH,
+                right: AppSpacing.screenH,
+                top: 8,
+                bottom: 88,
+              ),
+              sliver: GroupedSliverList(
+                itemCount: list.length,
+                itemBuilder: (context, i) => _ExpenseRow(
+                  vehicle: vehicle,
+                  expense: list[i],
+                  currency: currency,
+                ),
+              ),
             ),
           ],
         );
@@ -168,9 +168,9 @@ class _ExpenseRow extends ConsumerWidget {
     final container = ProviderScope.containerOf(context, listen: false);
     messenger.hideCurrentSnackBar();
     await ref.read(deleteExpenseProvider).execute(expense.id);
-    ref.invalidate(expensesProvider(vehicle.id));
-    ref.invalidate(vehicleStatsProvider(vehicle.id));
-    unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
+    container.invalidate(expensesProvider(vehicle.id));
+    container.invalidate(vehicleStatsProvider(vehicle.id));
+    unawaited(container.read(autoBackupProvider.notifier).runIfDue());
     messenger.showSnackBar(
       SnackBar(
         content: const Text('Expense deleted'),
