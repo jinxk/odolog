@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:odolog/domain/entities/expense.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/presentation/expenses/expenses_tab.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
@@ -16,8 +17,11 @@ const _vehicle = Vehicle(
   fuelCategory: FuelCategory.petrol,
 );
 
-Future<FakeExpenseRepository> pumpScreen(WidgetTester tester) async {
-  final expenseRepo = FakeExpenseRepository();
+Future<FakeExpenseRepository> pumpScreen(
+  WidgetTester tester, {
+  List<Expense> seed = const [],
+}) async {
+  final expenseRepo = FakeExpenseRepository(seed);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -114,4 +118,41 @@ void main() {
     expect(repo.expenses.single.category, 'Tyre');
     expect(find.text('No expenses yet'), findsNothing);
   });
+
+  testWidgets(
+    'a long expense list builds a far row only when scrolled to, and it deletes and undoes',
+    (tester) async {
+      final repo = await pumpScreen(
+        tester,
+        seed: [
+          for (var i = 1; i <= 40; i++)
+            Expense(
+              id: i,
+              vehicleId: 1,
+              amount: 100,
+              date: DateTime.now().subtract(Duration(days: i)),
+              category: 'Item $i',
+            ),
+        ],
+      );
+
+      expect(find.text('Item 40', skipOffstage: false), findsNothing);
+
+      await tester.scrollUntilVisible(find.text('Item 40'), 500);
+      await tester.drag(find.byType(Scrollable), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Delete Item 40'));
+      await tester.pumpAndSettle();
+
+      expect(repo.expenses.map((e) => e.id), isNot(contains(40)));
+      expect(find.text('Expense deleted'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(repo.expenses.map((e) => e.id), contains(40));
+      expect(find.text('Item 40'), findsOneWidget);
+    },
+  );
 }

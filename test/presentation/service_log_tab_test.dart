@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
 import 'package:odolog/presentation/service/service_log_tab.dart';
@@ -23,8 +24,9 @@ const _vehicle = Vehicle(
 Future<FakeServiceLogRepository> pumpScreen(
   WidgetTester tester, {
   FakeReminderScheduler? scheduler,
+  List<ServiceLogEntry> seed = const [],
 }) async {
-  final serviceLogRepo = FakeServiceLogRepository();
+  final serviceLogRepo = FakeServiceLogRepository(seed);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -154,4 +156,52 @@ void main() {
     // restarts from 10500 while the latest reading is still 10000.
     expect(find.text('Engine oil due in about 3500 km'), findsOneWidget);
   });
+
+  testWidgets(
+    'a long service history builds a far row only when scrolled to, and it deletes and undoes',
+    (tester) async {
+      final repo = await pumpScreen(
+        tester,
+        seed: [
+          for (var i = 1; i <= 40; i++)
+            ServiceLogEntry(
+              id: i,
+              vehicleId: 1,
+              template: ServiceTemplate.engineOil,
+              performedAt: DateTime.now().subtract(Duration(days: i * 30)),
+              odometer: 10000.0 - i * 100,
+              note: 'Visit $i',
+            ),
+        ],
+      );
+
+      expect(
+        find.textContaining('Visit 40', skipOffstage: false),
+        findsNothing,
+      );
+
+      await tester.scrollUntilVisible(find.textContaining('Visit 40'), 500);
+      await tester.drag(find.byType(Scrollable), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.ancestor(
+            of: find.textContaining('Visit 40'),
+            matching: find.byType(ListTile),
+          ),
+          matching: find.byTooltip('Delete Engine oil'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repo.entries.map((e) => e.id), isNot(contains(40)));
+      expect(find.text('Service deleted'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(repo.entries.map((e) => e.id), contains(40));
+    },
+  );
 }
