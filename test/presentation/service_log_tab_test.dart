@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:odolog/core/typedefs.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
@@ -24,9 +28,9 @@ const _vehicle = Vehicle(
 Future<FakeServiceLogRepository> pumpScreen(
   WidgetTester tester, {
   FakeReminderScheduler? scheduler,
-  List<ServiceLogEntry> seed = const [],
+  FakeServiceLogRepository? repo,
 }) async {
-  final serviceLogRepo = FakeServiceLogRepository(seed);
+  final serviceLogRepo = repo ?? FakeServiceLogRepository();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -158,11 +162,12 @@ void main() {
   });
 
   testWidgets(
-    'a long service history builds a far row only when scrolled to, and it deletes and undoes',
+    'a long service history builds a far row only when scrolled to, and a delete still finishes and undoes after the row is scrolled away',
     (tester) async {
+      final gate = Completer<void>();
       final repo = await pumpScreen(
         tester,
-        seed: [
+        repo: _GatedServiceLogRepository(gate, [
           for (var i = 1; i <= 40; i++)
             ServiceLogEntry(
               id: i,
@@ -172,7 +177,7 @@ void main() {
               odometer: 10000.0 - i * 100,
               note: 'Visit $i',
             ),
-        ],
+        ]),
       );
 
       expect(
@@ -181,7 +186,6 @@ void main() {
       );
 
       await tester.scrollUntilVisible(find.textContaining('Visit 40'), 500);
-      await tester.drag(find.byType(Scrollable), const Offset(0, -500));
       await tester.pumpAndSettle();
 
       await tester.tap(
@@ -193,6 +197,16 @@ void main() {
           matching: find.byTooltip('Delete Engine oil'),
         ),
       );
+      await tester.pump();
+
+      await tester.drag(find.byType(Scrollable), const Offset(0, 10000));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Visit 40', skipOffstage: false),
+        findsNothing,
+      );
+
+      gate.complete();
       await tester.pumpAndSettle();
 
       expect(repo.entries.map((e) => e.id), isNot(contains(40)));
@@ -204,4 +218,17 @@ void main() {
       expect(repo.entries.map((e) => e.id), contains(40));
     },
   );
+}
+
+/// Holds every delete until [gate] completes.
+class _GatedServiceLogRepository extends FakeServiceLogRepository {
+  _GatedServiceLogRepository(this.gate, super.seed);
+
+  final Completer<void> gate;
+
+  @override
+  Future<Result<Unit>> delete(int id) async {
+    await gate.future;
+    return super.delete(id);
+  }
 }

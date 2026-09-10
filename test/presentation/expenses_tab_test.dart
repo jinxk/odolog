@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:odolog/core/typedefs.dart';
 import 'package:odolog/domain/entities/expense.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/presentation/expenses/expenses_tab.dart';
@@ -19,9 +23,9 @@ const _vehicle = Vehicle(
 
 Future<FakeExpenseRepository> pumpScreen(
   WidgetTester tester, {
-  List<Expense> seed = const [],
+  FakeExpenseRepository? repo,
 }) async {
-  final expenseRepo = FakeExpenseRepository(seed);
+  final expenseRepo = repo ?? FakeExpenseRepository();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -120,11 +124,12 @@ void main() {
   });
 
   testWidgets(
-    'a long expense list builds a far row only when scrolled to, and it deletes and undoes',
+    'a long expense list builds a far row only when scrolled to, and a delete still finishes and undoes after the row is scrolled away',
     (tester) async {
+      final gate = Completer<void>();
       final repo = await pumpScreen(
         tester,
-        seed: [
+        repo: _GatedExpenseRepository(gate, [
           for (var i = 1; i <= 40; i++)
             Expense(
               id: i,
@@ -133,16 +138,22 @@ void main() {
               date: DateTime.now().subtract(Duration(days: i)),
               category: 'Item $i',
             ),
-        ],
+        ]),
       );
 
       expect(find.text('Item 40', skipOffstage: false), findsNothing);
 
       await tester.scrollUntilVisible(find.text('Item 40'), 500);
-      await tester.drag(find.byType(Scrollable), const Offset(0, -500));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byTooltip('Delete Item 40'));
+      await tester.pump();
+
+      await tester.drag(find.byType(Scrollable), const Offset(0, 10000));
+      await tester.pumpAndSettle();
+      expect(find.text('Item 40', skipOffstage: false), findsNothing);
+
+      gate.complete();
       await tester.pumpAndSettle();
 
       expect(repo.expenses.map((e) => e.id), isNot(contains(40)));
@@ -152,7 +163,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.expenses.map((e) => e.id), contains(40));
-      expect(find.text('Item 40'), findsOneWidget);
     },
   );
+}
+
+/// Holds every delete until [gate] completes.
+class _GatedExpenseRepository extends FakeExpenseRepository {
+  _GatedExpenseRepository(this.gate, super.seed);
+
+  final Completer<void> gate;
+
+  @override
+  Future<Result<Unit>> delete(int id) async {
+    await gate.future;
+    return super.delete(id);
+  }
 }
