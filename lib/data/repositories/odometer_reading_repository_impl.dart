@@ -1,4 +1,5 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:sqflite/sqflite.dart' show DatabaseException;
 
 import '../../core/failures.dart';
 import '../../core/typedefs.dart';
@@ -28,6 +29,9 @@ class OdometerReadingRepositoryImpl implements OdometerReadingRepository {
       final id = await _dao.insert(reading);
       return right(reading.copyWith(id: id));
     } catch (error) {
+      if (error is DatabaseException && error.isUniqueConstraintError()) {
+        return left(DuplicateIdFailure(error.toString()));
+      }
       return left(DatabaseFailure(error.toString()));
     }
   }

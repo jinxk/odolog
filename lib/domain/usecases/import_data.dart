@@ -12,6 +12,10 @@ import 'log_odometer_reading.dart';
 import 'log_refuel.dart';
 import 'log_service.dart';
 
+const _duplicateIdMessage =
+    'Some items in this file are already on this phone, so nothing was '
+    'imported. Import only adds new items, it does not replace what is here.';
+
 /// Decodes a backup file through [DataBundleCodec] and replays it through the
 /// same use cases the forms write with, so an imported item passes exactly the
 /// validation a hand-entered one does. The whole replay runs inside one
@@ -139,13 +143,15 @@ class ImportData {
   );
 
   /// Points a complaint at the item that raised it, the same "refuels[3]"
-  /// convention the codec uses for a structural problem.
+  /// convention the codec uses for a structural problem. A duplicate id gets
+  /// the plain message with no location, since the location names a table.
   static Failure _locate(Failure failure, String where) => switch (failure) {
     ValidationFailure() => ValidationFailure(
       field: failure.field,
       reason: '$where: ${failure.reason}',
     ),
     NotFoundFailure() => NotFoundFailure('$where: ${failure.message}'),
+    DuplicateIdFailure() => const DuplicateIdFailure(_duplicateIdMessage),
     DatabaseFailure() => DatabaseFailure('$where: ${failure.message}'),
   };
 }

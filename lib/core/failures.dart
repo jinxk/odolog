@@ -26,6 +26,11 @@ class DatabaseFailure extends Failure {
   List<Object?> get props => [message];
 }
 
+/// A write refused because a row with the same id is already stored.
+class DuplicateIdFailure extends DatabaseFailure {
+  const DuplicateIdFailure(super.message);
+}
+
 class NotFoundFailure extends Failure {
   const NotFoundFailure(this.message);
 

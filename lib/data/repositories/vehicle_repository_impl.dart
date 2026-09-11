@@ -1,4 +1,5 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:sqflite/sqflite.dart' show DatabaseException;
 
 import '../../core/failures.dart';
 import '../../core/typedefs.dart';
@@ -40,6 +41,9 @@ class VehicleRepositoryImpl implements VehicleRepository {
       final id = await _dao.insert(vehicle);
       return right(vehicle.copyWith(id: id));
     } catch (error) {
+      if (error is DatabaseException && error.isUniqueConstraintError()) {
+        return left(DuplicateIdFailure(error.toString()));
+      }
       return left(DatabaseFailure(error.toString()));
     }
   }
