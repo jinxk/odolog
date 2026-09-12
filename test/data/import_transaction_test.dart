@@ -13,6 +13,7 @@ import 'package:odolog/data/repositories/odometer_reading_repository_impl.dart';
 import 'package:odolog/data/repositories/refuel_repository_impl.dart';
 import 'package:odolog/data/repositories/service_log_repository_impl.dart';
 import 'package:odolog/data/repositories/vehicle_repository_impl.dart';
+import 'package:odolog/domain/entities/expense.dart';
 import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/domain/usecases/add_vehicle.dart';
@@ -168,6 +169,48 @@ void main() {
       expect(await vehicles.getAll(), hasLength(1));
       expect(await refuels.getForVehicle(2), isEmpty);
       expect(await refuels.getForVehicle(1), hasLength(1));
+    },
+  );
+
+  test(
+    'the same backup imported twice is refused the second time and changes nothing',
+    () async {
+      final expenses = ExpenseDao(db);
+      final codec = FakeDataBundleCodec(
+        decodeResult: right((
+          vehicles: [vehicle],
+          entries: [
+            entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
+          ],
+          serviceLog: const [],
+          odometerReadings: const [],
+          expenses: [
+            Expense(
+              id: 1,
+              vehicleId: vehicle.id,
+              amount: 500,
+              date: DateTime.utc(2020),
+              category: 'Tyre',
+            ),
+          ],
+        )),
+      );
+
+      final first = await importer(codec).execute('...');
+      expect(first.isRight(), isTrue);
+
+      final second = await importer(codec).execute('...');
+
+      final failure = second.getLeft().toNullable()! as DatabaseFailure;
+      expect(
+        failure.message,
+        'Some items in this file are already on this phone, so nothing was '
+        'imported. Import only adds new items, it does not replace what is '
+        'here.',
+      );
+      expect(await vehicles.getAll(), hasLength(1));
+      expect(await refuels.getForVehicle(vehicle.id), hasLength(1));
+      expect(await expenses.getForVehicle(vehicle.id), hasLength(1));
     },
   );
 
