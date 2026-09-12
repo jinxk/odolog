@@ -117,6 +117,60 @@ void main() {
     expect(await refuels.getForVehicle(vehicle.id), isEmpty);
   });
 
+  test(
+    'a backup whose refuel id is already on the device is refused with the plain message and writes nothing',
+    () async {
+      await vehicles.insert(vehicle);
+      await refuels.insert(
+        entry(id: 1, odometer: 500, quantity: 20, pricePaid: 2000),
+      );
+      final codec = FakeDataBundleCodec(
+        decodeResult: right((
+          vehicles: [
+            const Vehicle(
+              id: 2,
+              name: 'City',
+              type: VehicleType.car,
+              fuelCategory: FuelCategory.petrol,
+            ),
+          ],
+          entries: [
+            entry(
+              id: 3,
+              vehicleId: 2,
+              odometer: 1000,
+              quantity: 20,
+              pricePaid: 2000,
+            ),
+            entry(
+              id: 1,
+              vehicleId: 2,
+              odometer: 900,
+              quantity: 20,
+              pricePaid: 2000,
+            ),
+          ],
+          serviceLog: const [],
+          odometerReadings: const [],
+          expenses: const [],
+        )),
+      );
+
+      final result = await importer(codec).execute('...');
+
+      final failure = result.getLeft().toNullable()! as DuplicateIdFailure;
+      expect(
+        failure.message,
+        'Some items in this file are already on this phone, so nothing was '
+        'imported. Import only adds new items, it does not replace what is '
+        'here.',
+      );
+      expect(await vehicles.getAll(), hasLength(1));
+      expect(await refuels.getForVehicle(2), isEmpty);
+      expect(await refuels.getForVehicle(1), hasLength(1));
+    },
+  );
+
   test('a bundle with a bad odometer reading writes nothing at all', () async {
     final readings = OdometerReadingDao(db);
     final codec = FakeDataBundleCodec(
