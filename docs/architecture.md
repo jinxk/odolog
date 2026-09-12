@@ -584,6 +584,7 @@ Failures are a small sealed taxonomy in `core/failures.dart`. Repositories and u
 
 - **ValidationFailure** carries a field and a reason (odometer not greater than previous, non-positive quantity or price, date in the future). The add form renders these against the specific field.
 - **DatabaseFailure** wraps a sqflite error (disk full, constraint violation, corrupt file). Surfaced as a non-destructive error banner with a retry.
+- **DuplicateIdFailure** is a `DatabaseFailure` for an insert refused because a row with that id is already stored. Import shows a plain message for it instead of the sqflite text.
 - **NotFoundFailure** for a vehicle or entry id that does not resolve, usually a stale route argument.
 
 Validation rules enforced before write: odometer strictly greater than the previous entry's unless `odometer_override` is set; quantity and price strictly positive; `filled_at` not in the future. These live in the `LogRefuel` and `EditRefuel` use cases so the same rules apply whether the write comes from the form or from an import.
