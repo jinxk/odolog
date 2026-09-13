@@ -14,10 +14,12 @@ class GetVehicleHistory {
   Future<Result<List<HistoryItem>>> execute(int vehicleId) async {
     final result = await _repository.getForVehicle(vehicleId);
     return result.map((entries) {
-      final derived = const MileageCalculator().perEntry(entries);
+      const calculator = MileageCalculator();
+      final ordered = calculator.driveOrder(entries);
+      final derived = calculator.perEntry(ordered);
       return [
-        for (var i = 0; i < entries.length; i++)
-          (entry: entries[i], derived: derived[i]),
+        for (var i = 0; i < ordered.length; i++)
+          (entry: ordered[i], derived: derived[i]),
       ];
     });
   }

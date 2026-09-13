@@ -2,13 +2,44 @@ import '../entities/refuel_entry.dart';
 import '../value_objects/entry_derived.dart';
 import '../value_objects/window_mileage.dart';
 
-/// Pure full-tank window math. Every method takes the entry list already
-/// ordered by odometer then time, exactly as the refuel repository returns it,
-/// and returns plain value objects. No Flutter, no database, no Riverpod.
+/// Pure full-tank window math. Every method takes the entry list in drive
+/// order, as [driveOrder] returns it, and returns plain value objects. No
+/// Flutter, no database, no Riverpod.
 class MileageCalculator {
   const MileageCalculator();
 
-  /// Price per unit and distance since the previous entry, one per entry.
+  /// [entries] in the order they were driven. Takes the repository order
+  /// (odometer, then time) and splits it into runs at each rollover: a fill
+  /// saved with the odometer override at a lower reading than the first fill of
+  /// the run it falls in, walking the fills by date. An override fill at or
+  /// above that first fill is a correction and stays where it is. Runs come in
+  /// date order, each in the repository order. Without a rollover, [entries]
+  /// comes back as it is.
+  List<RefuelEntry> driveOrder(List<RefuelEntry> entries) {
+    final byDate = [...entries]
+      ..sort((a, b) {
+        final byTime = a.filledAt.compareTo(b.filledAt);
+        return byTime != 0 ? byTime : a.id.compareTo(b.id);
+      });
+    final runOf = <int, int>{};
+    var run = 0;
+    var runStart = byDate.isEmpty ? 0.0 : byDate.first.odometer;
+    for (var i = 0; i < byDate.length; i++) {
+      final entry = byDate[i];
+      if (i > 0 && entry.odometerOverride && entry.odometer < runStart) {
+        run++;
+        runStart = entry.odometer;
+      }
+      runOf[entry.id] = run;
+    }
+    if (run == 0) return entries;
+    return [
+      for (var r = 0; r <= run; r++) ...entries.where((e) => runOf[e.id] == r),
+    ];
+  }
+
+  /// Price per unit and distance since the previous entry, one per entry. The
+  /// distance is null for the first entry and the first entry after a rollover.
   List<EntryDerived> perEntry(List<RefuelEntry> entries) {
     final derived = <EntryDerived>[];
     for (var i = 0; i < entries.length; i++) {
@@ -16,7 +47,8 @@ class MileageCalculator {
       derived.add(
         EntryDerived(
           pricePerUnit: entry.pricePaid / entry.quantity,
-          distanceSincePrevious: i == 0
+          distanceSincePrevious:
+              i == 0 || entry.odometer < entries[i - 1].odometer
               ? null
               : entry.odometer - entries[i - 1].odometer,
         ),
@@ -36,14 +68,19 @@ class MileageCalculator {
     int? openingIndex;
     var fuelConsumed = 0.0;
     var costInWindow = 0.0;
+    var crossedRollover = false;
 
     for (var i = 0; i < entries.length; i++) {
       final entry = entries[i];
+      if (i > 0 && entry.odometer < entries[i - 1].odometer) {
+        crossedRollover = true;
+      }
 
       if (openingIndex == null) {
         // Nothing before the first full fill belongs to any window.
         if (entry.fullTank) {
           openingIndex = i;
+          crossedRollover = false;
         }
         continue;
       }
@@ -55,9 +92,10 @@ class MileageCalculator {
         final opening = entries[openingIndex];
         final distance = entry.odometer - opening.odometer;
 
-        if (distance <= 0) {
+        if (distance <= 0 || crossedRollover) {
           // A non-increasing odometer, reachable through the override, would
-          // give an infinite or negative mileage, so this window is dropped.
+          // give an infinite or negative mileage, so this window is dropped. A
+          // window with a rollover inside it has no known distance either.
           // The fill still opens the next window, so its own fuel and cost are
           // backed out of the running totals (they belong to the opening, not
           // to the window it opens). What was burned since the previous opening
@@ -65,6 +103,7 @@ class MileageCalculator {
           fuelConsumed -= entry.quantity;
           costInWindow -= entry.pricePaid;
           openingIndex = i;
+          crossedRollover = false;
           continue;
         }
 
@@ -80,6 +119,7 @@ class MileageCalculator {
           ),
         );
         openingIndex = i;
+        crossedRollover = false;
         fuelConsumed = 0.0;
         costInWindow = 0.0;
       }
@@ -96,13 +136,16 @@ class MileageCalculator {
 
   /// Distance driven between the last two entries, or null before the second.
   double? lastFillRange(List<RefuelEntry> entries) {
-    if (entries.length < 2) return null;
+    if (entries.length < 2 ||
+        entries.last.odometer < entries[entries.length - 2].odometer) {
+      return null;
+    }
     return entries.last.odometer - entries[entries.length - 2].odometer;
   }
 
   /// Price per unit of the most recent refuel, the figure the add form turns a
-  /// rupee amount into an estimated quantity with. The list is odometer
-  /// ordered, so the last entry is the latest fill. Null when there is no
+  /// rupee amount into an estimated quantity with. The list is in
+  /// drive order, so the last entry is the latest fill. Null when there is no
   /// history to read, or the latest fill carries no quantity to divide by.
   double? lastKnownPricePerUnit(List<RefuelEntry> entries) {
     if (entries.isEmpty) return null;

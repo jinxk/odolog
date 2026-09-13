@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../core/typedefs.dart';
 import '../calculators/aggregate_calculator.dart';
+import '../calculators/mileage_calculator.dart';
 import '../repositories/expense_repository.dart';
 import '../repositories/odometer_reading_repository.dart';
 import '../repositories/refuel_repository.dart';
@@ -47,7 +48,9 @@ class GetVehicleStats {
 
     return right(
       const AggregateCalculator().lifetime(
-        entriesResult.getRight().toNullable()!,
+        const MileageCalculator().driveOrder(
+          entriesResult.getRight().toNullable()!,
+        ),
         tankCapacity: vehicleResult.getRight().toNullable()!.tankCapacity,
         expenses: expensesResult.getRight().toNullable()!,
         serviceLog: logResult.getRight().toNullable()!,

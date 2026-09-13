@@ -88,25 +88,50 @@ class AggregateCalculator {
     return result;
   }
 
-  // Lifetime distance runs from the first fill to the furthest point on record,
-  // which is a manual reading whenever one sits beyond the last fill.
+  // Lifetime distance adds up each odometer run, from its first fill to the
+  // furthest point on record in it, which is a manual reading whenever one
+  // taken during the run sits beyond its last fill. The jump at a rollover
+  // is not distance.
   double _lifetimeDistance(
     List<RefuelEntry> entries,
     List<OdometerReading> readings,
   ) {
-    var furthest = entries.last.odometer;
-    for (final reading in readings) {
-      if (reading.odometer > furthest) furthest = reading.odometer;
+    var distance = 0.0;
+    var start = 0;
+    for (var end = 1; end <= entries.length; end++) {
+      if (end < entries.length &&
+          entries[end].odometer >= entries[end - 1].odometer) {
+        continue;
+      }
+      final nextRun = end < entries.length ? entries[end].filledAt : null;
+      var furthest = entries[end - 1].odometer;
+      for (final reading in readings) {
+        if (start > 0 && reading.recordedAt.isBefore(entries[start].filledAt)) {
+          continue;
+        }
+        if (nextRun != null && !reading.recordedAt.isBefore(nextRun)) continue;
+        if (reading.odometer > furthest) furthest = reading.odometer;
+      }
+      distance += furthest - entries[start].odometer;
+      start = end;
     }
-    return furthest - entries.first.odometer;
+    return distance;
   }
 
   // Distance across a scope counts the drive into the scope's first fill: it is
   // measured from the entry just before the scope began, or from the first
-  // entry in scope when nothing precedes it.
+  // entry in scope when nothing precedes it. The jump at a rollover inside that
+  // span is left out.
   double _scopeDistance(List<RefuelEntry> entries, int lo, int hi) {
-    final baseline = lo > 0 ? entries[lo - 1] : entries[lo];
-    return entries[hi].odometer - baseline.odometer;
+    var from = lo > 0 ? lo - 1 : lo;
+    var distance = 0.0;
+    for (var i = from + 1; i <= hi; i++) {
+      if (entries[i].odometer < entries[i - 1].odometer) {
+        distance += entries[i - 1].odometer - entries[from].odometer;
+        from = i;
+      }
+    }
+    return distance + (entries[hi].odometer - entries[from].odometer);
   }
 
   double _sumSpend(List<RefuelEntry> entries) =>
