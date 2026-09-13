@@ -147,6 +147,49 @@ void main() {
     expect(months[thisKey]!.totalDistance, 700);
   });
 
+  test('a month that starts with a rollover counts none of the jump', () {
+    final now = DateTime.now();
+    final monthA = DateTime(now.year, now.month - 3, 5);
+    final monthB = DateTime(now.year, now.month - 2, 5);
+
+    final entries = <RefuelEntry>[
+      entry(
+        id: 1,
+        odometer: 99000,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: monthA,
+      ),
+      entry(
+        id: 2,
+        odometer: 99300,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: monthA.add(const Duration(days: 10)),
+      ),
+      entry(
+        id: 3,
+        odometer: 100,
+        quantity: 20,
+        pricePaid: 2000,
+        odometerOverride: true,
+        filledAt: monthB,
+      ),
+      entry(
+        id: 4,
+        odometer: 400,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: monthB.add(const Duration(days: 10)),
+      ),
+    ];
+
+    final months = calculator.monthly(entries);
+
+    expect(months[DateTime(monthA.year, monthA.month)]!.totalDistance, 300);
+    expect(months[DateTime(monthB.year, monthB.month)]!.totalDistance, 300);
+  });
+
   test(
     'average mileage is distance weighted, not a mean of the window numbers',
     () {

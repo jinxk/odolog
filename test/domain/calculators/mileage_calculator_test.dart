@@ -254,6 +254,91 @@ void main() {
     expect(window.mileage, 12.5);
   });
 
+  test(
+    'only an override fill below the fill dated before it starts a new odometer run',
+    () {
+      final now = DateTime.now();
+      final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+      final twentyDaysAgo = now.subtract(const Duration(days: 20));
+      final tenDaysAgo = now.subtract(const Duration(days: 10));
+
+      final equalWithOverride = [
+        entry(
+          id: 1,
+          odometer: 1000,
+          quantity: 20,
+          pricePaid: 2000,
+          filledAt: thirtyDaysAgo,
+        ),
+        entry(
+          id: 2,
+          odometer: 1000,
+          quantity: 20,
+          pricePaid: 2000,
+          odometerOverride: true,
+          filledAt: twentyDaysAgo,
+        ),
+        entry(
+          id: 3,
+          odometer: 1400,
+          quantity: 20,
+          pricePaid: 2000,
+          filledAt: tenDaysAgo,
+        ),
+      ];
+      expect(calculator.driveOrder(equalWithOverride), equalWithOverride);
+
+      RefuelEntry lowFill({required bool override}) => entry(
+        id: 2,
+        odometer: 800,
+        quantity: 20,
+        pricePaid: 2000,
+        odometerOverride: override,
+        filledAt: twentyDaysAgo,
+      );
+      List<RefuelEntry> repositoryOrder({required bool override}) => [
+        lowFill(override: override),
+        entry(
+          id: 1,
+          odometer: 1000,
+          quantity: 20,
+          pricePaid: 2000,
+          filledAt: thirtyDaysAgo,
+        ),
+        entry(
+          id: 3,
+          odometer: 1400,
+          quantity: 20,
+          pricePaid: 2000,
+          filledAt: tenDaysAgo,
+        ),
+      ];
+
+      final withoutOverride = repositoryOrder(override: false);
+      expect(calculator.driveOrder(withoutOverride), withoutOverride);
+
+      final ordered = calculator.driveOrder(repositoryOrder(override: true));
+      expect(ordered.map((e) => e.id), [1, 2, 3]);
+    },
+  );
+
+  test('a partial fill at a rollover closes no window across it', () {
+    final entries = [
+      entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
+      entry(
+        id: 2,
+        odometer: 950,
+        quantity: 10,
+        pricePaid: 1000,
+        fullTank: false,
+        odometerOverride: true,
+      ),
+      entry(id: 3, odometer: 1400, quantity: 30, pricePaid: 3000),
+    ];
+
+    expect(calculator.windows(entries), isEmpty);
+  });
+
   group('last known price per unit', () {
     test('reads the price per unit of the most recent fill', () {
       final entries = [
