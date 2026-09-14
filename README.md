@@ -44,8 +44,6 @@ Present today:
 - India-first fuel presets: IOCL, BPCL, HPCL, Shell, Nayara, Jio-bp variants, CNG, and Auto LPG. Free text entry and a currency picker cover other countries.
 - Material 3 interface with dark and light themes.
 
-Known limits: after an odometer rollover, the latest fill, last price and lifetime distance can read wrong. A fix is planned.
-
 Fuel variant is remembered per vehicle, so most refuels are just quantity, amount, odometer, save.
 
 See the [Roadmap](#roadmap) for what is planned.
