@@ -96,12 +96,18 @@ class MileageCalculator {
           // A non-increasing odometer, reachable through the override, would
           // give an infinite or negative mileage, so this window is dropped. A
           // window with a rollover inside it has no known distance either.
-          // The fill still opens the next window, so its own fuel and cost are
-          // backed out of the running totals (they belong to the opening, not
-          // to the window it opens). What was burned since the previous opening
-          // stays accumulated and rolls into the next window.
-          fuelConsumed -= entry.quantity;
-          costInWindow -= entry.pricePaid;
+          // The fill still opens the next window. After a rollover the fuel
+          // and cost of the skipped span are dropped with it. With equal
+          // readings and no rollover, the fill's own fuel and cost are backed
+          // out (they belong to the opening) and what was burned since the
+          // previous opening rolls into the next window.
+          if (crossedRollover) {
+            fuelConsumed = 0.0;
+            costInWindow = 0.0;
+          } else {
+            fuelConsumed -= entry.quantity;
+            costInWindow -= entry.pricePaid;
+          }
           openingIndex = i;
           crossedRollover = false;
           continue;

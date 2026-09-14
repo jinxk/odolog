@@ -220,7 +220,7 @@ void main() {
     },
   );
 
-  test('the fuel of a skipped span rolls into the next window', () {
+  test('a rollover drops the fuel of the span it skips', () {
     final entries = [
       entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
       entry(
@@ -244,18 +244,57 @@ void main() {
     expect(windows, hasLength(1));
     final window = windows.single;
     // Opening is the rewound full fill (id 3); its own 28 litres do not count.
-    // The partial's 10 litres from the skipped span carry into this window
-    // alongside the closing fill's 30, for 40 litres over 500 km.
+    // The odometer steps down at id 3, so the partial's 10 litres from the
+    // skipped span are dropped. Only the closing fill's 30 litres count, over
+    // 500 km.
     expect(window.openingEntryId, 3);
     expect(window.closingEntryId, 4);
     expect(window.distance, 500);
-    expect(window.fuelConsumed, 40.0);
-    expect(window.costInWindow, 4000.0);
-    expect(window.mileage, 12.5);
+    expect(window.fuelConsumed, 30.0);
+    expect(window.costInWindow, 3000.0);
+    expect(window.mileage, closeTo(16.6667, 0.0001));
   });
 
   test(
-    'only an override fill below the fill dated before it starts a new odometer run',
+    'an equal reading double fill carries the fuel since the opening into the next window',
+    () {
+      final entries = [
+        entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
+        entry(
+          id: 2,
+          odometer: 1000,
+          quantity: 5,
+          pricePaid: 500,
+          fullTank: false,
+          odometerOverride: true,
+        ),
+        entry(
+          id: 3,
+          odometer: 1000,
+          quantity: 8,
+          pricePaid: 800,
+          odometerOverride: true,
+        ),
+        entry(id: 4, odometer: 1300, quantity: 25, pricePaid: 2500),
+      ];
+
+      final windows = calculator.windows(entries);
+      expect(windows, hasLength(1));
+      final window = windows.single;
+      // Fills 1 and 3 share a reading, so that window is dropped. The partial's
+      // 5 litres carry into the window from fill 3 to fill 4, with the 25 litres
+      // of the closing fill.
+      expect(window.openingEntryId, 3);
+      expect(window.closingEntryId, 4);
+      expect(window.distance, 300);
+      expect(window.fuelConsumed, 30.0);
+      expect(window.costInWindow, 3000.0);
+      expect(window.mileage, 10.0);
+    },
+  );
+
+  test(
+    'only an override fill below the first fill of its run starts a new odometer run',
     () {
       final now = DateTime.now();
       final thirtyDaysAgo = now.subtract(const Duration(days: 30));
@@ -319,6 +358,32 @@ void main() {
 
       final ordered = calculator.driveOrder(repositoryOrder(override: true));
       expect(ordered.map((e) => e.id), [1, 2, 3]);
+
+      final typoFix = [
+        entry(
+          id: 1,
+          odometer: 1000,
+          quantity: 20,
+          pricePaid: 2000,
+          filledAt: thirtyDaysAgo,
+        ),
+        entry(
+          id: 3,
+          odometer: 1500,
+          quantity: 20,
+          pricePaid: 2000,
+          odometerOverride: true,
+          filledAt: tenDaysAgo,
+        ),
+        entry(
+          id: 2,
+          odometer: 2000,
+          quantity: 20,
+          pricePaid: 2000,
+          filledAt: twentyDaysAgo,
+        ),
+      ];
+      expect(calculator.driveOrder(typoFix), typoFix);
     },
   );
 

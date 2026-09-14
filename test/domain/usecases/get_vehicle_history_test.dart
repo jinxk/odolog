@@ -10,7 +10,7 @@ void main() {
   final now = DateTime.now();
 
   // The meter rolled over after fill 2, so fill 3 is saved with the override at
-  // a lower reading than the fill dated before it.
+  // a lower reading than the first fill of its run.
   List<RefuelEntry> afterRollover({
     double quantityTwo = 25,
     double pricePaidTwo = 2500,
