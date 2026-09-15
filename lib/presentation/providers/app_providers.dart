@@ -126,8 +126,7 @@ Future<List<Expense>> expenses(Ref ref, int vehicleId) async {
   return _unwrap(result);
 }
 
-/// A vehicle's manual odometer readings, ordered by odometer then date, the
-/// same sequence the refuel history uses.
+/// A vehicle's manual odometer readings, ordered by odometer then date.
 @riverpod
 Future<List<OdometerReading>> odometerReadings(Ref ref, int vehicleId) async {
   final result = await ref

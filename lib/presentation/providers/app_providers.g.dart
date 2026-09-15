@@ -806,14 +806,12 @@ final class ExpensesFamily extends $Family
   String toString() => r'expensesProvider';
 }
 
-/// A vehicle's manual odometer readings, ordered by odometer then date, the
-/// same sequence the refuel history uses.
+/// A vehicle's manual odometer readings, ordered by odometer then date.
 
 @ProviderFor(odometerReadings)
 final odometerReadingsProvider = OdometerReadingsFamily._();
 
-/// A vehicle's manual odometer readings, ordered by odometer then date, the
-/// same sequence the refuel history uses.
+/// A vehicle's manual odometer readings, ordered by odometer then date.
 
 final class OdometerReadingsProvider
     extends
@@ -825,8 +823,7 @@ final class OdometerReadingsProvider
     with
         $FutureModifier<List<OdometerReading>>,
         $FutureProvider<List<OdometerReading>> {
-  /// A vehicle's manual odometer readings, ordered by odometer then date, the
-  /// same sequence the refuel history uses.
+  /// A vehicle's manual odometer readings, ordered by odometer then date.
   OdometerReadingsProvider._({
     required OdometerReadingsFamily super.from,
     required int super.argument,
@@ -873,8 +870,7 @@ final class OdometerReadingsProvider
 
 String _$odometerReadingsHash() => r'6e1ece6862a2dfc31672ec141741e7f0bb8d9804';
 
-/// A vehicle's manual odometer readings, ordered by odometer then date, the
-/// same sequence the refuel history uses.
+/// A vehicle's manual odometer readings, ordered by odometer then date.
 
 final class OdometerReadingsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<OdometerReading>>, int> {
@@ -887,8 +883,7 @@ final class OdometerReadingsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// A vehicle's manual odometer readings, ordered by odometer then date, the
-  /// same sequence the refuel history uses.
+  /// A vehicle's manual odometer readings, ordered by odometer then date.
 
   OdometerReadingsProvider call(int vehicleId) =>
       OdometerReadingsProvider._(argument: vehicleId, from: this);
