@@ -120,6 +120,8 @@ price_per_unit = price_paid / quantity
 distance_since_previous = odometer(this) - odometer(previous)
 ```
 
+It is empty for the first entry after an odometer rollover.
+
 ### Mileage over full-tank windows
 
 Mileage is only computed between two full-tank fills, where the tank started full and ended full and the fuel added equals the fuel burned over that distance.
@@ -138,6 +140,8 @@ cost_per_km   = cost_in_window / distance
 
 A partial fill inside the window contributes its quantity and price to the window totals but does not produce a mileage point of its own.
 
+A window with an odometer rollover inside it gives no mileage point, and the fuel and cost of that span are dropped.
+
 The **latest mileage** shown on the dashboard is the mileage of the most recently closed full-tank window.
 
 ### Range
@@ -147,6 +151,8 @@ The **latest mileage** shown on the dashboard is the mileage of the most recentl
 ```
 last_fill_range = odometer(latest) - odometer(previous)
 ```
+
+It is empty when the latest fill is the first after an odometer rollover.
 
 **Projected range** is available only when the vehicle has a tank capacity:
 
@@ -159,7 +165,7 @@ projected_range = latest_window_mileage * tank_capacity
 Lifetime and monthly aggregates run over the entries in scope (all entries, or one calendar month):
 
 - **Total spend** = sum of `price_paid`.
-- **Total distance** = odometer of the last entry in scope minus the odometer of the entry just before the scope began (so the distance driven into the month's first fill is counted in that month). When no earlier entry exists, the first entry in scope is the baseline.
+- **Total distance** = odometer of the last entry in scope minus the odometer of the entry just before the scope began (so the distance driven into the month's first fill is counted in that month). When no earlier entry exists, the first entry in scope is the baseline. Across an odometer rollover the distance of each run is added, and the jump in the reading is not counted.
 - **Total quantity** = sum of `quantity`.
 - **Average mileage** = total distance covered by closed full-tank windows in scope, divided by total fuel consumed in those windows. This is a distance-weighted average, not a mean of the per-window numbers, so a long window counts more than a short one.
 - **Average cost per kilometre** = total window cost divided by total window distance, over the same closed windows.

@@ -419,7 +419,7 @@ abstract class OdometerReadingRepository {
 }
 ```
 
-The domain calculators consume the plain ordered list from `getForVehicle` and produce the value objects above. Ordering is by odometer first, then timestamp: the window algorithm walks entries in the sequence they were driven, and the odometer is the source of truth for that order.
+The domain calculators consume the fills in drive order (`MileageCalculator.driveOrder`) and produce the value objects above. That is the repository order (odometer first, then timestamp) split into runs at each rollover, with the runs in date order. A rollover is a fill saved with the odometer override at a reading below the first fill of its run. Without a rollover the list is the repository order, and the window algorithm walks the entries in the sequence they were driven.
 
 ## Reminder scheduler port
 
