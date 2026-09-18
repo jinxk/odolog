@@ -5,6 +5,8 @@ import '../../core/typedefs.dart';
 import '../backup/data_bundle.dart';
 import '../backup/data_bundle_codec.dart';
 import '../backup/unit_of_work.dart';
+import '../calculators/mileage_calculator.dart';
+import '../entities/refuel_entry.dart';
 import 'add_vehicle.dart';
 import 'list_vehicles.dart';
 import 'log_expense.dart';
@@ -72,7 +74,9 @@ class ImportData {
       final result = await _addVehicle.execute(bundle.vehicles[i]);
       _abortOnLeft(result, 'vehicles[$i]');
     }
+    final rolledOver = _vehiclesWithRollover(bundle.entries);
     for (var i = 0; i < bundle.entries.length; i++) {
+      if (rolledOver.contains(bundle.entries[i].vehicleId)) continue;
       final result = await _logRefuel.execute(bundle.entries[i]);
       _abortOnLeft(result, 'refuels[$i]');
     }
@@ -85,11 +89,66 @@ class ImportData {
       _abortOnLeft(result, 'expenses[$i]');
     }
     for (var i = 0; i < bundle.odometerReadings.length; i++) {
+      if (rolledOver.contains(bundle.odometerReadings[i].vehicleId)) continue;
       final result = await _logOdometerReading.execute(
         bundle.odometerReadings[i],
       );
       _abortOnLeft(result, 'odometerReadings[$i]');
     }
+    await _writeInDateOrder(bundle, rolledOver);
+  }
+
+  /// The file lists fills by odometer, which puts the fills after a rollover
+  /// ahead of the ones before it, so such a vehicle replays its fills and
+  /// readings by date.
+  Future<void> _writeInDateOrder(DataBundle bundle, Set<int> vehicleIds) async {
+    final records =
+        <
+            ({
+              DateTime at,
+              double odometer,
+              String where,
+              Future<Result<Object?>> Function() write,
+            })
+          >[
+            for (var i = 0; i < bundle.entries.length; i++)
+              if (vehicleIds.contains(bundle.entries[i].vehicleId))
+                (
+                  at: bundle.entries[i].filledAt,
+                  odometer: bundle.entries[i].odometer,
+                  where: 'refuels[$i]',
+                  write: () => _logRefuel.execute(bundle.entries[i]),
+                ),
+            for (var i = 0; i < bundle.odometerReadings.length; i++)
+              if (vehicleIds.contains(bundle.odometerReadings[i].vehicleId))
+                (
+                  at: bundle.odometerReadings[i].recordedAt,
+                  odometer: bundle.odometerReadings[i].odometer,
+                  where: 'odometerReadings[$i]',
+                  write: () =>
+                      _logOdometerReading.execute(bundle.odometerReadings[i]),
+                ),
+          ]
+          ..sort((a, b) {
+            final byTime = a.at.compareTo(b.at);
+            return byTime != 0 ? byTime : a.odometer.compareTo(b.odometer);
+          });
+    for (final record in records) {
+      _abortOnLeft(await record.write(), record.where);
+    }
+  }
+
+  /// Vehicles whose fills in the bundle hold a rollover. driveOrder hands back
+  /// the same list when there is none.
+  static Set<int> _vehiclesWithRollover(List<RefuelEntry> entries) {
+    final byVehicle = <int, List<RefuelEntry>>{};
+    for (final entry in entries) {
+      (byVehicle[entry.vehicleId] ??= []).add(entry);
+    }
+    return {
+      for (final MapEntry(:key, :value) in byVehicle.entries)
+        if (!identical(const MileageCalculator().driveOrder(value), value)) key,
+    };
   }
 
   /// Turns a rejected write into a throw, the only way out of a unit of work
