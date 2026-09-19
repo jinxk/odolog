@@ -164,6 +164,105 @@ void main() {
     expect(refuelRepo.entries, hasLength(3));
   });
 
+  test('a backup with a rollover still refuses a later fill below the '
+      'rollover fill without the override', () async {
+    final now = DateTime.now();
+    final codec = FakeDataBundleCodec(
+      decodeResult: right((
+        vehicles: [vehicle],
+        entries: [
+          entry(
+            id: 1,
+            odometer: 30,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: now.subtract(const Duration(days: 10)),
+          ),
+          entry(
+            id: 2,
+            odometer: 50,
+            quantity: 20,
+            pricePaid: 2000,
+            odometerOverride: true,
+            filledAt: now.subtract(const Duration(days: 20)),
+          ),
+          entry(
+            id: 3,
+            odometer: 1000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: now.subtract(const Duration(days: 40)),
+          ),
+          entry(
+            id: 4,
+            odometer: 2000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: now.subtract(const Duration(days: 30)),
+          ),
+        ],
+        serviceLog: const [],
+        odometerReadings: const [],
+        expenses: const [],
+      )),
+    );
+
+    final result = await importer(codec: codec).execute('...');
+
+    final failure = result.getLeft().toNullable()! as ValidationFailure;
+    expect(failure.field, 'odometer');
+    expect(
+      failure.reason,
+      'refuels[0]: Odometer must be greater than the previous reading.',
+    );
+  });
+
+  test('a backup with an override fill above a later fill and no rollover '
+      'imports as it does today', () async {
+    final now = DateTime.now();
+    final refuelRepo = FakeRefuelRepository();
+    final codec = FakeDataBundleCodec(
+      decodeResult: right((
+        vehicles: [vehicle],
+        entries: [
+          entry(
+            id: 0,
+            odometer: 1000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: now.subtract(const Duration(days: 40)),
+          ),
+          entry(
+            id: 0,
+            odometer: 2000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: now.subtract(const Duration(days: 20)),
+          ),
+          entry(
+            id: 0,
+            odometer: 5000,
+            quantity: 20,
+            pricePaid: 2000,
+            odometerOverride: true,
+            filledAt: now.subtract(const Duration(days: 30)),
+          ),
+        ],
+        serviceLog: const [],
+        odometerReadings: const [],
+        expenses: const [],
+      )),
+    );
+
+    final result = await importer(
+      refuelRepo: refuelRepo,
+      codec: codec,
+    ).execute('...');
+
+    expect(result.isRight(), isTrue, reason: '$result');
+    expect(refuelRepo.entries, hasLength(3));
+  });
+
   test('a rejected row aborts the unit of work so nothing commits', () async {
     final unitOfWork = FakeUnitOfWork();
     final codec = FakeDataBundleCodec(
