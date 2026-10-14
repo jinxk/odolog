@@ -466,7 +466,7 @@ Each use case is a thin, single-responsibility class that orchestrates repositor
 - **DeleteOdometerReading** removes a manual reading.
 - **RestoreRefuel**, **RestoreServiceEntry**, **RestoreExpense** and **RestoreOdometerReading** each write a deleted row back with its original id, which is what undo on the delete snack bar calls.
 - **ExportData** assembles every vehicle and everything logged against it, then hands the bundle to the `DataBundleCodec` port to produce the backup file content.
-- **ImportData** decodes a backup file through `DataBundleCodec` and writes it into the repositories, returning the imported bundle so the caller can report what came in.
+- **ImportData** decodes a backup file through `DataBundleCodec` and writes it into the repositories, returning the imported bundle so the caller can report what came in. When a vehicle's fills hold an odometer rollover, its fills and readings are written in date order, since the file lists them by odometer; everything else is written in file order.
 - **GetDataBundleTemplate** returns a blank backup file from the same port, for a user to fill in externally and import back.
 - **RunAutoBackup** reuses `ExportData` for the bundle, writes it under today's dated name through the `AutoBackupWriter` port, then prunes the folder to the newest seven. The once-a-day debounce and the consent gate live in the presentation coordinator that calls it, not here.
 - **ResetAllData** clears every table through the `DataEraser` port and cancels every scheduled reminder, for delete all data.
