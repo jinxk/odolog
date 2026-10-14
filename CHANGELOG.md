@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.0 - 2026-10-14
+
+- Backups that hold an odometer rollover now import.
+- Latest fill, last price and lifetime distance follow an odometer rollover, and the fuel of the span a rollover skips is left out of mileage.
+- Importing a file whose ids are already on the phone shows a plain message instead of a database error.
+- The Service and Expenses lists build rows as you scroll, so long lists open faster.
+- Predictive back on Android.
+- The Inter font licence is on the licence page, and the privacy page names the developer and a contact.
+- The Play Store version and the APK from GitHub releases are signed with different keys, so one cannot update the other. To switch, export a backup and uninstall first.
+
 ## 1.4.0 - 2026-09-04
 
 - Release builds are minified and have unused code and resources stripped.
