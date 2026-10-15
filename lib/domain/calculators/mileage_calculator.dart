@@ -8,20 +8,19 @@ import '../value_objects/window_mileage.dart';
 class MileageCalculator {
   const MileageCalculator();
 
-  /// [entries] in the order they were driven. Takes the repository order
-  /// (odometer, then time) and splits it into runs at each rollover: a fill
-  /// saved with the odometer override at a lower reading than the first fill of
-  /// the run it falls in, walking the fills by date. An override fill at or
-  /// above that first fill is a correction and stays where it is. Runs come in
-  /// date order, each in the repository order. Without a rollover, [entries]
-  /// comes back as it is.
-  List<RefuelEntry> driveOrder(List<RefuelEntry> entries) {
+  /// Takes the repository order (odometer, then time) and splits it into runs
+  /// at each rollover: a fill saved with the odometer override at a lower
+  /// reading than the first fill of the run it falls in, walking the fills by
+  /// date. An override fill at or above that first fill is a correction and
+  /// stays where it is. Runs come in date order, each in the order of
+  /// [entries]. Without a rollover the single run is [entries] itself.
+  List<List<RefuelEntry>> runs(List<RefuelEntry> entries) {
     final byDate = [...entries]
       ..sort((a, b) {
         final byTime = a.filledAt.compareTo(b.filledAt);
         return byTime != 0 ? byTime : a.id.compareTo(b.id);
       });
-    final runOf = <int, int>{};
+    final runOf = Map<RefuelEntry, int>.identity();
     var run = 0;
     var runStart = byDate.isEmpty ? 0.0 : byDate.first.odometer;
     for (var i = 0; i < byDate.length; i++) {
@@ -30,12 +29,23 @@ class MileageCalculator {
         run++;
         runStart = entry.odometer;
       }
-      runOf[entry.id] = run;
+      runOf[entry] = run;
     }
-    if (run == 0) return entries;
+    if (run == 0) return [entries];
     return [
-      for (var r = 0; r <= run; r++) ...entries.where((e) => runOf[e.id] == r),
+      for (var r = 0; r <= run; r++)
+        [
+          for (final e in entries)
+            if (runOf[e] == r) e,
+        ],
     ];
+  }
+
+  /// [entries] in the order they were driven: the runs of [runs] one after the
+  /// other. Without a rollover, [entries] comes back as it is.
+  List<RefuelEntry> driveOrder(List<RefuelEntry> entries) {
+    final split = runs(entries);
+    return split.length == 1 ? split.single : [for (final run in split) ...run];
   }
 
   /// Price per unit and distance since the previous entry, one per entry. The

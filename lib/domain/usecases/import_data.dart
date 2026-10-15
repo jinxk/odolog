@@ -61,20 +61,32 @@ class ImportData {
     final orphan = _findOrphan(bundle, owners.getRight().toNullable()!);
     if (orphan != null) return left(orphan);
 
+    final rolledOver = _vehiclesWithRollover(bundle.entries);
     try {
-      await _unitOfWork.run(() => _write(bundle));
+      await _unitOfWork.run(() => _write(bundle, rolledOver, byRun: false));
     } on _ImportAborted catch (aborted) {
-      return left(aborted.failure);
+      if (rolledOver.isEmpty) return left(aborted.failure);
+      // A backdated override fill above a later fill is refused in date order
+      // but goes in run by run, so a rollover backup gets a second try and
+      // keeps the first error if that fails too.
+      try {
+        await _unitOfWork.run(() => _write(bundle, rolledOver, byRun: true));
+      } on _ImportAborted {
+        return left(aborted.failure);
+      }
     }
     return right(bundle);
   }
 
-  Future<void> _write(DataBundle bundle) async {
+  Future<void> _write(
+    DataBundle bundle,
+    Set<int> rolledOver, {
+    required bool byRun,
+  }) async {
     for (var i = 0; i < bundle.vehicles.length; i++) {
       final result = await _addVehicle.execute(bundle.vehicles[i]);
       _abortOnLeft(result, 'vehicles[$i]');
     }
-    final rolledOver = _vehiclesWithRollover(bundle.entries);
     for (var i = 0; i < bundle.entries.length; i++) {
       if (rolledOver.contains(bundle.entries[i].vehicleId)) continue;
       final result = await _logRefuel.execute(bundle.entries[i]);
@@ -95,7 +107,11 @@ class ImportData {
       );
       _abortOnLeft(result, 'odometerReadings[$i]');
     }
-    await _writeInDateOrder(bundle, rolledOver);
+    if (byRun) {
+      await _writeByRun(bundle, rolledOver);
+    } else {
+      await _writeInDateOrder(bundle, rolledOver);
+    }
   }
 
   /// The file lists fills by odometer, which puts the fills after a rollover
@@ -135,6 +151,44 @@ class ImportData {
           });
     for (final record in records) {
       _abortOnLeft(await record.write(), record.where);
+    }
+  }
+
+  /// Each run of a rollover vehicle goes in the way a vehicle with no rollover
+  /// does: fills in file order, then readings. A reading goes with the last run
+  /// that started at or before it.
+  Future<void> _writeByRun(DataBundle bundle, Set<int> vehicleIds) async {
+    for (final vehicleId in vehicleIds) {
+      final runs = const MileageCalculator().runs([
+        for (final e in bundle.entries)
+          if (e.vehicleId == vehicleId) e,
+      ]);
+      final starts = [
+        for (final run in runs.skip(1))
+          run.map((e) => e.filledAt).reduce((a, b) => a.isBefore(b) ? a : b),
+      ];
+      for (var r = 0; r < runs.length; r++) {
+        final inRun = Set<RefuelEntry>.identity()..addAll(runs[r]);
+        for (var i = 0; i < bundle.entries.length; i++) {
+          if (!inRun.contains(bundle.entries[i])) continue;
+          _abortOnLeft(
+            await _logRefuel.execute(bundle.entries[i]),
+            'refuels[$i]',
+          );
+        }
+        for (var i = 0; i < bundle.odometerReadings.length; i++) {
+          final reading = bundle.odometerReadings[i];
+          if (reading.vehicleId != vehicleId) continue;
+          final started = starts
+              .where((start) => !start.isAfter(reading.recordedAt))
+              .length;
+          if (started != r) continue;
+          _abortOnLeft(
+            await _logOdometerReading.execute(reading),
+            'odometerReadings[$i]',
+          );
+        }
+      }
     }
   }
 
