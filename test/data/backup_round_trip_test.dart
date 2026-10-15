@@ -196,4 +196,166 @@ void main() {
     ).execute(vehicle.id);
     expect(statsAfter.getRight().toNullable(), statsBefore);
   });
+
+  test('a backup holding a rollover and a backdated override fill above a '
+      'later fill restores every row and the same stats into an empty '
+      'store', () async {
+    final a = await AppDatabase.open(path: inMemoryDatabasePath);
+    final vehicleRepoA = VehicleRepositoryImpl(VehicleDao(a));
+    final refuelRepoA = RefuelRepositoryImpl(RefuelDao(a));
+    final readingRepoA = OdometerReadingRepositoryImpl(OdometerReadingDao(a));
+    final serviceRepoA = ServiceLogRepositoryImpl(ServiceLogDao(a));
+    final expenseRepoA = ExpenseRepositoryImpl(ExpenseDao(a));
+    final logRefuel = LogRefuel(refuelRepoA, readingRepoA);
+
+    final seeded = [
+      await AddVehicle(vehicleRepoA).execute(vehicle),
+      await logRefuel.execute(
+        entry(
+          id: 0,
+          odometer: 1000,
+          quantity: 20,
+          pricePaid: 2000,
+          filledAt: daysAgo(40),
+        ),
+      ),
+      await logRefuel.execute(
+        entry(
+          id: 0,
+          odometer: 3000,
+          quantity: 22,
+          pricePaid: 2200,
+          filledAt: daysAgo(20),
+        ),
+      ),
+      await logRefuel.execute(
+        entry(
+          id: 0,
+          odometer: 3500,
+          quantity: 19,
+          pricePaid: 1900,
+          odometerOverride: true,
+          filledAt: daysAgo(30),
+        ),
+      ),
+      await logRefuel.execute(
+        entry(
+          id: 0,
+          odometer: 50,
+          quantity: 18,
+          pricePaid: 1800,
+          odometerOverride: true,
+          filledAt: daysAgo(10),
+        ),
+      ),
+      await LogOdometerReading(readingRepoA, refuelRepoA).execute(
+        OdometerReading(
+          id: 0,
+          vehicleId: vehicle.id,
+          odometer: 200,
+          recordedAt: daysAgo(6),
+        ),
+      ),
+      await logRefuel.execute(
+        entry(
+          id: 0,
+          odometer: 400,
+          quantity: 21,
+          pricePaid: 2100,
+          filledAt: daysAgo(3),
+        ),
+      ),
+      await LogService(serviceRepoA).execute(
+        ServiceLogEntry(
+          id: 0,
+          vehicleId: vehicle.id,
+          template: ServiceTemplate.engineOil,
+          performedAt: daysAgo(15),
+          odometer: 100,
+          cost: 450,
+        ),
+      ),
+      await LogExpense(expenseRepoA).execute(
+        Expense(
+          id: 0,
+          vehicleId: vehicle.id,
+          amount: 800,
+          date: daysAgo(5),
+          category: 'Parking',
+        ),
+      ),
+    ];
+    for (final result in seeded) {
+      expect(result.isRight(), isTrue, reason: '$result');
+    }
+
+    final stats = GetVehicleStats(
+      vehicleRepoA,
+      refuelRepoA,
+      expenseRepoA,
+      serviceRepoA,
+      readingRepoA,
+    );
+    final vehiclesBefore = await VehicleDao(a).getAll();
+    final refuelsBefore = await RefuelDao(a).getForVehicle(vehicle.id);
+    final readingsBefore = await OdometerReadingDao(
+      a,
+    ).getForVehicle(vehicle.id);
+    final servicesBefore = await ServiceLogDao(a).getForVehicle(vehicle.id);
+    final expensesBefore = await ExpenseDao(a).getForVehicle(vehicle.id);
+    final statsBefore = (await stats.execute(
+      vehicle.id,
+    )).getRight().toNullable()!;
+
+    const codec = DataBundleJsonCodec();
+    final exported = await ExportData(
+      vehicleRepoA,
+      refuelRepoA,
+      serviceRepoA,
+      expenseRepoA,
+      readingRepoA,
+      codec,
+    ).execute();
+    expect(exported.isRight(), isTrue, reason: '$exported');
+    final content = exported.getRight().toNullable()!;
+    await a.close();
+
+    final b = await AppDatabase.open(path: inMemoryDatabasePath);
+    addTearDown(b.close);
+    expect(await VehicleDao(b).getAll(), isEmpty);
+    final vehicleRepoB = VehicleRepositoryImpl(VehicleDao(b));
+    final refuelRepoB = RefuelRepositoryImpl(RefuelDao(b));
+    final readingRepoB = OdometerReadingRepositoryImpl(OdometerReadingDao(b));
+    final serviceRepoB = ServiceLogRepositoryImpl(ServiceLogDao(b));
+    final expenseRepoB = ExpenseRepositoryImpl(ExpenseDao(b));
+
+    final result = await ImportData(
+      AddVehicle(vehicleRepoB),
+      LogRefuel(refuelRepoB, readingRepoB),
+      LogService(serviceRepoB),
+      LogExpense(expenseRepoB),
+      LogOdometerReading(readingRepoB, refuelRepoB),
+      ListVehicles(vehicleRepoB),
+      codec,
+      SqfliteUnitOfWork(b),
+    ).execute(content);
+
+    expect(result.isRight(), isTrue, reason: '$result');
+    expect(await VehicleDao(b).getAll(), vehiclesBefore);
+    expect(await RefuelDao(b).getForVehicle(vehicle.id), refuelsBefore);
+    expect(
+      await OdometerReadingDao(b).getForVehicle(vehicle.id),
+      readingsBefore,
+    );
+    expect(await ServiceLogDao(b).getForVehicle(vehicle.id), servicesBefore);
+    expect(await ExpenseDao(b).getForVehicle(vehicle.id), expensesBefore);
+    final statsAfter = await GetVehicleStats(
+      vehicleRepoB,
+      refuelRepoB,
+      expenseRepoB,
+      serviceRepoB,
+      readingRepoB,
+    ).execute(vehicle.id);
+    expect(statsAfter.getRight().toNullable(), statsBefore);
+  });
 }

@@ -249,4 +249,77 @@ void main() {
     expect(await refuels.getForVehicle(vehicle.id), isEmpty);
     expect(await readings.getForVehicle(vehicle.id), isEmpty);
   });
+
+  test('a rollover backup refused in both replays reports the first error and '
+      'writes nothing', () async {
+    final readings = OdometerReadingDao(db);
+    DateTime daysAgo(int days) => DateTime.now().subtract(Duration(days: days));
+    final codec = FakeDataBundleCodec(
+      decodeResult: right((
+        vehicles: [vehicle],
+        entries: [
+          entry(
+            id: 4,
+            odometer: 50,
+            quantity: 20,
+            pricePaid: 2000,
+            odometerOverride: true,
+            filledAt: daysAgo(10),
+          ),
+          entry(
+            id: 5,
+            odometer: 400,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: daysAgo(3),
+          ),
+          entry(
+            id: 1,
+            odometer: 1000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: daysAgo(40),
+          ),
+          entry(
+            id: 2,
+            odometer: 3000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: daysAgo(20),
+          ),
+          entry(
+            id: 3,
+            odometer: 3500,
+            quantity: 20,
+            pricePaid: 2000,
+            odometerOverride: true,
+            filledAt: daysAgo(30),
+          ),
+        ],
+        serviceLog: const [],
+        // Below the fill at 3 days ago, so the run by run replay refuses it.
+        odometerReadings: [
+          OdometerReading(
+            id: 1,
+            vehicleId: vehicle.id,
+            odometer: 300,
+            recordedAt: daysAgo(2),
+          ),
+        ],
+        expenses: const [],
+      )),
+    );
+
+    final result = await importer(codec).execute('...');
+
+    final failure = result.getLeft().toNullable()! as ValidationFailure;
+    expect(failure.field, 'odometer');
+    expect(
+      failure.reason,
+      'refuels[3]: Odometer must be greater than the previous reading.',
+    );
+    expect(await vehicles.getAll(), isEmpty);
+    expect(await refuels.getForVehicle(vehicle.id), isEmpty);
+    expect(await readings.getForVehicle(vehicle.id), isEmpty);
+  });
 }

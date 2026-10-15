@@ -263,6 +263,67 @@ void main() {
     expect(refuelRepo.entries, hasLength(3));
   });
 
+  test('a backup with a rollover and an override fill below an earlier fill '
+      'imports as it does today', () async {
+    final now = DateTime.now();
+    final refuelRepo = FakeRefuelRepository();
+    final codec = FakeDataBundleCodec(
+      decodeResult: right((
+        vehicles: [vehicle],
+        entries: [
+          entry(
+            id: 5,
+            odometer: 50,
+            quantity: 20,
+            pricePaid: 2000,
+            odometerOverride: true,
+            filledAt: now.subtract(const Duration(days: 5)),
+          ),
+          entry(
+            id: 1,
+            odometer: 1000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: now.subtract(const Duration(days: 40)),
+          ),
+          entry(
+            id: 3,
+            odometer: 2000,
+            quantity: 20,
+            pricePaid: 2000,
+            odometerOverride: true,
+            filledAt: now.subtract(const Duration(days: 20)),
+          ),
+          entry(
+            id: 4,
+            odometer: 2500,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: now.subtract(const Duration(days: 10)),
+          ),
+          entry(
+            id: 2,
+            odometer: 3000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: now.subtract(const Duration(days: 30)),
+          ),
+        ],
+        serviceLog: const [],
+        odometerReadings: const [],
+        expenses: const [],
+      )),
+    );
+
+    final result = await importer(
+      refuelRepo: refuelRepo,
+      codec: codec,
+    ).execute('...');
+
+    expect(result.isRight(), isTrue, reason: '$result');
+    expect(refuelRepo.entries, hasLength(5));
+  });
+
   test('a rejected row aborts the unit of work so nothing commits', () async {
     final unitOfWork = FakeUnitOfWork();
     final codec = FakeDataBundleCodec(
