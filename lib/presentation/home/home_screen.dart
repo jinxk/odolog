@@ -204,7 +204,8 @@ class _HeroCard extends ConsumerWidget {
     // that has no average yet, or one that matches it exactly, shows no chip
     // rather than a misleading zero.
     final average = stats.averageMileage;
-    final delta = average == null ? 0.0 : window.mileage - average;
+    final rawDelta = average == null ? 0.0 : window.mileage - average;
+    final delta = formatMileage(rawDelta.abs()) == '0.0' ? 0.0 : rawDelta;
     // A single spoken label for the hero figure, so the reader hears the number,
     // its unit, and the trend as one phrase rather than the animated numeral
     // counting up digit by digit.
@@ -299,7 +300,7 @@ class _HeroCard extends ConsumerWidget {
                 alignment: Alignment.bottomLeft,
                 child: CountUpText(
                   value: window.costPerKm,
-                  format: (v) => '$currency ${v.toStringAsFixed(2)}',
+                  format: (v) => formatMoney(v, currency),
                   style: theme.textTheme.displaySmall!.copyWith(
                     color: AppColors.offWhite,
                   ),

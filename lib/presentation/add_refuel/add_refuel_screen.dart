@@ -189,7 +189,7 @@ class _AddRefuelScreenState extends ConsumerState<AddRefuelScreen> {
     final lastPrice = state.lastPricePerUnit;
     final lastPriceHint = lastPrice == null
         ? null
-        : 'Last price $currency ${lastPrice.toStringAsFixed(2)}'
+        : 'Last price ${formatMoney(lastPrice, currency)}'
               '${perUnitLabel(category)}';
 
     final items = ref.watch(historyProvider(widget.vehicle.id)).value;
@@ -714,7 +714,7 @@ class _PriceHint extends StatelessWidget {
       );
     }
     return Text(
-      '$currency ${pricePerUnit!.toStringAsFixed(2)} ${perUnitLabel(category)}',
+      '${formatMoney(pricePerUnit!, currency)} ${perUnitLabel(category)}',
       key: const Key('priceHint'),
       style: theme.textTheme.titleMedium?.copyWith(
         color: theme.colorScheme.secondary,

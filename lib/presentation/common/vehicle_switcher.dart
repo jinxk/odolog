@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/vehicle.dart';
 import '../providers/app_providers.dart';
+import 'formatting.dart';
 
 /// The active vehicle's name, which doubles as the switcher when there is more
 /// than one vehicle to switch between. The switcher opens as a menu anchored to
@@ -31,7 +32,7 @@ class VehicleSwitcher extends ConsumerWidget {
       menuChildren: [
         for (final option in vehicles)
           MenuItemButton(
-            leadingIcon: const Icon(Icons.directions_car),
+            leadingIcon: Icon(vehicleTypeIcon(option.type)),
             trailingIcon: option.id == vehicle.id
                 ? const Icon(Icons.check)
                 : null,

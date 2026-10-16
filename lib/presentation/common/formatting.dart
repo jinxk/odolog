@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/service_log_entry.dart';
@@ -25,11 +26,17 @@ String formatQuantity(double value) => value.toStringAsFixed(2);
 String formatDistance(double value) =>
     '${NumberFormat.decimalPattern().format(value.round())} km';
 
+String _groupedAmount(double value) =>
+    (NumberFormat.decimalPattern()
+          ..minimumFractionDigits = 2
+          ..maximumFractionDigits = 2)
+        .format(value);
+
 String formatMoney(double value, String symbol) =>
-    '$symbol ${value.toStringAsFixed(2)}';
+    '$symbol ${_groupedAmount(value)}';
 
 String formatMoneyPerKm(double value, String symbol) =>
-    '$symbol ${value.toStringAsFixed(2)} /km';
+    '$symbol ${_groupedAmount(value)} /km';
 
 String formatDate(DateTime when) => DateFormat('d MMM yyyy').format(when);
 
@@ -37,6 +44,11 @@ String formatDateTime(DateTime when) =>
     DateFormat('d MMM yyyy, h:mm a').format(when);
 
 String formatMonth(DateTime month) => DateFormat('MMMM yyyy').format(month);
+
+IconData vehicleTypeIcon(VehicleType type) => switch (type) {
+  VehicleType.motorcycle || VehicleType.scooter => Icons.two_wheeler,
+  VehicleType.car || VehicleType.other => Icons.directions_car,
+};
 
 String vehicleTypeLabel(VehicleType type) => switch (type) {
   VehicleType.car => 'Car',

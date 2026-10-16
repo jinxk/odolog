@@ -47,7 +47,7 @@ class VehiclesScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final vehicle = list[index];
               return ListTile(
-                leading: const Icon(Icons.directions_car),
+                leading: Icon(vehicleTypeIcon(vehicle.type)),
                 title: Text(vehicle.name),
                 subtitle: Text(
                   '${vehicleTypeLabel(vehicle.type)}, '
