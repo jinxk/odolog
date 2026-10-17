@@ -69,14 +69,30 @@ class ImportData {
         for (final e in bundle.entries)
           if (e.odometerOverride) e.vehicleId,
       };
-      if (withOverride.isEmpty) return left(aborted.failure);
-      // An override fill is never checked, so where it goes decides whether
-      // the rows around it pass. Try once more run by run, keep the first error.
-      try {
-        await _unitOfWork.run(() => _write(bundle, withOverride, byRun: true));
-      } on _ImportAborted {
-        return left(aborted.failure);
+      // Second try: rollover vehicles run by run. Third try: vehicles with an
+      // override fill run by run, override fills held back. An override fill
+      // is never checked, so where it goes decides whether the rows around it
+      // pass. If every try is refused the first error is kept.
+      final retries = [
+        if (rolledOver.isNotEmpty) (rolledOver, false),
+        if (withOverride.isNotEmpty) (withOverride, true),
+      ];
+      for (final (vehicleIds, holdOverrides) in retries) {
+        try {
+          await _unitOfWork.run(
+            () => _write(
+              bundle,
+              vehicleIds,
+              byRun: true,
+              holdOverrides: holdOverrides,
+            ),
+          );
+          return right(bundle);
+        } on _ImportAborted {
+          continue;
+        }
       }
+      return left(aborted.failure);
     }
     return right(bundle);
   }
@@ -85,6 +101,7 @@ class ImportData {
     DataBundle bundle,
     Set<int> vehicleIds, {
     required bool byRun,
+    bool holdOverrides = false,
   }) async {
     for (var i = 0; i < bundle.vehicles.length; i++) {
       final result = await _addVehicle.execute(bundle.vehicles[i]);
@@ -111,7 +128,7 @@ class ImportData {
       _abortOnLeft(result, 'odometerReadings[$i]');
     }
     if (byRun) {
-      await _writeByRun(bundle, vehicleIds);
+      await _writeByRun(bundle, vehicleIds, holdOverrides);
     } else {
       await _writeInDateOrder(bundle, vehicleIds);
     }
@@ -159,10 +176,14 @@ class ImportData {
 
   /// Each run goes in the way a vehicle with no rollover does: fills in file
   /// order, then readings, a reading going with the last run that started at
-  /// or before it. Override fills go after the readings, except the one that
-  /// starts a later run, so a backdated one cannot sit in front of a reading
-  /// saved before it.
-  Future<void> _writeByRun(DataBundle bundle, Set<int> vehicleIds) async {
+  /// or before it. With [holdOverrides], override fills go after the
+  /// readings, except the one that starts a later run, so a backdated one
+  /// cannot sit in front of a reading saved before it.
+  Future<void> _writeByRun(
+    DataBundle bundle,
+    Set<int> vehicleIds,
+    bool holdOverrides,
+  ) async {
     for (final vehicleId in vehicleIds) {
       final runs = const MileageCalculator().runs([
         for (final e in bundle.entries)
@@ -179,6 +200,7 @@ class ImportData {
             if (inRun.contains(bundle.entries[i])) i,
         ];
         bool waits(int i) =>
+            holdOverrides &&
             bundle.entries[i].odometerOverride &&
             (r == 0 ||
                 !bundle.entries[i].filledAt.isAtSameMomentAs(starts[r - 1]));

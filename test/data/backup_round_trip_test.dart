@@ -530,4 +530,46 @@ void main() {
       ),
     ]);
   });
+
+  test('a backup holding a rollover and an override fill above an earlier '
+      'reading restores every row and the same stats into an empty '
+      'store', () async {
+    await expectRoundTrip([
+      entry(
+        id: 0,
+        odometer: 200,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: daysAgo(24),
+      ),
+      entry(
+        id: 0,
+        odometer: 2000,
+        quantity: 20,
+        pricePaid: 2000,
+        odometerOverride: true,
+        filledAt: daysAgo(31),
+      ),
+      OdometerReading(
+        id: 0,
+        vehicleId: vehicle.id,
+        odometer: 400,
+        recordedAt: daysAgo(37),
+      ),
+      entry(
+        id: 0,
+        odometer: 1500,
+        quantity: 20,
+        pricePaid: 2000,
+        odometerOverride: true,
+        filledAt: daysAgo(17),
+      ),
+      OdometerReading(
+        id: 0,
+        vehicleId: vehicle.id,
+        odometer: 2000,
+        recordedAt: daysAgo(11),
+      ),
+    ]);
+  });
 }
