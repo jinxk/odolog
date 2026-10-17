@@ -419,7 +419,7 @@ abstract class OdometerReadingRepository {
 }
 ```
 
-The domain calculators consume the fills in drive order (`MileageCalculator.driveOrder`) and produce the value objects above. That is the repository order (odometer first, then timestamp) split into runs at each rollover, with the runs in date order. A rollover is a fill saved with the odometer override at a reading below the first fill of its run. Without a rollover the list is the repository order, and the window algorithm walks the entries in the sequence they were driven.
+The domain calculators consume the fills in drive order (`MileageCalculator.driveOrder`) and produce the value objects above. That is the repository order (odometer first, then timestamp) split into runs at each rollover, with the runs in date order, so drive order is the runs of `MileageCalculator.runs` joined. A rollover is a fill saved with the odometer override at a reading below the first fill of its run. Without a rollover the list is the repository order, and the window algorithm walks the entries in the sequence they were driven.
 
 ## Reminder scheduler port
 
@@ -466,7 +466,7 @@ Each use case is a thin, single-responsibility class that orchestrates repositor
 - **DeleteOdometerReading** removes a manual reading.
 - **RestoreRefuel**, **RestoreServiceEntry**, **RestoreExpense** and **RestoreOdometerReading** each write a deleted row back with its original id, which is what undo on the delete snack bar calls.
 - **ExportData** assembles every vehicle and everything logged against it, then hands the bundle to the `DataBundleCodec` port to produce the backup file content.
-- **ImportData** decodes a backup file through `DataBundleCodec` and writes it into the repositories, returning the imported bundle so the caller can report what came in. When a vehicle's fills hold an odometer rollover, its fills and readings are written in date order, since the file lists them by odometer; everything else is written in file order.
+- **ImportData** decodes a backup file through `DataBundleCodec` and writes it into the repositories, returning the imported bundle so the caller can report what came in. When a vehicle's fills hold an odometer rollover, its fills and readings are written in date order, since the file lists them by odometer; everything else is written in file order. If the backup is refused and it holds a rollover vehicle, it gets a second try that writes that vehicle run by run, and the first error is kept if the second try fails too.
 - **GetDataBundleTemplate** returns a blank backup file from the same port, for a user to fill in externally and import back.
 - **RunAutoBackup** reuses `ExportData` for the bundle, writes it under today's dated name through the `AutoBackupWriter` port, then prunes the folder to the newest seven. The once-a-day debounce and the consent gate live in the presentation coordinator that calls it, not here.
 - **ResetAllData** clears every table through the `DataEraser` port and cancels every scheduled reminder, for delete all data.
