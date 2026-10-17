@@ -125,6 +125,28 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('the hero label has no trend phrase when the change is 0.0', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    // The last window runs 15.075 km/l against a 15.038 average: a real but
+    // sub-0.05 gap that shows as 0.0.
+    await pumpHome(
+      tester,
+      seed: [
+        entry(id: 1, odometer: 10000, quantity: 30, pricePaid: 3000),
+        entry(id: 2, odometer: 10300, quantity: 20, pricePaid: 2000),
+        entry(id: 3, odometer: 10600, quantity: 19.9, pricePaid: 1990),
+      ],
+    );
+
+    expect(
+      find.bySemanticsLabel('Mileage 15.1 km/l over your last full tank'),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
   testWidgets('the title names the switch action when there is a fleet', (
     tester,
   ) async {

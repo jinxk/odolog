@@ -257,7 +257,7 @@ void main() {
     // Stats: lifetime spend Rs 7024, total quantity 70 L, projected range
     // 525 km, average mileage 15.0 km/l, average cost per km Rs 6.71 /km.
     await pumpStats(tester);
-    expect(find.text('Rs 7024.00'), findsWidgets);
+    expect(find.text('Rs 7,024.00'), findsWidgets);
     expect(find.text('70.00 L'), findsOneWidget);
     expect(find.text('525 km'), findsOneWidget);
     expect(find.text('15.0 km/l'), findsOneWidget);

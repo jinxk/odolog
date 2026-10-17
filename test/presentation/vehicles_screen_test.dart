@@ -15,12 +15,15 @@ const _pulsar = Vehicle(
   fuelCategory: FuelCategory.petrol,
 );
 
-Future<void> pumpScreen(WidgetTester tester) async {
+Future<void> pumpScreen(
+  WidgetTester tester, {
+  List<Vehicle> vehicles = const [_pulsar],
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         vehicleRepositoryProvider.overrideWithValue(
-          FakeVehicleRepository([_pulsar]),
+          FakeVehicleRepository(vehicles),
         ),
       ],
       child: const MaterialApp(home: VehiclesScreen()),
@@ -39,5 +42,38 @@ void main() {
 
     expect(find.byTooltip('Edit Pulsar 125'), findsOneWidget);
     expect(find.byTooltip('Delete Pulsar 125'), findsOneWidget);
+  });
+
+  testWidgets('two-wheelers get the two-wheeler icon, the rest the car icon', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      vehicles: const [
+        _pulsar,
+        Vehicle(
+          id: 2,
+          name: 'Activa',
+          type: VehicleType.scooter,
+          fuelCategory: FuelCategory.petrol,
+        ),
+        Vehicle(
+          id: 3,
+          name: 'Swift',
+          type: VehicleType.car,
+          fuelCategory: FuelCategory.petrol,
+        ),
+      ],
+    );
+
+    Finder iconIn(String name) => find.descendant(
+      of: find.widgetWithText(ListTile, name),
+      matching: find.byType(Icon),
+    );
+    Icon leading(String name) => tester.widget<Icon>(iconIn(name).first);
+
+    expect(leading('Pulsar 125').icon, Icons.two_wheeler);
+    expect(leading('Activa').icon, Icons.two_wheeler);
+    expect(leading('Swift').icon, Icons.directions_car);
   });
 }
