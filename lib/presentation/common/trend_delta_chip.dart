@@ -39,11 +39,14 @@ class TrendDeltaChip extends StatelessWidget {
 
   static final _significantDigit = RegExp('[1-9]');
 
+  /// Whether [delta] is zero or too small to show in [format]'s rounding.
+  static bool roundsToZero(double delta, String Function(double) format) =>
+      delta == 0 || !format(delta.abs()).contains(_significantDigit);
+
   @override
   Widget build(BuildContext context) {
-    if (delta == 0) return const SizedBox.shrink();
+    if (roundsToZero(delta, format)) return const SizedBox.shrink();
     final magnitude = format(delta.abs());
-    if (!magnitude.contains(_significantDigit)) return const SizedBox.shrink();
     final rising = delta > 0;
     final good = rising == higherIsBetter;
     final color = good ? positiveColor : negativeColor;

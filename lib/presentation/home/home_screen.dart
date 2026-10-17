@@ -201,11 +201,13 @@ class _HeroCard extends ConsumerWidget {
       color: AppColors.offWhite.withValues(alpha: 0.7),
     );
     // The trend rides against the vehicle's rolling average, so a fresh figure
-    // that has no average yet, or one that matches it exactly, shows no chip
-    // rather than a misleading zero.
+    // that has no average yet, or one whose change rounds to zero, shows no chip
+    // and no spoken trend rather than a misleading zero.
     final average = stats.averageMileage;
     final rawDelta = average == null ? 0.0 : window.mileage - average;
-    final delta = formatMileage(rawDelta.abs()) == '0.0' ? 0.0 : rawDelta;
+    final delta = TrendDeltaChip.roundsToZero(rawDelta, formatMileage)
+        ? 0.0
+        : rawDelta;
     // A single spoken label for the hero figure, so the reader hears the number,
     // its unit, and the trend as one phrase rather than the animated numeral
     // counting up digit by digit.
