@@ -14,6 +14,7 @@ import 'package:odolog/data/repositories/service_log_repository_impl.dart';
 import 'package:odolog/data/repositories/vehicle_repository_impl.dart';
 import 'package:odolog/domain/entities/expense.dart';
 import 'package:odolog/domain/entities/odometer_reading.dart';
+import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/domain/usecases/add_vehicle.dart';
@@ -45,6 +46,93 @@ void main() {
   );
 
   DateTime daysAgo(int days) => DateTime.now().subtract(Duration(days: days));
+
+  /// Saves [history] in order through the use cases on one real database,
+  /// exports it, imports the file into a second empty one and checks that the
+  /// rows and the stats came back the same.
+  Future<void> expectRoundTrip(List<Object> history) async {
+    final a = await AppDatabase.open(path: inMemoryDatabasePath);
+    final vehicleRepoA = VehicleRepositoryImpl(VehicleDao(a));
+    final refuelRepoA = RefuelRepositoryImpl(RefuelDao(a));
+    final readingRepoA = OdometerReadingRepositoryImpl(OdometerReadingDao(a));
+    final serviceRepoA = ServiceLogRepositoryImpl(ServiceLogDao(a));
+    final expenseRepoA = ExpenseRepositoryImpl(ExpenseDao(a));
+    final logRefuel = LogRefuel(refuelRepoA, readingRepoA);
+    final logReading = LogOdometerReading(readingRepoA, refuelRepoA);
+
+    expect((await AddVehicle(vehicleRepoA).execute(vehicle)).isRight(), isTrue);
+    for (final item in history) {
+      final saved = item is RefuelEntry
+          ? await logRefuel.execute(item)
+          : await logReading.execute(item as OdometerReading);
+      expect(saved.isRight(), isTrue, reason: '$item: $saved');
+    }
+
+    final stats = GetVehicleStats(
+      vehicleRepoA,
+      refuelRepoA,
+      expenseRepoA,
+      serviceRepoA,
+      readingRepoA,
+    );
+    final vehiclesBefore = await VehicleDao(a).getAll();
+    final refuelsBefore = await RefuelDao(a).getForVehicle(vehicle.id);
+    final readingsBefore = await OdometerReadingDao(
+      a,
+    ).getForVehicle(vehicle.id);
+    final statsBefore = (await stats.execute(
+      vehicle.id,
+    )).getRight().toNullable()!;
+
+    const codec = DataBundleJsonCodec();
+    final exported = await ExportData(
+      vehicleRepoA,
+      refuelRepoA,
+      serviceRepoA,
+      expenseRepoA,
+      readingRepoA,
+      codec,
+    ).execute();
+    expect(exported.isRight(), isTrue, reason: '$exported');
+    final content = exported.getRight().toNullable()!;
+    await a.close();
+
+    final b = await AppDatabase.open(path: inMemoryDatabasePath);
+    addTearDown(b.close);
+    expect(await VehicleDao(b).getAll(), isEmpty);
+    final vehicleRepoB = VehicleRepositoryImpl(VehicleDao(b));
+    final refuelRepoB = RefuelRepositoryImpl(RefuelDao(b));
+    final readingRepoB = OdometerReadingRepositoryImpl(OdometerReadingDao(b));
+    final serviceRepoB = ServiceLogRepositoryImpl(ServiceLogDao(b));
+    final expenseRepoB = ExpenseRepositoryImpl(ExpenseDao(b));
+
+    final result = await ImportData(
+      AddVehicle(vehicleRepoB),
+      LogRefuel(refuelRepoB, readingRepoB),
+      LogService(serviceRepoB),
+      LogExpense(expenseRepoB),
+      LogOdometerReading(readingRepoB, refuelRepoB),
+      ListVehicles(vehicleRepoB),
+      codec,
+      SqfliteUnitOfWork(b),
+    ).execute(content);
+
+    expect(result.isRight(), isTrue, reason: '$result');
+    expect(await VehicleDao(b).getAll(), vehiclesBefore);
+    expect(await RefuelDao(b).getForVehicle(vehicle.id), refuelsBefore);
+    expect(
+      await OdometerReadingDao(b).getForVehicle(vehicle.id),
+      readingsBefore,
+    );
+    final statsAfter = await GetVehicleStats(
+      vehicleRepoB,
+      refuelRepoB,
+      expenseRepoB,
+      serviceRepoB,
+      readingRepoB,
+    ).execute(vehicle.id);
+    expect(statsAfter.getRight().toNullable(), statsBefore);
+  }
 
   test('a backup holding an odometer rollover restores every row and the same '
       'stats into an empty store', () async {
@@ -357,5 +445,89 @@ void main() {
       readingRepoB,
     ).execute(vehicle.id);
     expect(statsAfter.getRight().toNullable(), statsBefore);
+  });
+
+  test('a backup holding an override fill dated before a later manual reading '
+      'restores every row and the same stats into an empty store', () async {
+    await expectRoundTrip([
+      entry(
+        id: 0,
+        odometer: 1000,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: daysAgo(40),
+      ),
+      entry(
+        id: 0,
+        odometer: 3000,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: daysAgo(20),
+      ),
+      OdometerReading(
+        id: 0,
+        vehicleId: vehicle.id,
+        odometer: 2000,
+        recordedAt: daysAgo(25),
+      ),
+      entry(
+        id: 0,
+        odometer: 3500,
+        quantity: 20,
+        pricePaid: 2000,
+        odometerOverride: true,
+        filledAt: daysAgo(30),
+      ),
+    ]);
+  });
+
+  test('a backup holding a rollover and an override fill dated before a later '
+      'manual reading restores every row and the same stats into an empty '
+      'store', () async {
+    await expectRoundTrip([
+      entry(
+        id: 0,
+        odometer: 1000,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: daysAgo(40),
+      ),
+      entry(
+        id: 0,
+        odometer: 3000,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: daysAgo(20),
+      ),
+      OdometerReading(
+        id: 0,
+        vehicleId: vehicle.id,
+        odometer: 2000,
+        recordedAt: daysAgo(25),
+      ),
+      entry(
+        id: 0,
+        odometer: 3500,
+        quantity: 20,
+        pricePaid: 2000,
+        odometerOverride: true,
+        filledAt: daysAgo(30),
+      ),
+      entry(
+        id: 0,
+        odometer: 50,
+        quantity: 20,
+        pricePaid: 2000,
+        odometerOverride: true,
+        filledAt: daysAgo(10),
+      ),
+      entry(
+        id: 0,
+        odometer: 400,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: daysAgo(3),
+      ),
+    ]);
   });
 }

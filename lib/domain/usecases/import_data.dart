@@ -65,12 +65,15 @@ class ImportData {
     try {
       await _unitOfWork.run(() => _write(bundle, rolledOver, byRun: false));
     } on _ImportAborted catch (aborted) {
-      if (rolledOver.isEmpty) return left(aborted.failure);
-      // A backdated override fill above a later fill is refused in date order
-      // but goes in run by run, so a rollover backup gets a second try and
-      // keeps the first error if that fails too.
+      final withOverride = {
+        for (final e in bundle.entries)
+          if (e.odometerOverride) e.vehicleId,
+      };
+      if (withOverride.isEmpty) return left(aborted.failure);
+      // An override fill is never checked, so where it goes decides whether
+      // the rows around it pass. Try once more run by run, keep the first error.
       try {
-        await _unitOfWork.run(() => _write(bundle, rolledOver, byRun: true));
+        await _unitOfWork.run(() => _write(bundle, withOverride, byRun: true));
       } on _ImportAborted {
         return left(aborted.failure);
       }
@@ -80,7 +83,7 @@ class ImportData {
 
   Future<void> _write(
     DataBundle bundle,
-    Set<int> rolledOver, {
+    Set<int> vehicleIds, {
     required bool byRun,
   }) async {
     for (var i = 0; i < bundle.vehicles.length; i++) {
@@ -88,7 +91,7 @@ class ImportData {
       _abortOnLeft(result, 'vehicles[$i]');
     }
     for (var i = 0; i < bundle.entries.length; i++) {
-      if (rolledOver.contains(bundle.entries[i].vehicleId)) continue;
+      if (vehicleIds.contains(bundle.entries[i].vehicleId)) continue;
       final result = await _logRefuel.execute(bundle.entries[i]);
       _abortOnLeft(result, 'refuels[$i]');
     }
@@ -101,16 +104,16 @@ class ImportData {
       _abortOnLeft(result, 'expenses[$i]');
     }
     for (var i = 0; i < bundle.odometerReadings.length; i++) {
-      if (rolledOver.contains(bundle.odometerReadings[i].vehicleId)) continue;
+      if (vehicleIds.contains(bundle.odometerReadings[i].vehicleId)) continue;
       final result = await _logOdometerReading.execute(
         bundle.odometerReadings[i],
       );
       _abortOnLeft(result, 'odometerReadings[$i]');
     }
     if (byRun) {
-      await _writeByRun(bundle, rolledOver);
+      await _writeByRun(bundle, vehicleIds);
     } else {
-      await _writeInDateOrder(bundle, rolledOver);
+      await _writeInDateOrder(bundle, vehicleIds);
     }
   }
 
@@ -154,9 +157,11 @@ class ImportData {
     }
   }
 
-  /// Each run of a rollover vehicle goes in the way a vehicle with no rollover
-  /// does: fills in file order, then readings. A reading goes with the last run
-  /// that started at or before it.
+  /// Each run goes in the way a vehicle with no rollover does: fills in file
+  /// order, then readings, a reading going with the last run that started at
+  /// or before it. Override fills go after the readings, except the one that
+  /// starts a later run, so a backdated one cannot sit in front of a reading
+  /// saved before it.
   Future<void> _writeByRun(DataBundle bundle, Set<int> vehicleIds) async {
     for (final vehicleId in vehicleIds) {
       final runs = const MileageCalculator().runs([
@@ -169,8 +174,15 @@ class ImportData {
       ];
       for (var r = 0; r < runs.length; r++) {
         final inRun = Set<RefuelEntry>.identity()..addAll(runs[r]);
-        for (var i = 0; i < bundle.entries.length; i++) {
-          if (!inRun.contains(bundle.entries[i])) continue;
+        final fills = [
+          for (var i = 0; i < bundle.entries.length; i++)
+            if (inRun.contains(bundle.entries[i])) i,
+        ];
+        bool waits(int i) =>
+            bundle.entries[i].odometerOverride &&
+            (r == 0 ||
+                !bundle.entries[i].filledAt.isAtSameMomentAs(starts[r - 1]));
+        for (final i in fills.where((i) => !waits(i))) {
           _abortOnLeft(
             await _logRefuel.execute(bundle.entries[i]),
             'refuels[$i]',
@@ -186,6 +198,12 @@ class ImportData {
           _abortOnLeft(
             await _logOdometerReading.execute(reading),
             'odometerReadings[$i]',
+          );
+        }
+        for (final i in fills.where(waits)) {
+          _abortOnLeft(
+            await _logRefuel.execute(bundle.entries[i]),
+            'refuels[$i]',
           );
         }
       }
