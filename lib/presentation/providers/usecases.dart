@@ -110,6 +110,8 @@ ImportData importData(Ref ref) => ImportData(
   ref.watch(listVehiclesProvider),
   ref.watch(dataBundleCodecProvider),
   ref.watch(unitOfWorkProvider),
+  refuelRepository: ref.watch(refuelRepositoryProvider),
+  readingRepository: ref.watch(odometerReadingRepositoryProvider),
 );
 
 @Riverpod(keepAlive: true)
