@@ -49,6 +49,8 @@ void main() {
       ListVehicles(vehicles),
       codec,
       unitOfWork ?? FakeUnitOfWork(),
+      refuels,
+      readings,
     );
   }
 

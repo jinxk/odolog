@@ -115,6 +115,8 @@ void main() {
       ListVehicles(vehicleRepoB),
       codec,
       SqfliteUnitOfWork(b),
+      refuelRepoB,
+      readingRepoB,
     ).execute(content);
 
     expect(result.isRight(), isTrue, reason: '$result');
@@ -264,6 +266,8 @@ void main() {
       ListVehicles(vehicleRepoB),
       codec,
       SqfliteUnitOfWork(b),
+      refuelRepoB,
+      readingRepoB,
     ).execute(content);
 
     expect(result.isRight(), isTrue, reason: '$result');
@@ -426,6 +430,8 @@ void main() {
       ListVehicles(vehicleRepoB),
       codec,
       SqfliteUnitOfWork(b),
+      refuelRepoB,
+      readingRepoB,
     ).execute(content);
 
     expect(result.isRight(), isTrue, reason: '$result');

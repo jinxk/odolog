@@ -70,8 +70,8 @@ void main() {
       ListVehicles(vehicleRepo),
       codec,
       SqfliteUnitOfWork(db),
-      refuelRepository: RefuelRepositoryImpl(refuels),
-      readingRepository: readingRepo,
+      RefuelRepositoryImpl(refuels),
+      readingRepo,
     );
   }
 

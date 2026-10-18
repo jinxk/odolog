@@ -36,13 +36,11 @@ class ImportData {
     this._logOdometerReading,
     this._listVehicles,
     this._codec,
-    this._unitOfWork, {
+    this._unitOfWork,
     this._refuelRepository,
     this._readingRepository,
-  });
+  );
 
-  final RefuelRepository? _refuelRepository;
-  final OdometerReadingRepository? _readingRepository;
   final AddVehicle _addVehicle;
   final LogRefuel _logRefuel;
   final LogService _logService;
@@ -51,6 +49,8 @@ class ImportData {
   final ListVehicles _listVehicles;
   final DataBundleCodec _codec;
   final UnitOfWork _unitOfWork;
+  final RefuelRepository _refuelRepository;
+  final OdometerReadingRepository _readingRepository;
 
   Future<Result<DataBundle>> execute(String content) async {
     final decoded = _codec.decode(content);
@@ -300,34 +300,28 @@ class ImportData {
   /// sits in the sequence, so it is caught before any try. A read that fails
   /// is returned as it is.
   Future<Failure?> _findStoredItem(DataBundle bundle) async {
-    final refuelRepository = _refuelRepository;
-    if (refuelRepository != null) {
-      for (final vehicleId in {for (final e in bundle.entries) e.vehicleId}) {
-        final stored = await refuelRepository.getForVehicle(vehicleId);
-        final failure = stored.getLeft().toNullable();
-        if (failure != null) return failure;
-        final ids = {for (final e in stored.getRight().toNullable()!) e.id};
-        if (bundle.entries.any(
-          (e) => e.vehicleId == vehicleId && ids.contains(e.id),
-        )) {
-          return const DuplicateIdFailure(_duplicateIdMessage);
-        }
+    for (final vehicleId in {for (final e in bundle.entries) e.vehicleId}) {
+      final stored = await _refuelRepository.getForVehicle(vehicleId);
+      final failure = stored.getLeft().toNullable();
+      if (failure != null) return failure;
+      final ids = {for (final e in stored.getRight().toNullable()!) e.id};
+      if (bundle.entries.any(
+        (e) => e.vehicleId == vehicleId && ids.contains(e.id),
+      )) {
+        return const DuplicateIdFailure(_duplicateIdMessage);
       }
     }
-    final readingRepository = _readingRepository;
-    if (readingRepository != null) {
-      for (final vehicleId in {
-        for (final r in bundle.odometerReadings) r.vehicleId,
-      }) {
-        final stored = await readingRepository.getForVehicle(vehicleId);
-        final failure = stored.getLeft().toNullable();
-        if (failure != null) return failure;
-        final ids = {for (final r in stored.getRight().toNullable()!) r.id};
-        if (bundle.odometerReadings.any(
-          (r) => r.vehicleId == vehicleId && ids.contains(r.id),
-        )) {
-          return const DuplicateIdFailure(_duplicateIdMessage);
-        }
+    for (final vehicleId in {
+      for (final r in bundle.odometerReadings) r.vehicleId,
+    }) {
+      final stored = await _readingRepository.getForVehicle(vehicleId);
+      final failure = stored.getLeft().toNullable();
+      if (failure != null) return failure;
+      final ids = {for (final r in stored.getRight().toNullable()!) r.id};
+      if (bundle.odometerReadings.any(
+        (r) => r.vehicleId == vehicleId && ids.contains(r.id),
+      )) {
+        return const DuplicateIdFailure(_duplicateIdMessage);
       }
     }
     return null;
