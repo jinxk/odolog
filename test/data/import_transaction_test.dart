@@ -70,6 +70,8 @@ void main() {
       ListVehicles(vehicleRepo),
       codec,
       SqfliteUnitOfWork(db),
+      refuelRepository: RefuelRepositoryImpl(refuels),
+      readingRepository: readingRepo,
     );
   }
 
@@ -213,6 +215,109 @@ void main() {
       expect(await expenses.getForVehicle(vehicle.id), hasLength(1));
     },
   );
+
+  const duplicateMessage =
+      'Some items in this file are already on this phone, so nothing was '
+      'imported. Import only adds new items, it does not replace what is '
+      'here.';
+
+  test('fills and readings imported twice for a vehicle already on the phone '
+      'are refused with the plain message', () async {
+    await vehicles.insert(vehicle);
+    final readings = OdometerReadingDao(db);
+    final codec = FakeDataBundleCodec(
+      decodeResult: right((
+        vehicles: const <Vehicle>[],
+        entries: [
+          entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
+          entry(id: 2, odometer: 1400, quantity: 22, pricePaid: 2200),
+        ],
+        serviceLog: const [],
+        odometerReadings: [
+          OdometerReading(
+            id: 1,
+            vehicleId: vehicle.id,
+            odometer: 1500,
+            recordedAt: DateTime.now().subtract(const Duration(days: 1)),
+          ),
+        ],
+        expenses: const [],
+      )),
+    );
+
+    final first = await importer(codec).execute('...');
+    expect(first.isRight(), isTrue, reason: '$first');
+
+    final second = await importer(codec).execute('...');
+
+    final failure = second.getLeft().toNullable()! as DuplicateIdFailure;
+    expect(failure.message, duplicateMessage);
+    expect(await refuels.getForVehicle(vehicle.id), hasLength(2));
+    expect(await readings.getForVehicle(vehicle.id), hasLength(1));
+  });
+
+  test('a rollover backup imported twice for a vehicle already on the phone '
+      'is refused with the plain message', () async {
+    await vehicles.insert(vehicle);
+    final readings = OdometerReadingDao(db);
+    DateTime daysAgo(int days) => DateTime.now().subtract(Duration(days: days));
+    final codec = FakeDataBundleCodec(
+      decodeResult: right((
+        vehicles: const <Vehicle>[],
+        entries: [
+          entry(
+            id: 3,
+            odometer: 100,
+            quantity: 20,
+            pricePaid: 2000,
+            odometerOverride: true,
+            filledAt: daysAgo(10),
+          ),
+          entry(
+            id: 4,
+            odometer: 400,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: daysAgo(5),
+          ),
+          entry(
+            id: 1,
+            odometer: 9000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: daysAgo(30),
+          ),
+          entry(
+            id: 2,
+            odometer: 9500,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: daysAgo(20),
+          ),
+        ],
+        serviceLog: const [],
+        odometerReadings: [
+          OdometerReading(
+            id: 1,
+            vehicleId: vehicle.id,
+            odometer: 450,
+            recordedAt: daysAgo(2),
+          ),
+        ],
+        expenses: const [],
+      )),
+    );
+
+    final first = await importer(codec).execute('...');
+    expect(first.isRight(), isTrue, reason: '$first');
+
+    final second = await importer(codec).execute('...');
+
+    final failure = second.getLeft().toNullable()! as DuplicateIdFailure;
+    expect(failure.message, duplicateMessage);
+    expect(await refuels.getForVehicle(vehicle.id), hasLength(4));
+    expect(await readings.getForVehicle(vehicle.id), hasLength(1));
+  });
 
   test('a bundle with a bad odometer reading writes nothing at all', () async {
     final readings = OdometerReadingDao(db);
