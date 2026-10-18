@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.1 - 2026-10-18
+
+- Backups with an odometer rollover and a backdated fill entered with the override now import.
+- Backups where a fill entered with the override is dated before a later odometer reading now import.
+- Money amounts show thousands separators everywhere, the same way distances do.
+- Motorcycles and scooters show a two-wheeler icon in the vehicle switcher and the vehicle list.
+- When the mileage change rounds to 0.0, the screen reader no longer reads a zero trend.
+
 ## 1.5.0 - 2026-10-14
 
 - Backups that hold an odometer rollover now import.

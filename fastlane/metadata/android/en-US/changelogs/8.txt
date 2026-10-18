@@ -1,0 +1,1 @@
+Backups with an odometer rollover and a backdated override fill now import, and so do backups with an override fill dated before a later reading.Money amounts show thousands separators. Motorcycles and scooters get a two-wheeler icon. The screen reader skips a zero mileage trend.
