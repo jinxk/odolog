@@ -319,6 +319,80 @@ void main() {
     expect(await readings.getForVehicle(vehicle.id), hasLength(1));
   });
 
+  test(
+    'a backup that needs a retry, with a fill id stored under another '
+    'vehicle, is refused with the plain message and writes nothing',
+    () async {
+      await vehicles.insert(vehicle);
+      await vehicles.insert(
+        const Vehicle(
+          id: 2,
+          name: 'City',
+          type: VehicleType.car,
+          fuelCategory: FuelCategory.petrol,
+        ),
+      );
+      await refuels.insert(
+        entry(
+          id: 1,
+          vehicleId: 2,
+          odometer: 500,
+          quantity: 20,
+          pricePaid: 2000,
+        ),
+      );
+      DateTime daysAgo(int days) =>
+          DateTime.now().subtract(Duration(days: days));
+      final codec = FakeDataBundleCodec(
+        decodeResult: right((
+          vehicles: const <Vehicle>[],
+          entries: [
+            entry(
+              id: 10,
+              odometer: 1000,
+              quantity: 20,
+              pricePaid: 2000,
+              filledAt: daysAgo(20),
+            ),
+            // Behind the fill before it, so the first try stops here.
+            entry(
+              id: 11,
+              odometer: 900,
+              quantity: 20,
+              pricePaid: 2000,
+              filledAt: daysAgo(10),
+            ),
+            entry(
+              id: 1,
+              odometer: 2000,
+              quantity: 20,
+              pricePaid: 2000,
+              filledAt: daysAgo(5),
+            ),
+            entry(
+              id: 12,
+              odometer: 3000,
+              quantity: 20,
+              pricePaid: 2000,
+              odometerOverride: true,
+              filledAt: daysAgo(1),
+            ),
+          ],
+          serviceLog: const [],
+          odometerReadings: const [],
+          expenses: const [],
+        )),
+      );
+
+      final result = await importer(codec).execute('...');
+
+      final failure = result.getLeft().toNullable()! as DuplicateIdFailure;
+      expect(failure.message, duplicateMessage);
+      expect(await refuels.getForVehicle(vehicle.id), isEmpty);
+      expect(await refuels.getForVehicle(2), hasLength(1));
+    },
+  );
+
   test('a bundle with a bad odometer reading writes nothing at all', () async {
     final readings = OdometerReadingDao(db);
     final codec = FakeDataBundleCodec(
