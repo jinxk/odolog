@@ -44,13 +44,19 @@ void main() {
     type: VehicleType.car,
     fuelCategory: FuelCategory.petrol,
   );
+  const second = Vehicle(
+    id: 2,
+    name: 'Activa',
+    type: VehicleType.scooter,
+    fuelCategory: FuelCategory.petrol,
+  );
 
   DateTime daysAgo(int days) => DateTime.now().subtract(Duration(days: days));
 
   /// Saves [history] in order through the use cases on one real database,
   /// exports it, imports the file into a second empty one and checks that the
   /// rows and the stats came back the same.
-  Future<void> expectRoundTrip(List<Object> history) async {
+  Future<void> expectRoundTrip(List<Object> history, {Vehicle? second}) async {
     final a = await AppDatabase.open(path: inMemoryDatabasePath);
     final vehicleRepoA = VehicleRepositoryImpl(VehicleDao(a));
     final refuelRepoA = RefuelRepositoryImpl(RefuelDao(a));
@@ -60,7 +66,10 @@ void main() {
     final logRefuel = LogRefuel(refuelRepoA, readingRepoA);
     final logReading = LogOdometerReading(readingRepoA, refuelRepoA);
 
-    expect((await AddVehicle(vehicleRepoA).execute(vehicle)).isRight(), isTrue);
+    final vehicles = [vehicle, ?second];
+    for (final v in vehicles) {
+      expect((await AddVehicle(vehicleRepoA).execute(v)).isRight(), isTrue);
+    }
     for (final item in history) {
       final saved = item is RefuelEntry
           ? await logRefuel.execute(item)
@@ -76,13 +85,17 @@ void main() {
       readingRepoA,
     );
     final vehiclesBefore = await VehicleDao(a).getAll();
-    final refuelsBefore = await RefuelDao(a).getForVehicle(vehicle.id);
-    final readingsBefore = await OdometerReadingDao(
-      a,
-    ).getForVehicle(vehicle.id);
-    final statsBefore = (await stats.execute(
-      vehicle.id,
-    )).getRight().toNullable()!;
+    final refuelsBefore = {
+      for (final v in vehicles) v.id: await RefuelDao(a).getForVehicle(v.id),
+    };
+    final readingsBefore = {
+      for (final v in vehicles)
+        v.id: await OdometerReadingDao(a).getForVehicle(v.id),
+    };
+    final statsBefore = {
+      for (final v in vehicles)
+        v.id: (await stats.execute(v.id)).getRight().toNullable()!,
+    };
 
     const codec = DataBundleJsonCodec();
     final exported = await ExportData(
@@ -121,19 +134,24 @@ void main() {
 
     expect(result.isRight(), isTrue, reason: '$result');
     expect(await VehicleDao(b).getAll(), vehiclesBefore);
-    expect(await RefuelDao(b).getForVehicle(vehicle.id), refuelsBefore);
-    expect(
-      await OdometerReadingDao(b).getForVehicle(vehicle.id),
-      readingsBefore,
-    );
-    final statsAfter = await GetVehicleStats(
+    final statsB = GetVehicleStats(
       vehicleRepoB,
       refuelRepoB,
       expenseRepoB,
       serviceRepoB,
       readingRepoB,
-    ).execute(vehicle.id);
-    expect(statsAfter.getRight().toNullable(), statsBefore);
+    );
+    for (final v in vehicles) {
+      expect(await RefuelDao(b).getForVehicle(v.id), refuelsBefore[v.id]);
+      expect(
+        await OdometerReadingDao(b).getForVehicle(v.id),
+        readingsBefore[v.id],
+      );
+      expect(
+        (await statsB.execute(v.id)).getRight().toNullable(),
+        statsBefore[v.id],
+      );
+    }
   }
 
   test('a backup holding an odometer rollover restores every row and the same '
@@ -576,6 +594,88 @@ void main() {
         odometer: 2000,
         recordedAt: daysAgo(11),
       ),
+    ]);
+  });
+
+  RefuelEntry fill(
+    double odometer,
+    DateTime filledAt, {
+    bool override = false,
+    int vehicleId = 1,
+  }) => entry(
+    id: 0,
+    odometer: odometer,
+    quantity: 20,
+    pricePaid: 2000,
+    odometerOverride: override,
+    filledAt: filledAt,
+    vehicleId: vehicleId,
+  );
+
+  OdometerReading reading(
+    double odometer,
+    DateTime recordedAt,
+    int vehicleId,
+  ) => OdometerReading(
+    id: 0,
+    vehicleId: vehicleId,
+    odometer: odometer,
+    recordedAt: recordedAt,
+  );
+
+  test('a backup holding an override fill that corrects a fill typed too high '
+      'restores every row and the same stats into an empty store', () async {
+    await expectRoundTrip([
+      fill(1000, daysAgo(50)),
+      fill(2000, daysAgo(40)),
+      fill(1500, daysAgo(30), override: true),
+      fill(1800, daysAgo(20)),
+    ]);
+  });
+
+  test('a backup holding a rollover fill dated between fills it is out of '
+      'order with restores every row and the same stats into an empty '
+      'store', () async {
+    await expectRoundTrip([
+      fill(100, daysAgo(24)),
+      fill(3000, daysAgo(20)),
+      fill(5000, daysAgo(50), override: true),
+      fill(2000, daysAgo(45), override: true),
+    ]);
+  });
+
+  test('a backup holding a reading that goes in between two override fills '
+      'restores every row and the same stats into an empty store', () async {
+    await expectRoundTrip([
+      fill(1000, daysAgo(40)),
+      reading(1500, daysAgo(25), 1),
+      fill(5000, daysAgo(50), override: true),
+      fill(3000, daysAgo(33), override: true),
+    ]);
+  });
+
+  test('a backup holding two vehicles that each need a different import order '
+      'restores every row and the same stats into an empty store', () async {
+    await expectRoundTrip([
+      fill(1000, daysAgo(50)),
+      fill(2000, daysAgo(40)),
+      fill(1500, daysAgo(30), override: true),
+      fill(1800, daysAgo(20)),
+      fill(500, daysAgo(10), override: true),
+      fill(1000, daysAgo(40), vehicleId: 2),
+      fill(3000, daysAgo(20), vehicleId: 2),
+      reading(2000, daysAgo(25), 2),
+      fill(3500, daysAgo(30), override: true, vehicleId: 2),
+    ], second: second);
+  });
+
+  test('a backup holding a reading and a higher fill saved at the same moment '
+      'restores every row and the same stats into an empty store', () async {
+    final at = daysAgo(20);
+    await expectRoundTrip([
+      fill(1000, daysAgo(40)),
+      reading(1500, at, 1),
+      fill(2000, at),
     ]);
   });
 }
