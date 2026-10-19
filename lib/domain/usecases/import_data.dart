@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:fpdart/fpdart.dart';
 
 import '../../core/failures.dart';
@@ -9,6 +11,7 @@ import '../calculators/mileage_calculator.dart';
 import '../entities/refuel_entry.dart';
 import '../repositories/odometer_reading_repository.dart';
 import '../repositories/refuel_repository.dart';
+import '../validators/odometer_sequence_validator.dart';
 import 'add_vehicle.dart';
 import 'list_vehicles.dart';
 import 'log_expense.dart';
@@ -71,55 +74,46 @@ class ImportData {
     if (stored != null) return left(stored);
 
     final rolledOver = _vehiclesWithRollover(bundle.entries);
-    try {
-      await _unitOfWork.run(() => _write(bundle, rolledOver, byRun: false));
-    } on _ImportAborted catch (aborted) {
-      final withOverride = {
-        for (final e in bundle.entries)
-          if (e.odometerOverride) e.vehicleId,
-      };
-      // Second try: rollover vehicles run by run. Third try: vehicles with an
-      // override fill run by run, override fills held back. An override fill
-      // is never checked, so where it goes decides whether the rows around it
-      // pass. If every try is refused the first error is kept.
-      final retries = [
-        if (rolledOver.isNotEmpty) (rolledOver, false),
-        if (withOverride.isNotEmpty) (withOverride, true),
-      ];
-      for (final (vehicleIds, holdOverrides) in retries) {
-        try {
-          await _unitOfWork.run(
-            () => _write(
-              bundle,
-              vehicleIds,
-              byRun: true,
-              holdOverrides: holdOverrides,
-            ),
-          );
-          return right(bundle);
-        } on _ImportAborted {
-          continue;
-        }
+    // Order per vehicle: 0 the first try (file order, by date for a rollover
+    // vehicle), 1 run by run, 2 run by run with override fills held back,
+    // 3 the order the rows were saved in. An override fill is never checked,
+    // so where it goes decides whether the rows around it pass. Vehicles never
+    // check each other's rows, so a refused vehicle moves on alone and the
+    // whole file is written again. If every order is refused the first error
+    // is kept.
+    final orders = <int, int>{};
+    Failure? first;
+    while (true) {
+      try {
+        await _unitOfWork.run(() => _write(bundle, rolledOver, orders));
+        return right(bundle);
+      } on _ImportAborted catch (aborted) {
+        first ??= aborted.failure;
+        final vehicleId = aborted.vehicleId;
+        if (vehicleId == null) return left(first);
+        final next = (orders[vehicleId] ?? 0) + 1;
+        if (next > 3) return left(first);
+        orders[vehicleId] = next;
       }
-      return left(aborted.failure);
     }
-    return right(bundle);
   }
 
   Future<void> _write(
     DataBundle bundle,
-    Set<int> vehicleIds, {
-    required bool byRun,
-    bool holdOverrides = false,
-  }) async {
+    Set<int> rolledOver,
+    Map<int, int> orders,
+  ) async {
+    bool plain(int vehicleId) =>
+        !rolledOver.contains(vehicleId) && !orders.containsKey(vehicleId);
     for (var i = 0; i < bundle.vehicles.length; i++) {
       final result = await _addVehicle.execute(bundle.vehicles[i]);
       _abortOnLeft(result, 'vehicles[$i]');
     }
     for (var i = 0; i < bundle.entries.length; i++) {
-      if (vehicleIds.contains(bundle.entries[i].vehicleId)) continue;
+      final vehicleId = bundle.entries[i].vehicleId;
+      if (!plain(vehicleId)) continue;
       final result = await _logRefuel.execute(bundle.entries[i]);
-      _abortOnLeft(result, 'refuels[$i]');
+      _abortOnLeft(result, 'refuels[$i]', vehicleId);
     }
     for (var i = 0; i < bundle.serviceLog.length; i++) {
       final result = await _logService.execute(bundle.serviceLog[i]);
@@ -130,16 +124,28 @@ class ImportData {
       _abortOnLeft(result, 'expenses[$i]');
     }
     for (var i = 0; i < bundle.odometerReadings.length; i++) {
-      if (vehicleIds.contains(bundle.odometerReadings[i].vehicleId)) continue;
+      final vehicleId = bundle.odometerReadings[i].vehicleId;
+      if (!plain(vehicleId)) continue;
       final result = await _logOdometerReading.execute(
         bundle.odometerReadings[i],
       );
-      _abortOnLeft(result, 'odometerReadings[$i]');
+      _abortOnLeft(result, 'odometerReadings[$i]', vehicleId);
     }
-    if (byRun) {
-      await _writeByRun(bundle, vehicleIds, holdOverrides);
-    } else {
-      await _writeInDateOrder(bundle, vehicleIds);
+    // Rollover vehicles still on the first try go in together, so the first
+    // error is the one the first try reports.
+    await _writeInDateOrder(bundle, {
+      for (final v in rolledOver)
+        if ((orders[v] ?? 0) == 0) v,
+    });
+    for (final MapEntry(key: vehicleId, value: order) in orders.entries) {
+      switch (order) {
+        case 1:
+          await _writeByRun(bundle, {vehicleId}, false);
+        case 2:
+          await _writeByRun(bundle, {vehicleId}, true);
+        case 3:
+          await _writeSaved(bundle, vehicleId);
+      }
     }
   }
 
@@ -153,6 +159,7 @@ class ImportData {
               DateTime at,
               double odometer,
               String where,
+              int vehicleId,
               Future<Result<Object?>> Function() write,
             })
           >[
@@ -162,6 +169,7 @@ class ImportData {
                   at: bundle.entries[i].filledAt,
                   odometer: bundle.entries[i].odometer,
                   where: 'refuels[$i]',
+                  vehicleId: bundle.entries[i].vehicleId,
                   write: () => _logRefuel.execute(bundle.entries[i]),
                 ),
             for (var i = 0; i < bundle.odometerReadings.length; i++)
@@ -170,6 +178,7 @@ class ImportData {
                   at: bundle.odometerReadings[i].recordedAt,
                   odometer: bundle.odometerReadings[i].odometer,
                   where: 'odometerReadings[$i]',
+                  vehicleId: bundle.odometerReadings[i].vehicleId,
                   write: () =>
                       _logOdometerReading.execute(bundle.odometerReadings[i]),
                 ),
@@ -179,7 +188,7 @@ class ImportData {
             return byTime != 0 ? byTime : a.odometer.compareTo(b.odometer);
           });
     for (final record in records) {
-      _abortOnLeft(await record.write(), record.where);
+      _abortOnLeft(await record.write(), record.where, record.vehicleId);
     }
   }
 
@@ -217,6 +226,7 @@ class ImportData {
           _abortOnLeft(
             await _logRefuel.execute(bundle.entries[i]),
             'refuels[$i]',
+            vehicleId,
           );
         }
         for (var i = 0; i < bundle.odometerReadings.length; i++) {
@@ -229,17 +239,113 @@ class ImportData {
           _abortOnLeft(
             await _logOdometerReading.execute(reading),
             'odometerReadings[$i]',
+            vehicleId,
           );
         }
         for (final i in fills.where(waits)) {
           _abortOnLeft(
             await _logRefuel.execute(bundle.entries[i]),
             'refuels[$i]',
+            vehicleId,
           );
         }
       }
     }
   }
+
+  /// The vehicle's fills and readings in the order they were saved. The rows
+  /// are written only through [_logRefuel] and [_logOdometerReading].
+  Future<void> _writeSaved(DataBundle bundle, int vehicleId) async {
+    final fills = [
+      for (var i = 0; i < bundle.entries.length; i++)
+        if (bundle.entries[i].vehicleId == vehicleId) i,
+    ]..sort((a, b) => bundle.entries[a].id.compareTo(bundle.entries[b].id));
+    final readings =
+        [
+          for (var i = 0; i < bundle.odometerReadings.length; i++)
+            if (bundle.odometerReadings[i].vehicleId == vehicleId) i,
+        ]..sort(
+          (a, b) => bundle.odometerReadings[a].id.compareTo(
+            bundle.odometerReadings[b].id,
+          ),
+        );
+    // With no fitting interleaving, fills then readings: the writes below
+    // refuse the vehicle with a located error.
+    final path =
+        await _savedOrder(
+          [
+            for (final i in fills)
+              OdometerSequenceValidator.refuelPoint(bundle.entries[i]),
+          ],
+          [for (final i in fills) bundle.entries[i].odometerOverride],
+          [
+            for (final i in readings)
+              OdometerSequenceValidator.readingPoint(
+                bundle.odometerReadings[i],
+              ),
+          ],
+        ) ??
+        [for (final _ in fills) true, for (final _ in readings) false];
+    var f = 0;
+    var r = 0;
+    for (final isFill in path) {
+      if (isFill) {
+        final i = fills[f++];
+        _abortOnLeft(
+          await _logRefuel.execute(bundle.entries[i]),
+          'refuels[$i]',
+          vehicleId,
+        );
+      } else {
+        final i = readings[r++];
+        _abortOnLeft(
+          await _logOdometerReading.execute(bundle.odometerReadings[i]),
+          'odometerReadings[$i]',
+          vehicleId,
+        );
+      }
+    }
+  }
+
+  /// Ids only grow, so a vehicle's fills by id and its readings by id are each
+  /// in the order they were saved. Only how the two lists interleave is
+  /// unknown. This finds an interleaving in which every checked row fits the
+  /// rows before it, the same check [LogRefuel] and [LogOdometerReading] run;
+  /// an override fill is never checked. The path holds true for a fill and
+  /// false for a reading, or is null when none fits. It runs on its own
+  /// isolate because it can take seconds on a large file.
+  static Future<List<bool>?> _savedOrder(
+    List<OdometerPoint> fills,
+    List<bool> overrides,
+    List<OdometerPoint> readings,
+  ) => Isolate.run(() {
+    final placed = <OdometerPoint>[];
+    final path = <bool>[];
+    final dead = <int>{};
+    bool fits(OdometerPoint point) =>
+        OdometerSequenceValidator.check(point, placed) == null;
+    bool walk(int f, int r) {
+      if (f == fills.length && r == readings.length) return true;
+      if (!dead.add(f * (readings.length + 1) + r)) return false;
+      if (f < fills.length && (overrides[f] || fits(fills[f]))) {
+        placed.add(fills[f]);
+        path.add(true);
+        if (walk(f + 1, r)) return true;
+        placed.removeLast();
+        path.removeLast();
+      }
+      if (r < readings.length && fits(readings[r])) {
+        placed.add(readings[r]);
+        path.add(false);
+        if (walk(f, r + 1)) return true;
+        placed.removeLast();
+        path.removeLast();
+      }
+      return false;
+    }
+
+    return walk(0, 0) ? path : null;
+  });
 
   /// Vehicles whose fills in the bundle hold a rollover. driveOrder hands back
   /// the same list when there is none.
@@ -256,9 +362,15 @@ class ImportData {
 
   /// Turns a rejected write into a throw, the only way out of a unit of work
   /// that also undoes the rows written before it.
-  static void _abortOnLeft(Result<Object?> result, String where) {
+  static void _abortOnLeft(
+    Result<Object?> result,
+    String where, [
+    int? vehicleId,
+  ]) {
     final failure = result.getLeft().toNullable();
-    if (failure != null) throw _ImportAborted(_locate(failure, where));
+    if (failure != null) {
+      throw _ImportAborted(_locate(failure, where), vehicleId);
+    }
   }
 
   /// Every vehicle id the bundle is allowed to reference: the ones it carries
@@ -345,9 +457,11 @@ class ImportData {
   };
 }
 
-/// Carries a located [Failure] out of the unit of work body.
+/// Carries a located [Failure] out of the unit of work body, with the vehicle
+/// whose row raised it. A row that does not depend on order has none.
 class _ImportAborted implements Exception {
-  const _ImportAborted(this.failure);
+  const _ImportAborted(this.failure, [this.vehicleId]);
 
   final Failure failure;
+  final int? vehicleId;
 }
