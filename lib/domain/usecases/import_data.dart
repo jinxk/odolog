@@ -64,9 +64,10 @@ class ImportData {
     final owners = await _knownVehicleIds(bundle);
     final ownerFailure = owners.getLeft().toNullable();
     if (ownerFailure != null) return left(ownerFailure);
-    final orphan = _findOrphan(bundle, owners.getRight().toNullable()!);
+    final known = owners.getRight().toNullable()!;
+    final orphan = _findOrphan(bundle, known);
     if (orphan != null) return left(orphan);
-    final stored = await _findStoredItem(bundle);
+    final stored = await _findStoredItem(bundle, known);
     if (stored != null) return left(stored);
 
     final rolledOver = _vehiclesWithRollover(bundle.entries);
@@ -295,34 +296,29 @@ class ImportData {
     return null;
   }
 
-  /// A fill or reading in the bundle whose id is already stored for its
-  /// vehicle. The odometer check would refuse it first, since the stored copy
-  /// sits in the sequence, so it is caught before any try. A read that fails
-  /// is returned as it is.
-  Future<Failure?> _findStoredItem(DataBundle bundle) async {
-    for (final vehicleId in {for (final e in bundle.entries) e.vehicleId}) {
-      final stored = await _refuelRepository.getForVehicle(vehicleId);
-      final failure = stored.getLeft().toNullable();
-      if (failure != null) return failure;
-      final ids = {for (final e in stored.getRight().toNullable()!) e.id};
-      if (bundle.entries.any(
-        (e) => e.vehicleId == vehicleId && ids.contains(e.id),
-      )) {
-        return const DuplicateIdFailure(_duplicateIdMessage);
-      }
+  /// A fill or reading in the bundle whose id is already stored, under any
+  /// vehicle: the id is the table key, so the insert would clash. The odometer
+  /// check can refuse the file first, so this is caught before any try. A read
+  /// that fails is returned as it is.
+  Future<Failure?> _findStoredItem(
+    DataBundle bundle,
+    Set<int> vehicleIds,
+  ) async {
+    final fillIds = <int>{};
+    final readingIds = <int>{};
+    for (final vehicleId in vehicleIds) {
+      final fills = await _refuelRepository.getForVehicle(vehicleId);
+      final fillsFailure = fills.getLeft().toNullable();
+      if (fillsFailure != null) return fillsFailure;
+      fillIds.addAll(fills.getRight().toNullable()!.map((e) => e.id));
+      final readings = await _readingRepository.getForVehicle(vehicleId);
+      final readingsFailure = readings.getLeft().toNullable();
+      if (readingsFailure != null) return readingsFailure;
+      readingIds.addAll(readings.getRight().toNullable()!.map((r) => r.id));
     }
-    for (final vehicleId in {
-      for (final r in bundle.odometerReadings) r.vehicleId,
-    }) {
-      final stored = await _readingRepository.getForVehicle(vehicleId);
-      final failure = stored.getLeft().toNullable();
-      if (failure != null) return failure;
-      final ids = {for (final r in stored.getRight().toNullable()!) r.id};
-      if (bundle.odometerReadings.any(
-        (r) => r.vehicleId == vehicleId && ids.contains(r.id),
-      )) {
-        return const DuplicateIdFailure(_duplicateIdMessage);
-      }
+    if (bundle.entries.any((e) => fillIds.contains(e.id)) ||
+        bundle.odometerReadings.any((r) => readingIds.contains(r.id))) {
+      return const DuplicateIdFailure(_duplicateIdMessage);
     }
     return null;
   }
