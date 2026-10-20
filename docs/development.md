@@ -26,6 +26,10 @@ The `build_runner` step is not optional. Riverpod providers and a few other clas
 dart run build_runner watch --delete-conflicting-outputs
 ```
 
+### Known build warning
+
+An Android build under Flutter 3.44 prints that the app uses a plugin that applies the Kotlin Gradle Plugin (KGP), and that future versions of Flutter will fail to build if an app uses such plugins. The plugin is `flutter_timezone`. Version 5.1.0 is in use and 5.1.1 is the newest release; neither supports built-in Kotlin, which Flutter 3.44 does not turn on by default. Check again when a new release comes out.
+
 ## Project layout
 
 The code follows Clean Architecture in three layers, and the dependency rule points inward: presentation depends on domain, data depends on domain, and domain depends on nothing but pure Dart.
