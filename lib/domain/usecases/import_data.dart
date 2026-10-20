@@ -324,27 +324,48 @@ class ImportData {
     final dead = <int>{};
     bool fits(OdometerPoint point) =>
         OdometerSequenceValidator.check(point, placed) == null;
-    bool walk(int f, int r) {
-      if (f == fills.length && r == readings.length) return true;
-      if (!dead.add(f * (readings.length + 1) + r)) return false;
-      if (f < fills.length && (overrides[f] || fits(fills[f]))) {
-        placed.add(fills[f]);
-        path.add(true);
-        if (walk(f + 1, r)) return true;
-        placed.removeLast();
-        path.removeLast();
+    // An explicit stack instead of recursion, so a long history cannot
+    // overflow the call stack. [tried] counts the moves already made from the
+    // current state (0 none, 1 the fill, 2 the reading); [resume] holds it for
+    // each state on the path.
+    var f = 0;
+    var r = 0;
+    var tried = 0;
+    final resume = <int>[];
+    while (true) {
+      if (f == fills.length && r == readings.length) return path;
+      final isDead = tried == 0 && !dead.add(f * (readings.length + 1) + r);
+      if (!isDead) {
+        if (tried == 0) {
+          tried = 1;
+          if (f < fills.length && (overrides[f] || fits(fills[f]))) {
+            placed.add(fills[f++]);
+            path.add(true);
+            resume.add(tried);
+            tried = 0;
+            continue;
+          }
+        }
+        if (tried == 1) {
+          tried = 2;
+          if (r < readings.length && fits(readings[r])) {
+            placed.add(readings[r++]);
+            path.add(false);
+            resume.add(tried);
+            tried = 0;
+            continue;
+          }
+        }
       }
-      if (r < readings.length && fits(readings[r])) {
-        placed.add(readings[r]);
-        path.add(false);
-        if (walk(f, r + 1)) return true;
-        placed.removeLast();
-        path.removeLast();
+      if (path.isEmpty) return null;
+      if (path.removeLast()) {
+        f--;
+      } else {
+        r--;
       }
-      return false;
+      placed.removeLast();
+      tried = resume.removeLast();
     }
-
-    return walk(0, 0) ? path : null;
   });
 
   /// Vehicles whose fills in the bundle hold a rollover. driveOrder hands back
