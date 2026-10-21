@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.2 - 2026-10-21
+
+- Importing a backup whose fills or odometer readings are already on this phone now shows the "already on this phone" message instead of an odometer error.
+- More backups of histories the app saved now import, including two vehicles that need a different import order and a reading saved at the same moment as a fill.
+- Importing a large backup no longer freezes the screen.
+
 ## 1.5.1 - 2026-10-18
 
 - Backups with an odometer rollover and a backdated fill entered with the override now import.

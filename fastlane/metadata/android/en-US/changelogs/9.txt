@@ -1,0 +1,1 @@
+A backup with items already on this phone now shows the "already on this phone" message instead of an odometer error. More backups of saved histories now import, and a large import no longer freezes the screen.
