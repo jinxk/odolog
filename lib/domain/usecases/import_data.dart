@@ -88,6 +88,8 @@ class ImportData {
         await _unitOfWork.run(() => _write(bundle, rolledOver, orders));
         return right(bundle);
       } on _ImportAborted catch (aborted) {
+        // No write order can fix an id that is already taken.
+        if (aborted.failure is DuplicateIdFailure) return left(aborted.failure);
         first ??= aborted.failure;
         final vehicleId = aborted.vehicleId;
         if (vehicleId == null) return left(first);
