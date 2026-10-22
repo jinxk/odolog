@@ -106,11 +106,26 @@ class DataBundleJsonCodec implements DataBundleCodec {
   }
 
   @override
-  String addTemplate(List<Vehicle> vehicles) {
+  String addTemplate(
+    List<Vehicle> vehicles, {
+    required double startOdometer,
+    required DateTime now,
+  }) {
     final vehicleId = vehicles.last.id;
-    Map<String, Object?> example(Map<String, Object?> item) => item
+    // One minute apart and none later than now, in the order of the odometers.
+    final latest = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+    DateTime minutesAgo(int minutes) =>
+        latest.subtract(Duration(minutes: minutes));
+    Map<String, Object?> example(
+      Map<String, Object?> item,
+      String dateKey,
+      DateTime at,
+      double odometer,
+    ) => item
       ..remove('id')
-      ..['vehicleId'] = vehicleId;
+      ..['vehicleId'] = vehicleId
+      ..[dateKey] = at.toIso8601String()
+      ..['odometer'] = odometer;
     const encoder = JsonEncoder.withIndent('  ');
     return encoder.convert({
       'schema': DataBundleJsonFormat.schemaTag,
@@ -122,15 +137,37 @@ class DataBundleJsonCodec implements DataBundleCodec {
       ],
       'serviceTemplates': [for (final t in ServiceTemplate.values) t.name],
       DataBundleJsonFormat.vehiclesKey: const <Object?>[],
-      DataBundleJsonFormat.refuelsKey: [example(_refuelJson(_exampleEntry))],
+      DataBundleJsonFormat.refuelsKey: [
+        example(
+          _refuelJson(_exampleEntry),
+          'filledAt',
+          minutesAgo(2),
+          startOdometer + 100,
+        ),
+      ],
       DataBundleJsonFormat.serviceLogKey: [
-        example(_serviceLogJson(_exampleServiceLog)),
+        example(
+          _serviceLogJson(_exampleServiceLog),
+          'performedAt',
+          minutesAgo(3),
+          startOdometer + 50,
+        ),
       ],
       DataBundleJsonFormat.expensesKey: [
-        example(_expenseJson(_exampleExpense)),
+        example(
+          _expenseJson(_exampleExpense),
+          'date',
+          minutesAgo(1),
+          startOdometer + 120,
+        ),
       ],
       DataBundleJsonFormat.odometerReadingsKey: [
-        example(_odometerReadingJson(_exampleOdometerReading)),
+        example(
+          _odometerReadingJson(_exampleOdometerReading),
+          'recordedAt',
+          minutesAgo(0),
+          startOdometer + 150,
+        ),
       ],
     });
   }

@@ -333,10 +333,23 @@ void main() {
       await expenses.getForVehicle(vehicleId),
       await readings.getForVehicle(vehicleId),
     ];
+    await refuels.insert(
+      entry(
+        id: 2,
+        vehicleId: 2,
+        odometer: 20000,
+        quantity: 5,
+        pricePaid: 500,
+        filledAt: daysAgo(3),
+      ),
+    );
     final before = await rowsOf(vehicle.id);
+    final firstFillOfActiva = await refuels.getForVehicle(2);
 
     final template = (await GetAddDataTemplate(
       ListVehicles(VehicleRepositoryImpl(vehicles)),
+      RefuelRepositoryImpl(refuels),
+      OdometerReadingRepositoryImpl(readings),
       const DataBundleJsonCodec(),
     ).execute()).getRight().toNullable()!;
     final decoded = json.decode(template) as Map<String, Object?>;
@@ -352,7 +365,10 @@ void main() {
 
     expect(result.isRight(), isTrue, reason: '$result');
     expect(await vehicles.getAll(), hasLength(2));
-    for (final rows in await rowsOf(2)) {
+    final activa = await rowsOf(2);
+    expect(activa[0] as List, hasLength(2));
+    expect(activa[0], contains(firstFillOfActiva.single));
+    for (final rows in activa.skip(1)) {
       expect(rows as List, hasLength(1));
     }
     expect(await rowsOf(vehicle.id), before);

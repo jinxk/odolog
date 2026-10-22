@@ -19,8 +19,14 @@ abstract interface class DataBundleCodec {
 
   /// A file for adding to a phone that already has data: [vehicles] listed
   /// by id and name to copy from, and one example item per section with no
-  /// id, pointing at the last of [vehicles]. [vehicles] is not empty.
-  String addTemplate(List<Vehicle> vehicles);
+  /// id, pointing at the last of [vehicles]. [vehicles] is not empty. The
+  /// examples are dated [now] and their odometers run on from [startOdometer],
+  /// the latest odometer of that last vehicle, so the file imports as it is.
+  String addTemplate(
+    List<Vehicle> vehicles, {
+    required double startOdometer,
+    required DateTime now,
+  });
 
   /// Parses [content] back into a [DataBundle]. A structural problem (a
   /// missing section, the wrong columns, an unparsable value) comes back as a

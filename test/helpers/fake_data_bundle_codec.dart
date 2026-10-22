@@ -24,7 +24,11 @@ class FakeDataBundleCodec implements DataBundleCodec {
   String template() => 'template';
 
   @override
-  String addTemplate(List<Vehicle> vehicles) => 'add template';
+  String addTemplate(
+    List<Vehicle> vehicles, {
+    required double startOdometer,
+    required DateTime now,
+  }) => 'add template';
 
   @override
   Result<DataBundle> decode(String content) =>
