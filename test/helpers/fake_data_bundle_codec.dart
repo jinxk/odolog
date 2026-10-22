@@ -3,6 +3,7 @@ import 'package:odolog/core/failures.dart';
 import 'package:odolog/core/typedefs.dart';
 import 'package:odolog/domain/backup/data_bundle.dart';
 import 'package:odolog/domain/backup/data_bundle_codec.dart';
+import 'package:odolog/domain/entities/vehicle.dart';
 
 /// A [DataBundleCodec] stand-in for use case tests: encode and template
 /// return a marker string instead of real CSV, and decode is scripted per
@@ -21,6 +22,9 @@ class FakeDataBundleCodec implements DataBundleCodec {
 
   @override
   String template() => 'template';
+
+  @override
+  String addTemplate(List<Vehicle> vehicles) => 'add template';
 
   @override
   Result<DataBundle> decode(String content) =>

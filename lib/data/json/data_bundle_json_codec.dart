@@ -105,6 +105,36 @@ class DataBundleJsonCodec implements DataBundleCodec {
     ));
   }
 
+  @override
+  String addTemplate(List<Vehicle> vehicles) {
+    final vehicleId = vehicles.last.id;
+    Map<String, Object?> example(Map<String, Object?> item) => item
+      ..remove('id')
+      ..['vehicleId'] = vehicleId;
+    const encoder = JsonEncoder.withIndent('  ');
+    return encoder.convert({
+      'schema': DataBundleJsonFormat.schemaTag,
+      'version': DataBundleJsonFormat.schemaVersion,
+      // Read only: import never looks at these two keys.
+      'vehiclesOnThisPhone': [
+        for (final vehicle in vehicles)
+          {'id': vehicle.id, 'name': vehicle.name},
+      ],
+      'serviceTemplates': [for (final t in ServiceTemplate.values) t.name],
+      DataBundleJsonFormat.vehiclesKey: const <Object?>[],
+      DataBundleJsonFormat.refuelsKey: [example(_refuelJson(_exampleEntry))],
+      DataBundleJsonFormat.serviceLogKey: [
+        example(_serviceLogJson(_exampleServiceLog)),
+      ],
+      DataBundleJsonFormat.expensesKey: [
+        example(_expenseJson(_exampleExpense)),
+      ],
+      DataBundleJsonFormat.odometerReadingsKey: [
+        example(_odometerReadingJson(_exampleOdometerReading)),
+      ],
+    });
+  }
+
   /// Parses [content] back into a [DataBundle]. A structural problem (a
   /// missing array, a wrong type, an unparsable value) comes back as a
   /// [ValidationFailure] whose reason names where it was found. Content that

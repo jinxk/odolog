@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:odolog/core/failures.dart';
@@ -8,15 +10,19 @@ import 'package:odolog/data/daos/service_log_dao.dart';
 import 'package:odolog/data/daos/vehicle_dao.dart';
 import 'package:odolog/data/db/app_database.dart';
 import 'package:odolog/data/db/sqflite_unit_of_work.dart';
+import 'package:odolog/data/json/data_bundle_json_codec.dart';
 import 'package:odolog/data/repositories/expense_repository_impl.dart';
 import 'package:odolog/data/repositories/odometer_reading_repository_impl.dart';
 import 'package:odolog/data/repositories/refuel_repository_impl.dart';
 import 'package:odolog/data/repositories/service_log_repository_impl.dart';
 import 'package:odolog/data/repositories/vehicle_repository_impl.dart';
+import 'package:odolog/domain/backup/data_bundle_codec.dart';
 import 'package:odolog/domain/entities/expense.dart';
 import 'package:odolog/domain/entities/odometer_reading.dart';
+import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/domain/usecases/add_vehicle.dart';
+import 'package:odolog/domain/usecases/get_add_data_template.dart';
 import 'package:odolog/domain/usecases/import_data.dart';
 import 'package:odolog/domain/usecases/list_vehicles.dart';
 import 'package:odolog/domain/usecases/log_expense.dart';
@@ -58,7 +64,7 @@ void main() {
     fuelCategory: FuelCategory.petrol,
   );
 
-  ImportData importer(FakeDataBundleCodec codec) {
+  ImportData importer(DataBundleCodec codec) {
     final vehicleRepo = VehicleRepositoryImpl(vehicles);
     final readingRepo = OdometerReadingRepositoryImpl(OdometerReadingDao(db));
     return ImportData(
@@ -220,6 +226,137 @@ void main() {
       'Some items in this file are already on this phone, so nothing was '
       'imported. Import only adds new items, it does not replace what is '
       'here.';
+
+  test('a service log id already on the phone is refused with the plain '
+      'message, even when the fills need a second try', () async {
+    await vehicles.insert(vehicle);
+    final serviceLog = ServiceLogDao(db);
+    DateTime daysAgo(int days) => DateTime.now().subtract(Duration(days: days));
+    await serviceLog.insert(
+      ServiceLogEntry(
+        id: 1,
+        vehicleId: vehicle.id,
+        template: ServiceTemplate.generalService,
+        performedAt: daysAgo(30),
+        odometer: 500,
+      ),
+    );
+    final codec = FakeDataBundleCodec(
+      decodeResult: right((
+        vehicles: const <Vehicle>[],
+        entries: [
+          entry(
+            id: 0,
+            odometer: 1000,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: daysAgo(20),
+          ),
+          // Behind the fill before it, so the first try stops here.
+          entry(
+            id: 0,
+            odometer: 900,
+            quantity: 20,
+            pricePaid: 2000,
+            filledAt: daysAgo(10),
+          ),
+        ],
+        serviceLog: [
+          ServiceLogEntry(
+            id: 1,
+            vehicleId: vehicle.id,
+            template: ServiceTemplate.engineOil,
+            performedAt: daysAgo(5),
+            odometer: 1200,
+          ),
+        ],
+        odometerReadings: const [],
+        expenses: const [],
+      )),
+    );
+
+    final result = await importer(codec).execute('...');
+
+    final failure = result.getLeft().toNullable()! as DuplicateIdFailure;
+    expect(failure.message, duplicateMessage);
+    expect(await refuels.getForVehicle(vehicle.id), isEmpty);
+    expect(await serviceLog.getForVehicle(vehicle.id), hasLength(1));
+  });
+
+  test('an add template filled from this phone imports its examples and '
+      'leaves the rows already here as they were', () async {
+    DateTime daysAgo(int days) => DateTime.now().subtract(Duration(days: days));
+    final serviceLog = ServiceLogDao(db);
+    final expenses = ExpenseDao(db);
+    final readings = OdometerReadingDao(db);
+    await vehicles.insert(vehicle);
+    await vehicles.insert(
+      const Vehicle(
+        id: 2,
+        name: 'Activa',
+        type: VehicleType.scooter,
+        fuelCategory: FuelCategory.petrol,
+      ),
+    );
+    await refuels.insert(
+      entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
+    );
+    await serviceLog.insert(
+      ServiceLogEntry(
+        id: 1,
+        vehicleId: vehicle.id,
+        template: ServiceTemplate.generalService,
+        performedAt: daysAgo(10),
+        odometer: 900,
+      ),
+    );
+    await expenses.insert(
+      Expense(
+        id: 1,
+        vehicleId: vehicle.id,
+        amount: 500,
+        date: daysAgo(5),
+        category: 'Tyre',
+      ),
+    );
+    await readings.insert(
+      OdometerReading(
+        id: 1,
+        vehicleId: vehicle.id,
+        odometer: 1100,
+        recordedAt: daysAgo(1),
+      ),
+    );
+    Future<List<Object>> rowsOf(int vehicleId) async => [
+      await refuels.getForVehicle(vehicleId),
+      await serviceLog.getForVehicle(vehicleId),
+      await expenses.getForVehicle(vehicleId),
+      await readings.getForVehicle(vehicleId),
+    ];
+    final before = await rowsOf(vehicle.id);
+
+    final template = (await GetAddDataTemplate(
+      ListVehicles(VehicleRepositoryImpl(vehicles)),
+      const DataBundleJsonCodec(),
+    ).execute()).getRight().toNullable()!;
+    final decoded = json.decode(template) as Map<String, Object?>;
+    expect(decoded['vehiclesOnThisPhone'], [
+      {'id': 1, 'name': 'Swift'},
+      {'id': 2, 'name': 'Activa'},
+    ]);
+    expect(decoded['serviceTemplates'], ['engineOil', 'generalService']);
+
+    final result = await importer(
+      const DataBundleJsonCodec(),
+    ).execute(template);
+
+    expect(result.isRight(), isTrue, reason: '$result');
+    expect(await vehicles.getAll(), hasLength(2));
+    for (final rows in await rowsOf(2)) {
+      expect(rows as List, hasLength(1));
+    }
+    expect(await rowsOf(vehicle.id), before);
+  });
 
   test('fills and readings imported twice for a vehicle already on the phone '
       'are refused with the plain message', () async {
