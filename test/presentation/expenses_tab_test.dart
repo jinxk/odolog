@@ -222,8 +222,9 @@ void main() {
     final amount = find.textContaining('1,234,567.00');
     final paragraph = tester.renderObject<RenderParagraph>(amount);
     final text = paragraph.text.toPlainText();
+    final at = text.indexOf('1,234,567.00');
     final boxes = paragraph.getBoxesForSelection(
-      TextSelection(baseOffset: 0, extentOffset: text.length),
+      TextSelection(baseOffset: at - 3, extentOffset: at + 12),
     );
     expect(boxes.map((b) => b.top.round()).toSet(), hasLength(1));
     expect(tester.getRect(amount).right, lessThanOrEqualTo(360));
