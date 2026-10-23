@@ -23,6 +23,7 @@ import '../providers/repositories.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
 import 'currency_catalog.dart';
+import 'import_summary.dart';
 
 /// Settings: appearance, currency, the vehicle list, the data tools (export,
 /// import, a blank template to fill in externally), and an about section. The
@@ -349,12 +350,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
         ref.invalidate(serviceLogProvider);
         ref.invalidate(serviceDueProvider);
         unawaited(ref.read(autoBackupProvider.notifier).runIfDue());
-        _showMessage(
-          'Imported ${_counted(bundle.vehicles.length, 'vehicle')}, '
-          '${_counted(bundle.entries.length, 'refuel')}, '
-          '${_counted(bundle.serviceLog.length, 'service')}, and '
-          '${_counted(bundle.expenses.length, 'expense')}.',
-        );
+        _showMessage(importSummary(bundle));
       },
     );
     if (mounted) setState(() => _busy = false);
@@ -419,11 +415,6 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     if (!mounted) return;
     context.go('/onboarding');
   }
-
-  /// "1 vehicle", "2 vehicles". Every noun in the import summary takes a plain
-  /// -s plural.
-  String _counted(int count, String noun) =>
-      '$count $noun${count == 1 ? '' : 's'}';
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(
