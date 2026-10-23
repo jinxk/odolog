@@ -46,6 +46,7 @@ class GroupedSliverList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hairline = Theme.of(context).extension<AppColorRoles>()?.hairline;
+    const corner = Radius.circular(AppShapes.cardRadius);
     return DecoratedSliver(
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
@@ -53,7 +54,18 @@ class GroupedSliverList extends StatelessWidget {
       ),
       sliver: SliverList.separated(
         itemCount: itemCount,
-        itemBuilder: itemBuilder,
+        // The card colour is painted by the decoration above, so a row's ink
+        // needs its own Material on top of it, clipped to the card's corners.
+        itemBuilder: (context, i) => ClipRRect(
+          borderRadius: BorderRadius.vertical(
+            top: i == 0 ? corner : Radius.zero,
+            bottom: i == itemCount - 1 ? corner : Radius.zero,
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: itemBuilder(context, i),
+          ),
+        ),
         separatorBuilder: (context, index) =>
             Divider(height: 1, indent: 56, endIndent: 16, color: hairline),
       ),
