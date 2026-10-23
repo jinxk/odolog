@@ -35,6 +35,18 @@ String _groupedAmount(double value) =>
 String formatMoney(double value, String symbol) =>
     '$symbol ${_groupedAmount(value)}';
 
+/// An amount for use inside [Text.rich]. It never breaks between the symbol
+/// and the number: it moves to the next line when it does not fit after the
+/// words before it, and shrinks only when it is wider than a whole line.
+InlineSpan amountSpan(String amount, TextStyle? style) => WidgetSpan(
+  alignment: PlaceholderAlignment.baseline,
+  baseline: TextBaseline.alphabetic,
+  child: FittedBox(
+    fit: BoxFit.scaleDown,
+    child: Text(amount, style: style, textScaler: TextScaler.noScaling),
+  ),
+);
+
 String formatMoneyPerKm(double value, String symbol) =>
     '$symbol ${_groupedAmount(value)} /km';
 

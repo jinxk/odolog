@@ -310,6 +310,9 @@ class _HistoryRow extends StatelessWidget {
     // back to a quiet tertiary and leans on its position and tabular weight
     // instead of colour.
     final mileageColor = isDark ? AppColors.amber : roles.textTertiary;
+    final amountStyle = theme.textTheme.bodySmall?.copyWith(
+      color: roles.textSecondary,
+    );
     return InkWell(
       onTap: () => context.push('/entry/${entry.id}', extra: vehicle),
       child: Padding(
@@ -334,12 +337,17 @@ class _HistoryRow extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${formatQuantity(entry.quantity)} $unit, '
-                    '${formatMoney(entry.pricePaid, currency)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: roles.textSecondary,
+                  Text.rich(
+                    TextSpan(
+                      text: '${formatQuantity(entry.quantity)} $unit, ',
+                      children: [
+                        amountSpan(
+                          formatMoney(entry.pricePaid, currency),
+                          amountStyle,
+                        ),
+                      ],
                     ),
+                    style: amountStyle,
                   ),
                 ],
               ),

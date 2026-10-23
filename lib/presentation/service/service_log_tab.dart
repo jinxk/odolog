@@ -200,18 +200,24 @@ class _ServiceLogRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currency = ref.watch(settingsProvider).value?.currencySymbol ?? 'Rs';
-    final subtitleParts = <String>[
-      formatDistance(entry.odometer),
-      if (entry.cost != null)
-        formatMoney(entry.cost!, currency).replaceAll(' ', '\u00A0'),
-    ];
+    final cost = entry.cost;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       leading: const Icon(Icons.build_outlined),
       title: Text(serviceTemplateLabel(entry.template)),
-      subtitle: Text(
-        '${formatDate(entry.performedAt)}, ${subtitleParts.join(', ')}'
-        '${entry.note != null ? '\n${entry.note}' : ''}',
+      subtitle: Text.rich(
+        TextSpan(
+          text:
+              '${formatDate(entry.performedAt)}, '
+              '${formatDistance(entry.odometer)}',
+          children: [
+            if (cost != null) ...[
+              const TextSpan(text: ', '),
+              amountSpan(formatMoney(cost, currency), null),
+            ],
+            if (entry.note != null) TextSpan(text: '\n${entry.note}'),
+          ],
+        ),
       ),
       isThreeLine: entry.note != null,
       trailing: IconButton(

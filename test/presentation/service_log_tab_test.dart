@@ -273,6 +273,38 @@ void main() {
     );
     expect(boxes.map((box) => box.top.round()).toSet(), hasLength(1));
   });
+
+  testWidgets('a 7-digit service cost stays whole at 360 dp, scale 2.0', (
+    tester,
+  ) async {
+    await _loadInter();
+    await tester.binding.setSurfaceSize(const Size(360, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpScreen(
+      tester,
+      theme: AppTheme.light,
+      textScale: 2,
+      repo: FakeServiceLogRepository([
+        ServiceLogEntry(
+          id: 1,
+          vehicleId: 1,
+          template: ServiceTemplate.generalService,
+          performedAt: DateTime(2026, 9, 23),
+          odometer: 12345,
+          cost: 1234567,
+        ),
+      ]),
+    );
+
+    final cost = find.textContaining('1,234,567.00');
+    final paragraph = tester.renderObject<RenderParagraph>(cost);
+    final text = paragraph.text.toPlainText();
+    final boxes = paragraph.getBoxesForSelection(
+      TextSelection(baseOffset: 0, extentOffset: text.length),
+    );
+    expect(boxes.map((box) => box.top.round()).toSet(), hasLength(1));
+    expect(tester.getRect(cost).right, lessThanOrEqualTo(360));
+  });
 }
 
 /// Holds every delete until [gate] completes.

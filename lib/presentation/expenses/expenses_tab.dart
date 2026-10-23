@@ -141,20 +141,16 @@ class _ExpenseRow extends ConsumerWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       leading: const Icon(Icons.receipt_long_outlined),
       title: Text(expense.category),
-      subtitle: Text(subtitleParts.join(', ')),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            formatMoney(expense.amount, currency),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          IconButton(
-            tooltip: 'Delete ${expense.category}',
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _delete(context, ref),
-          ),
-        ],
+      subtitle: Text.rich(
+        TextSpan(
+          text: '${subtitleParts.join(', ')}, ',
+          children: [amountSpan(formatMoney(expense.amount, currency), null)],
+        ),
+      ),
+      trailing: IconButton(
+        tooltip: 'Delete ${expense.category}',
+        icon: const Icon(Icons.delete_outline),
+        onPressed: () => _delete(context, ref),
       ),
     );
   }

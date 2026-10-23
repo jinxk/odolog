@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:odolog/app/theme/theme.dart';
 import 'package:odolog/core/typedefs.dart';
 import 'package:odolog/domain/entities/expense.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
@@ -24,6 +27,8 @@ const _vehicle = Vehicle(
 Future<FakeExpenseRepository> pumpScreen(
   WidgetTester tester, {
   FakeExpenseRepository? repo,
+  ThemeData? theme,
+  double textScale = 1,
 }) async {
   final expenseRepo = repo ?? FakeExpenseRepository();
   await tester.pumpWidget(
@@ -34,11 +39,53 @@ Future<FakeExpenseRepository> pumpScreen(
         ),
         expenseRepositoryProvider.overrideWithValue(expenseRepo),
       ],
-      child: const MaterialApp(home: ExpensesTab()),
+      child: MaterialApp(
+        theme: theme,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        home: const ExpensesTab(),
+      ),
     ),
   );
   await tester.pumpAndSettle();
   return expenseRepo;
+}
+
+Future<void> _loadInter() async {
+  final loader = FontLoader('Inter');
+  for (final weight in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+    loader.addFont(rootBundle.load('assets/fonts/Inter-$weight.ttf'));
+  }
+  await loader.load();
+}
+
+Future<void> _pumpLargeAmount(
+  WidgetTester tester, {
+  required double width,
+  required double textScale,
+}) async {
+  await _loadInter();
+  await tester.binding.setSurfaceSize(Size(width, 900));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await pumpScreen(
+    tester,
+    theme: AppTheme.light,
+    textScale: textScale,
+    repo: FakeExpenseRepository([
+      Expense(
+        id: 1,
+        vehicleId: 1,
+        amount: 1234567,
+        date: DateTime(2026, 9, 23),
+        odometer: 12345,
+        category: 'Insurance',
+      ),
+    ]),
+  );
 }
 
 void main() {
@@ -165,6 +212,30 @@ void main() {
       expect(repo.expenses.map((e) => e.id), contains(40));
     },
   );
+
+  testWidgets('a 7-digit amount stays whole at 360 dp, scale 2.0', (
+    tester,
+  ) async {
+    await _pumpLargeAmount(tester, width: 360, textScale: 2);
+
+    expect(tester.takeException(), isNull);
+    final amount = find.textContaining('1,234,567.00');
+    final paragraph = tester.renderObject<RenderParagraph>(amount);
+    final text = paragraph.text.toPlainText();
+    final boxes = paragraph.getBoxesForSelection(
+      TextSelection(baseOffset: 0, extentOffset: text.length),
+    );
+    expect(boxes.map((b) => b.top.round()).toSet(), hasLength(1));
+    expect(tester.getRect(amount).right, lessThanOrEqualTo(360));
+  });
+
+  testWidgets('the category is not squeezed by a 7-digit amount at 360 dp', (
+    tester,
+  ) async {
+    await _pumpLargeAmount(tester, width: 360, textScale: 1);
+
+    expect(tester.getSize(find.text('Insurance')).height, lessThan(40));
+  });
 }
 
 /// Holds every delete until [gate] completes.
