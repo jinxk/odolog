@@ -87,15 +87,6 @@ Future<void> _pumpHistory(
   await tester.pumpAndSettle();
 }
 
-/// The history date overflows at 360 dp and scale 2.0, which is a separate
-/// defect. Any other exception still fails the test.
-void _drainDateOverflow(WidgetTester tester) {
-  Object? error;
-  while ((error = tester.takeException()) != null) {
-    expect(error.toString(), contains('overflowed'));
-  }
-}
-
 /// Number of lines the symbol, separator and [number] occupy.
 int _amountLines(WidgetTester tester, String number) {
   final paragraph = tester.renderObject<RenderParagraph>(
@@ -117,7 +108,7 @@ void main() {
     tester,
   ) async {
     await _pumpHistory(tester, width: 411, scale: 2, price: 2000);
-    _drainDateOverflow(tester);
+    expect(tester.takeException(), isNull);
 
     expect(_amountLines(tester, '2,000.00'), 1);
   });
@@ -126,7 +117,7 @@ void main() {
     tester,
   ) async {
     await _pumpHistory(tester, width: 360, scale: 2, price: 1234567);
-    _drainDateOverflow(tester);
+    expect(tester.takeException(), isNull);
 
     expect(_amountLines(tester, '1,234,567.00'), 1);
     expect(
