@@ -10,6 +10,7 @@ import '../../domain/usecases/edit_refuel.dart';
 import '../../domain/usecases/edit_vehicle.dart';
 import '../../domain/usecases/export_data.dart';
 import '../../domain/reminders/reminder_planning.dart';
+import '../../domain/usecases/get_add_data_template.dart';
 import '../../domain/usecases/get_data_bundle_template.dart';
 import '../../domain/usecases/get_expenses.dart';
 import '../../domain/usecases/get_odometer_readings.dart';
@@ -117,6 +118,14 @@ ImportData importData(Ref ref) => ImportData(
 @Riverpod(keepAlive: true)
 GetDataBundleTemplate getDataBundleTemplate(Ref ref) =>
     GetDataBundleTemplate(ref.watch(dataBundleCodecProvider));
+
+@Riverpod(keepAlive: true)
+GetAddDataTemplate getAddDataTemplate(Ref ref) => GetAddDataTemplate(
+  ref.watch(listVehiclesProvider),
+  ref.watch(refuelRepositoryProvider),
+  ref.watch(odometerReadingRepositoryProvider),
+  ref.watch(dataBundleCodecProvider),
+);
 
 @Riverpod(keepAlive: true)
 ResetAllData resetAllData(Ref ref) => ResetAllData(

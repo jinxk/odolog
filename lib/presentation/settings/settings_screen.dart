@@ -213,11 +213,11 @@ class _CurrencyRow extends ConsumerWidget {
   }
 }
 
-/// Export, import, and the blank template. Export and the template both write
-/// a JSON file to a temporary path and hand it to the Android share sheet;
-/// import reads a file picked from the file system (JSON, or a CSV backup
-/// from an older version). All three are disabled while one is running so a
-/// second tap cannot race the first.
+/// Export, import, the blank template and the template with this phone's
+/// vehicles. Export and both templates write a JSON file to a temporary path
+/// and hand it to the Android share sheet; import reads a file picked from the
+/// file system (JSON, or a CSV backup from an older version). All of them are
+/// disabled while one is running so a second tap cannot race the first.
 class _DataSection extends ConsumerStatefulWidget {
   const _DataSection();
 
@@ -260,6 +260,16 @@ class _DataSectionState extends ConsumerState<_DataSection> {
         ),
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          leading: const Icon(Icons.post_add),
+          title: const Text('Download template with your vehicles'),
+          subtitle: const Text(
+            'Get a JSON file with your vehicle ids, to add new items',
+          ),
+          enabled: !_busy,
+          onTap: _downloadAddTemplate,
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           leading: Icon(
             Icons.delete_forever,
             color: Theme.of(context).colorScheme.error,
@@ -294,6 +304,17 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     setState(() => _busy = true);
     final template = ref.read(getDataBundleTemplateProvider).execute();
     await _shareFile(template, 'odolog_template.json');
+    if (mounted) setState(() => _busy = false);
+  }
+
+  Future<void> _downloadAddTemplate() async {
+    setState(() => _busy = true);
+    final result = await ref.read(getAddDataTemplateProvider).execute();
+    if (!mounted) return;
+    await result.match(
+      (failure) => _reportFailure('Could not make the template.', failure),
+      (template) => _shareFile(template, 'odolog_add_template.json'),
+    );
     if (mounted) setState(() => _busy = false);
   }
 

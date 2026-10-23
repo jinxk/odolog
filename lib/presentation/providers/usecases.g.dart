@@ -598,6 +598,54 @@ final class GetDataBundleTemplateProvider
 String _$getDataBundleTemplateHash() =>
     r'd7f74409beb67d21c6020eeb4c0cf3ff53688db3';
 
+@ProviderFor(getAddDataTemplate)
+final getAddDataTemplateProvider = GetAddDataTemplateProvider._();
+
+final class GetAddDataTemplateProvider
+    extends
+        $FunctionalProvider<
+          GetAddDataTemplate,
+          GetAddDataTemplate,
+          GetAddDataTemplate
+        >
+    with $Provider<GetAddDataTemplate> {
+  GetAddDataTemplateProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getAddDataTemplateProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getAddDataTemplateHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetAddDataTemplate> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetAddDataTemplate create(Ref ref) {
+    return getAddDataTemplate(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetAddDataTemplate value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetAddDataTemplate>(value),
+    );
+  }
+}
+
+String _$getAddDataTemplateHash() =>
+    r'e423e8e77594494f815993ab143607a2dcd6a94b';
+
 @ProviderFor(resetAllData)
 final resetAllDataProvider = ResetAllDataProvider._();
 
