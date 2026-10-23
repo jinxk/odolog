@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:odolog/core/typedefs.dart';
 import 'package:odolog/domain/entities/odometer_reading.dart';
 import 'package:odolog/domain/entities/refuel_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
+import 'package:odolog/presentation/common/motion.dart';
 import 'package:odolog/presentation/home/home_screen.dart';
+import 'package:odolog/presentation/providers/app_providers.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,20 +35,49 @@ final _workedExample = [
   entry(id: 3, odometer: 10600, quantity: 25, pricePaid: 2515),
 ];
 
+/// How long the slow fakes below take to answer. The real database answers
+/// after a frame or two; with no delay a reload would finish before its loading
+/// state ever painted.
+Duration _dbDelay = Duration.zero;
+
+class _SlowRefuelRepository extends FakeRefuelRepository {
+  _SlowRefuelRepository(super.seed);
+
+  @override
+  Future<Result<List<RefuelEntry>>> getForVehicle(int vehicleId) async {
+    await Future<void>.delayed(_dbDelay);
+    return super.getForVehicle(vehicleId);
+  }
+}
+
+class _SlowVehicleRepository extends FakeVehicleRepository {
+  _SlowVehicleRepository(super.seed);
+
+  @override
+  Future<Result<List<Vehicle>>> getAll() async {
+    await Future<void>.delayed(_dbDelay);
+    return super.getAll();
+  }
+}
+
 Future<void> pumpHome(
   WidgetTester tester, {
   List<RefuelEntry> seed = const [],
   Vehicle vehicle = _vehicle,
   List<Vehicle> fleet = const [],
   List<OdometerReading> readings = const [],
+  FakeRefuelRepository? refuels,
+  FakeVehicleRepository? vehicles,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         vehicleRepositoryProvider.overrideWithValue(
-          FakeVehicleRepository(fleet.isEmpty ? [vehicle] : fleet),
+          vehicles ?? FakeVehicleRepository(fleet.isEmpty ? [vehicle] : fleet),
         ),
-        refuelRepositoryProvider.overrideWithValue(FakeRefuelRepository(seed)),
+        refuelRepositoryProvider.overrideWithValue(
+          refuels ?? FakeRefuelRepository(seed),
+        ),
         catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
         serviceLogRepositoryProvider.overrideWithValue(
           FakeServiceLogRepository(),
@@ -247,5 +279,62 @@ void main() {
     // windows, which a reading with no fuel behind it cannot change.
     expect(find.text('15.0'), findsOneWidget);
     expect(find.textContaining('6.71'), findsOneWidget);
+  });
+
+  testWidgets('hero figures move from the old value to the new one after a '
+      'save, never back through zero', (tester) async {
+    final refuels = _SlowRefuelRepository(_workedExample);
+    await pumpHome(
+      tester,
+      refuels: refuels,
+      vehicles: _SlowVehicleRepository([_vehicle]),
+    );
+    _dbDelay = const Duration(milliseconds: 100);
+    addTearDown(() => _dbDelay = Duration.zero);
+
+    // NaN when the figures are not on screen, which fails the range check.
+    double shown(int index) {
+      if (find.byType(CountUpText).evaluate().isEmpty) return double.nan;
+      final text = find.descendant(
+        of: find.byType(CountUpText).at(index),
+        matching: find.byType(Text),
+      );
+      final raw = tester.widget<Text>(text).data!;
+      return double.parse(RegExp(r'[\d.]+').firstMatch(raw)!.group(0)!);
+    }
+
+    final before = [shown(0), shown(1)];
+
+    // The same invalidations a saved refuel makes.
+    await refuels.add(
+      entry(id: 4, odometer: 10900, quantity: 15, pricePaid: 1500),
+    );
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(HomeScreen)),
+    );
+    container.invalidate(vehicleStatsProvider(1));
+    container.invalidate(historyProvider(1));
+    container.invalidate(vehicleListProvider);
+
+    final samples = <List<double>>[];
+    for (var i = 0; i < 16; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      samples.add([shown(0), shown(1)]);
+    }
+    await tester.pumpAndSettle();
+    final after = [shown(0), shown(1)];
+
+    for (var figure = 0; figure < 2; figure++) {
+      expect(after[figure], isNot(before[figure]));
+      final low = before[figure] < after[figure]
+          ? before[figure]
+          : after[figure];
+      final high = before[figure] < after[figure]
+          ? after[figure]
+          : before[figure];
+      for (final sample in samples) {
+        expect(sample[figure], inInclusiveRange(low - 0.05, high + 0.05));
+      }
+    }
   });
 }
