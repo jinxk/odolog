@@ -55,17 +55,24 @@ class GroupedSliverList extends StatelessWidget {
       sliver: SliverList.separated(
         itemCount: itemCount,
         // The card colour is painted by the decoration above, so a row's ink
-        // needs its own Material on top of it, clipped to the card's corners.
-        itemBuilder: (context, i) => ClipRRect(
-          borderRadius: BorderRadius.vertical(
-            top: i == 0 ? corner : Radius.zero,
-            bottom: i == itemCount - 1 ? corner : Radius.zero,
-          ),
-          child: Material(
+        // needs its own Material on top of it. The first and last rows are
+        // clipped to the card's corners.
+        itemBuilder: (context, i) {
+          final row = Material(
             type: MaterialType.transparency,
             child: itemBuilder(context, i),
-          ),
-        ),
+          );
+          final first = i == 0;
+          final last = i == itemCount - 1;
+          if (!first && !last) return row;
+          return ClipRRect(
+            borderRadius: BorderRadius.vertical(
+              top: first ? corner : Radius.zero,
+              bottom: last ? corner : Radius.zero,
+            ),
+            child: row,
+          );
+        },
         separatorBuilder: (context, index) =>
             Divider(height: 1, indent: 56, endIndent: 16, color: hairline),
       ),

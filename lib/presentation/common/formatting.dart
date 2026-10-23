@@ -43,6 +43,8 @@ InlineSpan amountSpan(String amount, TextStyle? style) => WidgetSpan(
   baseline: TextBaseline.alphabetic,
   child: FittedBox(
     fit: BoxFit.scaleDown,
+    // The paragraph already scales inline widgets by the text scale, so the
+    // inner Text must not scale again.
     child: Text(amount, style: style, textScaler: TextScaler.noScaling),
   ),
 );
