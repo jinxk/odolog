@@ -326,9 +326,11 @@ class _HistoryRow extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        formatDate(entry.filledAt),
-                        style: theme.textTheme.titleMedium,
+                      Flexible(
+                        child: Text(
+                          formatDate(entry.filledAt),
+                          style: theme.textTheme.titleMedium,
+                        ),
                       ),
                       if (!entry.fullTank) ...[
                         const SizedBox(width: 8),
