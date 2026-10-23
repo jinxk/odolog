@@ -40,7 +40,10 @@ class HomeScreen extends ConsumerWidget {
     final vehicle = ref.watch(currentVehicleProvider);
     return Scaffold(
       body: SafeArea(
+        // A save reloads the vehicle list; keep the dashboard mounted so the
+        // figures animate from what they showed instead of from zero.
         child: vehicle.when(
+          skipLoadingOnReload: true,
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => ErrorView(
             error: error,
