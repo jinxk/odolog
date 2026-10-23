@@ -202,7 +202,8 @@ class _ServiceLogRow extends ConsumerWidget {
     final currency = ref.watch(settingsProvider).value?.currencySymbol ?? 'Rs';
     final subtitleParts = <String>[
       formatDistance(entry.odometer),
-      if (entry.cost != null) formatMoney(entry.cost!, currency),
+      if (entry.cost != null)
+        formatMoney(entry.cost!, currency).replaceAll(' ', '\u00A0'),
     ];
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),

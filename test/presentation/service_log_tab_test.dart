@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:odolog/app/theme/theme.dart';
 import 'package:odolog/core/typedefs.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
@@ -29,6 +32,8 @@ Future<FakeServiceLogRepository> pumpScreen(
   WidgetTester tester, {
   FakeReminderScheduler? scheduler,
   FakeServiceLogRepository? repo,
+  ThemeData? theme,
+  double textScale = 1,
 }) async {
   final serviceLogRepo = repo ?? FakeServiceLogRepository();
   await tester.pumpWidget(
@@ -50,11 +55,28 @@ Future<FakeServiceLogRepository> pumpScreen(
           scheduler ?? FakeReminderScheduler(),
         ),
       ],
-      child: const MaterialApp(home: ServiceLogTab()),
+      child: MaterialApp(
+        theme: theme,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        home: const ServiceLogTab(),
+      ),
     ),
   );
   await tester.pumpAndSettle();
   return serviceLogRepo;
+}
+
+Future<void> _loadInter() async {
+  final loader = FontLoader('Inter');
+  for (final weight in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+    loader.addFont(rootBundle.load('assets/fonts/Inter-$weight.ttf'));
+  }
+  await loader.load();
 }
 
 void main() {
@@ -218,6 +240,39 @@ void main() {
       expect(repo.entries.map((e) => e.id), contains(40));
     },
   );
+
+  testWidgets('the service cost stays on one line at a large text scale', (
+    tester,
+  ) async {
+    // The default test font is as wide as it is tall, so load the real one.
+    await _loadInter();
+    await tester.binding.setSurfaceSize(const Size(411, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpScreen(
+      tester,
+      theme: AppTheme.light,
+      textScale: 2,
+      repo: FakeServiceLogRepository([
+        ServiceLogEntry(
+          id: 1,
+          vehicleId: 1,
+          template: ServiceTemplate.generalService,
+          performedAt: DateTime(2026, 9, 23),
+          odometer: 12345,
+          cost: 450,
+        ),
+      ]),
+    );
+
+    final subtitle = tester.renderObject<RenderParagraph>(
+      find.textContaining('450.00'),
+    );
+    final text = subtitle.text.toPlainText();
+    final boxes = subtitle.getBoxesForSelection(
+      TextSelection(baseOffset: text.indexOf('Rs'), extentOffset: text.length),
+    );
+    expect(boxes.map((box) => box.top.round()).toSet(), hasLength(1));
+  });
 }
 
 /// Holds every delete until [gate] completes.
