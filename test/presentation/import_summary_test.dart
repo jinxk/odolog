@@ -14,7 +14,7 @@ DataBundle _bundleWithReadings(int count) => (
         id: i + 1,
         vehicleId: 1,
         odometer: 1000.0 + i,
-        recordedAt: DateTime(2026, 1, 1 + i),
+        recordedAt: DateTime.now().subtract(Duration(days: i)),
       ),
   ],
 );
