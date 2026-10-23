@@ -112,10 +112,17 @@ class DataBundleJsonCodec implements DataBundleCodec {
     required DateTime now,
   }) {
     final vehicleId = vehicles.last.id;
-    // One minute apart and none later than now, in the order of the odometers.
-    final latest = DateTime(now.year, now.month, now.day, now.hour, now.minute);
-    DateTime minutesAgo(int minutes) =>
-        latest.subtract(Duration(minutes: minutes));
+    // One second apart and none later than now, in the order of the odometers.
+    final latest = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
+      now.second,
+    );
+    DateTime secondsAgo(int seconds) =>
+        latest.subtract(Duration(seconds: seconds));
     Map<String, Object?> example(
       Map<String, Object?> item,
       String dateKey,
@@ -141,7 +148,7 @@ class DataBundleJsonCodec implements DataBundleCodec {
         example(
           _refuelJson(_exampleEntry),
           'filledAt',
-          minutesAgo(2),
+          secondsAgo(2),
           startOdometer + 100,
         ),
       ],
@@ -149,7 +156,7 @@ class DataBundleJsonCodec implements DataBundleCodec {
         example(
           _serviceLogJson(_exampleServiceLog),
           'performedAt',
-          minutesAgo(3),
+          secondsAgo(3),
           startOdometer + 50,
         ),
       ],
@@ -157,7 +164,7 @@ class DataBundleJsonCodec implements DataBundleCodec {
         example(
           _expenseJson(_exampleExpense),
           'date',
-          minutesAgo(1),
+          secondsAgo(1),
           startOdometer + 120,
         ),
       ],
@@ -165,7 +172,7 @@ class DataBundleJsonCodec implements DataBundleCodec {
         example(
           _odometerReadingJson(_exampleOdometerReading),
           'recordedAt',
-          minutesAgo(0),
+          secondsAgo(0),
           startOdometer + 150,
         ),
       ],
