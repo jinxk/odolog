@@ -14,11 +14,9 @@ class GroupedList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hairline = Theme.of(context).extension<AppColorRoles>()?.hairline;
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(AppShapes.cardRadius),
-      ),
+    return Material(
+      color: Theme.of(context).cardTheme.color,
+      borderRadius: BorderRadius.circular(AppShapes.cardRadius),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:odolog/app/theme/theme.dart';
 import 'package:odolog/domain/backup/auto_backup_policy.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
@@ -40,8 +41,9 @@ final _activa = Vehicle(
 
 Future<void> _pumpSettings(
   WidgetTester tester,
-  FakeReminderScheduler scheduler,
-) async {
+  FakeReminderScheduler scheduler, {
+  ThemeData? theme,
+}) async {
   await tester.binding.setSurfaceSize(const Size(1200, 4000));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
@@ -67,7 +69,7 @@ Future<void> _pumpSettings(
         ),
         reminderSchedulerProvider.overrideWithValue(scheduler),
       ],
-      child: MaterialApp.router(routerConfig: _settingsRouter()),
+      child: MaterialApp.router(theme: theme, routerConfig: _settingsRouter()),
     ),
   );
   await tester.pumpAndSettle();
@@ -300,5 +302,13 @@ void main() {
 
     await _pumpSettings(tester, FakeReminderScheduler());
     expect(find.text(blocked), findsNothing);
+  });
+
+  testWidgets('opening Settings with the app theme raises no ink assertion', (
+    tester,
+  ) async {
+    await _pumpSettings(tester, FakeReminderScheduler(), theme: AppTheme.light);
+
+    expect(tester.takeException(), isNull);
   });
 }
