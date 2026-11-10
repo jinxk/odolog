@@ -1,10 +1,10 @@
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/failures.dart';
 import '../providers/app_providers.dart';
+import '../providers/backup_file_picker.dart';
 import '../providers/usecases.dart';
 import '../vehicles/vehicle_form.dart';
 
@@ -73,16 +73,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _restoreBackup() async {
     setState(() => _busy = true);
-    final picked = await openFile(
-      acceptedTypeGroups: const [
-        XTypeGroup(label: 'OdoLog backup', extensions: ['json', 'csv']),
-      ],
-    );
+    final picked = await ref.read(backupFilePickerProvider)();
     if (picked == null) {
       if (mounted) setState(() => _busy = false);
       return;
     }
-    final content = await picked.readAsString();
+    final String content;
+    try {
+      content = await picked.readAsString();
+    } on Exception {
+      // Not text, such as a photo renamed .json.
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not restore: Check the file and try again.'),
+        ),
+      );
+      return;
+    }
     final result = await ref.read(importDataProvider).execute(content);
     if (!mounted) return;
     result.match(

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +18,7 @@ import '../common/motion.dart';
 import '../common/section_header.dart';
 import '../providers/app_providers.dart';
 import '../providers/auto_backup_provider.dart';
+import '../providers/backup_file_picker.dart';
 import '../providers/repositories.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usecases.dart';
@@ -321,18 +321,27 @@ class _DataSectionState extends ConsumerState<_DataSection> {
 
   Future<void> _importData() async {
     setState(() => _busy = true);
-    // CSV stays accepted so a backup exported before the JSON format still
-    // restores; the codec sniffs the content and picks the right reader.
-    final picked = await openFile(
-      acceptedTypeGroups: const [
-        XTypeGroup(label: 'OdoLog backup', extensions: ['json', 'csv']),
-      ],
-    );
+    final picked = await ref.read(backupFilePickerProvider)();
     if (picked == null) {
       if (mounted) setState(() => _busy = false);
       return;
     }
-    final content = await picked.readAsString();
+    final String content;
+    try {
+      content = await picked.readAsString();
+    } on Exception {
+      // Not text, such as a photo renamed .json.
+      if (!mounted) return;
+      await _reportFailure(
+        'Could not import your data.',
+        const ValidationFailure(
+          field: 'file',
+          reason: 'Check the file and try again.',
+        ),
+      );
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
     final result = await ref.read(importDataProvider).execute(content);
     if (!mounted) return;
     await result.match(
