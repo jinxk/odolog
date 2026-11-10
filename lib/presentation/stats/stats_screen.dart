@@ -29,7 +29,10 @@ class StatsScreen extends ConsumerWidget {
     final vehicle = ref.watch(currentVehicleProvider);
     return Scaffold(
       body: SafeArea(
+        // A save reloads the vehicle list and the history the trend and
+        // months are built from; keep every section on screen meanwhile.
         child: vehicle.when(
+          skipLoadingOnReload: true,
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => ErrorView(
             error: error,
@@ -283,6 +286,7 @@ class _TrendSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return windows.when(
+      skipLoadingOnReload: true,
       loading: () => const SectionCard(child: _SectionSpinner()),
       error: (error, _) => SectionCard(
         child: ErrorView(
@@ -342,6 +346,7 @@ class _MonthlySection extends ConsumerWidget {
         theme.extension<AppColorRoles>() ??
         AppColorRoles.of(theme.colorScheme.onSurface, theme.brightness);
     return monthly.when(
+      skipLoadingOnReload: true,
       loading: () => const SectionCard(child: _SectionSpinner()),
       error: (error, _) => SectionCard(
         child: ErrorView(

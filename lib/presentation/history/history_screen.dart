@@ -120,7 +120,9 @@ class _FuelHistory extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vehicle = ref.watch(currentVehicleProvider);
+    // A save reloads the vehicle list; keep the list on screen meanwhile.
     return vehicle.when(
+      skipLoadingOnReload: true,
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => ErrorView(
         error: error,
