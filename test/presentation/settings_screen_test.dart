@@ -335,10 +335,17 @@ void main() {
       expect(find.text('Check the file and try again.'), findsOneWidget);
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
-      final importRow = tester.widget<ListTile>(
-        find.widgetWithText(ListTile, 'Import data'),
-      );
-      expect(importRow.enabled, isTrue);
+      for (final row in [
+        'Export data',
+        'Import data',
+        'Download template',
+        'Download template with your vehicles',
+      ]) {
+        final tile = tester.widget<ListTile>(
+          find.widgetWithText(ListTile, row),
+        );
+        expect(tile.enabled, isTrue, reason: row);
+      }
       expect(vehicles.vehicles, [_activa]);
     },
   );
