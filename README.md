@@ -39,7 +39,7 @@ Present today:
 - Document expiry reminders for insurance, PUC, RC, and fitness, delivered as local notifications at 30, 15, 7, and 1 days out. Settings lists what is scheduled and can send a test one.
 - Service log with due reminders: engine oil by distance, general service by date, whichever comes first.
 - Non-fuel expenses (service, tyres, repairs, insurance) folded into a total cost of ownership figure.
-- JSON export and import, plus a blank template to fill in and import back. The export is your backup. CSV backups from 1.0 still restore.
+- JSON export and import, plus a blank template and a template with your vehicles to fill in and import back. The export is your backup. CSV backups from 1.0 still restore.
 - Automatic daily backup to Downloads/OdoLog, kept to the last seven days. Files there survive an uninstall. On by default after a one-time consent, and restorable from the welcome screen.
 - India-first fuel presets: IOCL, BPCL, HPCL, Shell, Nayara, Jio-bp variants, CNG, and Auto LPG. Free text entry and a currency picker cover other countries.
 - Material 3 interface with dark and light themes.

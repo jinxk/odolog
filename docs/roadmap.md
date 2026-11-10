@@ -10,10 +10,11 @@ Where OdoLog is and where it is going. The short version lives in the README.
 - **1.2**: import runs as one transaction and refuses rows that name a vehicle it cannot find, error states with a retry, the vehicle switcher on every tab, a shorter start-up sweep.
 - **1.3**: manual odometer updates, undo after a delete, delete all data from Settings, a warning for fills past the tank capacity, a reminders section in Settings, and the notification prompt only when there is something to remind about.
 - **1.4**: project polish. Changelog, privacy page, this file, issue and pull request templates, a security policy, minified release builds, and an APK attached to the release with its SHA-256.
+- **1.5**: odometer rollovers handled in the stats and in backups, more saved backups that import, a plain message for ids already on the phone, a template that lists your vehicles for adding data by hand, odometer readings in the import summary, thousands separators on money, a two-wheeler icon, faster Service and Expenses lists, predictive back, and rows that stay whole at large text sizes.
 
 ## Next
 
-- A Play Store release, after a closed test.
+- A Play Store release. It is in closed testing now.
 - An F-Droid listing.
 - Notification behaviour checked on more phones, including the OEM battery savers that like to kill scheduled work.
 
