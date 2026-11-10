@@ -1,11 +1,16 @@
+import 'dart:convert';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:odolog/app/theme/theme.dart';
 import 'package:odolog/domain/backup/auto_backup_policy.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
+import 'package:odolog/domain/usecases/import_data.dart';
 import 'package:odolog/domain/usecases/reset_all_data.dart';
 import 'package:odolog/presentation/providers/backup_file_picker.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
@@ -20,6 +25,7 @@ import '../helpers/fake_refuel_repository.dart';
 import '../helpers/fake_reminder_scheduler.dart';
 import '../helpers/fake_service_log_repository.dart';
 import '../helpers/fake_vehicle_repository.dart';
+import '../helpers/held_import.dart';
 import '../helpers/unreadable_file.dart';
 
 GoRouter _settingsRouter() => GoRouter(
@@ -47,6 +53,7 @@ Future<void> _pumpSettings(
   ThemeData? theme,
   FakeVehicleRepository? vehicles,
   BackupFilePicker? picker,
+  ImportData? import,
 }) async {
   await tester.binding.setSurfaceSize(const Size(1200, 4000));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -57,6 +64,7 @@ Future<void> _pumpSettings(
           vehicles ?? FakeVehicleRepository([_activa]),
         ),
         if (picker != null) backupFilePickerProvider.overrideWithValue(picker),
+        if (import != null) importDataProvider.overrideWithValue(import),
         refuelRepositoryProvider.overrideWithValue(FakeRefuelRepository()),
         serviceLogRepositoryProvider.overrideWithValue(
           FakeServiceLogRepository([
@@ -349,4 +357,38 @@ void main() {
       expect(vehicles.vehicles, [_activa]);
     },
   );
+
+  testWidgets('the Import data row shows a spinner until the summary shows', (
+    tester,
+  ) async {
+    final import = HeldImport();
+    await _pumpSettings(
+      tester,
+      FakeReminderScheduler(),
+      picker: () async => XFile.fromData(utf8.encode('{}'), name: 'b.json'),
+      import: import,
+    );
+    final spinner = find.descendant(
+      of: find.widgetWithText(ListTile, 'Import data'),
+      matching: find.byType(CircularProgressIndicator),
+    );
+    expect(spinner, findsNothing);
+
+    await tester.tap(find.text('Import data'));
+    await tester.pump();
+    expect(spinner, findsOneWidget);
+
+    import.result.complete(
+      right((
+        vehicles: const <Vehicle>[],
+        entries: const [],
+        serviceLog: const [],
+        expenses: const [],
+        odometerReadings: const [],
+      )),
+    );
+    await tester.pump();
+    expect(spinner, findsNothing);
+    expect(find.byType(SnackBar), findsOneWidget);
+  });
 }
