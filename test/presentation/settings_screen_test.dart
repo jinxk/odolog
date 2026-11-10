@@ -7,6 +7,7 @@ import 'package:odolog/domain/backup/auto_backup_policy.dart';
 import 'package:odolog/domain/entities/service_log_entry.dart';
 import 'package:odolog/domain/entities/vehicle.dart';
 import 'package:odolog/domain/usecases/reset_all_data.dart';
+import 'package:odolog/presentation/providers/backup_file_picker.dart';
 import 'package:odolog/presentation/providers/repositories.dart';
 import 'package:odolog/presentation/providers/usecases.dart';
 import 'package:odolog/presentation/settings/settings_screen.dart';
@@ -19,6 +20,7 @@ import '../helpers/fake_refuel_repository.dart';
 import '../helpers/fake_reminder_scheduler.dart';
 import '../helpers/fake_service_log_repository.dart';
 import '../helpers/fake_vehicle_repository.dart';
+import '../helpers/unreadable_file.dart';
 
 GoRouter _settingsRouter() => GoRouter(
   initialLocation: '/',
@@ -43,6 +45,8 @@ Future<void> _pumpSettings(
   WidgetTester tester,
   FakeReminderScheduler scheduler, {
   ThemeData? theme,
+  FakeVehicleRepository? vehicles,
+  BackupFilePicker? picker,
 }) async {
   await tester.binding.setSurfaceSize(const Size(1200, 4000));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -50,8 +54,9 @@ Future<void> _pumpSettings(
     ProviderScope(
       overrides: [
         vehicleRepositoryProvider.overrideWithValue(
-          FakeVehicleRepository([_activa]),
+          vehicles ?? FakeVehicleRepository([_activa]),
         ),
+        if (picker != null) backupFilePickerProvider.overrideWithValue(picker),
         refuelRepositoryProvider.overrideWithValue(FakeRefuelRepository()),
         serviceLogRepositoryProvider.overrideWithValue(
           FakeServiceLogRepository([
@@ -311,4 +316,30 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'an unreadable import file shows the failure and frees the rows',
+    (tester) async {
+      final vehicles = FakeVehicleRepository([_activa]);
+      await _pumpSettings(
+        tester,
+        FakeReminderScheduler(),
+        vehicles: vehicles,
+        picker: () async => UnreadableFile(),
+      );
+
+      await tester.tap(find.text('Import data'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Could not import your data.'), findsOneWidget);
+      expect(find.text('Check the file and try again.'), findsOneWidget);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      final importRow = tester.widget<ListTile>(
+        find.widgetWithText(ListTile, 'Import data'),
+      );
+      expect(importRow.enabled, isTrue);
+      expect(vehicles.vehicles, [_activa]);
+    },
+  );
 }
