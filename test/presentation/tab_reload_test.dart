@@ -134,6 +134,9 @@ void main() {
     final refuels = await _pump(tester, const StatsScreen());
 
     await _saveAndWatch(tester, refuels, StatsScreen);
+
+    // 3,000 + 1,509 + 2,515 before the save, plus the 1,500 fill.
+    expect(find.textContaining('8,524.00'), findsWidgets);
   });
 
   testWidgets('stats still show loading when the vehicle changes', (
