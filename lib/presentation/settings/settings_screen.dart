@@ -229,6 +229,9 @@ class _DataSection extends ConsumerStatefulWidget {
 class _DataSectionState extends ConsumerState<_DataSection> {
   bool _busy = false;
 
+  /// From the pick until the summary or the failure shows.
+  bool _importing = false;
+
   @override
   Widget build(BuildContext context) {
     return GroupedList(
@@ -248,6 +251,13 @@ class _DataSectionState extends ConsumerState<_DataSection> {
           subtitle: const Text(
             'Load everything from a JSON file, adds to what is already here',
           ),
+          trailing: _importing
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : null,
           enabled: !_busy,
           onTap: _importData,
         ),
@@ -326,12 +336,14 @@ class _DataSectionState extends ConsumerState<_DataSection> {
       if (mounted) setState(() => _busy = false);
       return;
     }
+    setState(() => _importing = true);
     final String content;
     try {
       content = await picked.readAsString();
     } on Exception {
       // Not text, such as a photo renamed .json.
       if (!mounted) return;
+      setState(() => _importing = false);
       await _reportFailure(
         'Could not import your data.',
         const ValidationFailure(
@@ -344,6 +356,7 @@ class _DataSectionState extends ConsumerState<_DataSection> {
     }
     final result = await ref.read(importDataProvider).execute(content);
     if (!mounted) return;
+    setState(() => _importing = false);
     await result.match(
       (failure) => _reportFailure('Could not import your data.', failure),
       (bundle) async {

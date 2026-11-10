@@ -26,6 +26,9 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _busy = false;
 
+  /// From the pick until the restore ends or its failure shows.
+  bool _importing = false;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -51,7 +54,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   TextButton(
                     onPressed: _busy ? null : _restoreBackup,
                     style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                    child: const Text('Been here before? Restore a backup'),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Been here before? Restore a backup'),
+                        if (_importing) ...[
+                          const SizedBox(width: 8),
+                          const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -78,13 +94,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (mounted) setState(() => _busy = false);
       return;
     }
+    setState(() => _importing = true);
     final String content;
     try {
       content = await picked.readAsString();
     } on Exception {
       // Not text, such as a photo renamed .json.
       if (!mounted) return;
-      setState(() => _busy = false);
+      setState(() {
+        _busy = false;
+        _importing = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Could not restore: Check the file and try again.'),
@@ -96,7 +116,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (!mounted) return;
     result.match(
       (failure) {
-        setState(() => _busy = false);
+        setState(() {
+          _busy = false;
+          _importing = false;
+        });
         final reason = failure is ValidationFailure
             ? failure.reason
             : 'Check the file and try again.';
