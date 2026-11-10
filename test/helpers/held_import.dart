@@ -11,7 +11,4 @@ class HeldImport implements ImportData {
 
   @override
   Future<Result<DataBundle>> execute(String content) => result.future;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
