@@ -143,6 +143,8 @@ A partial fill inside the window contributes its quantity and price to the windo
 
 A window with an odometer rollover inside it gives no mileage point, and the fuel and cost of that span are dropped.
 
+A window whose closing reading is at or below its opening reading (possible through the odometer override) is dropped too and gives no mileage point. The closing fill still opens the next window.
+
 The **latest mileage** shown on the dashboard is the mileage of the most recently closed full-tank window.
 
 ### Range
