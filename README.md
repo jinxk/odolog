@@ -2,6 +2,15 @@
 
 A fuel log for your vehicles. Log every refuel, see your real mileage and running costs.
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/home.png" width="220" alt="Home dashboard with mileage and cost per km" /><br />Home dashboard</td>
+    <td align="center"><img src="docs/screenshots/history.png" width="220" alt="Refuel history timeline" /><br />Refuel history</td>
+    <td align="center"><img src="docs/screenshots/stats.png" width="220" alt="Lifetime and monthly stats" /><br />Mileage and costs</td>
+    <td align="center"><img src="docs/screenshots/home_dark.png" width="220" alt="Home dashboard in dark theme" /><br />Dark theme</td>
+  </tr>
+</table>
+
 [![ci](https://github.com/jinxk/odolog/actions/workflows/ci.yml/badge.svg)](https://github.com/jinxk/odolog/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-stable-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
@@ -10,21 +19,6 @@ A fuel log for your vehicles. Log every refuel, see your real mileage and runnin
 OdoLog tells you what your vehicles cost to run. You add a vehicle, log each refuel at the pump (quantity, amount paid, odometer), and the app works out your real mileage, cost per kilometre, range per tank, and monthly spend. Mileage is measured full tank to full tank.
 
 It is 100% offline. No account, no cloud, no ads, no analytics. Your data lives in a local SQLite database on the device and nowhere else. The app declares no internet permission, so it cannot make a network call even by mistake. See [Privacy](docs/privacy.md).
-
-## Screenshots
-
-<table>
-  <tr>
-    <td><img src="docs/screenshots/home.png" width="220" alt="Home dashboard with mileage and cost per km" /></td>
-    <td><img src="docs/screenshots/history.png" width="220" alt="Refuel history timeline" /></td>
-    <td><img src="docs/screenshots/stats.png" width="220" alt="Lifetime and monthly stats" /></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/refuel.png" width="220" alt="Log a refuel" /></td>
-    <td><img src="docs/screenshots/service.png" width="220" alt="Service log with due reminders" /></td>
-    <td><img src="docs/screenshots/home_dark.png" width="220" alt="Home dashboard in dark theme" /></td>
-  </tr>
-</table>
 
 ## Features
 
