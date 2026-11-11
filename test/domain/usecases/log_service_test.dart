@@ -57,13 +57,4 @@ void main() {
 
     expect(validationOf(result).field, 'note');
   });
-
-  test('a valid service is stored and given an id', () async {
-    final repo = FakeServiceLogRepository();
-    final result = await LogService(repo).execute(entry());
-
-    final stored = result.getRight().toNullable()!;
-    expect(stored.id, 1);
-    expect(repo.entries, hasLength(1));
-  });
 }

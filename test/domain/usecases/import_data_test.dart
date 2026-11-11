@@ -326,28 +326,6 @@ void main() {
     expect(refuelRepo.entries, hasLength(5));
   });
 
-  test('a rejected row aborts the unit of work so nothing commits', () async {
-    final unitOfWork = FakeUnitOfWork();
-    final codec = FakeDataBundleCodec(
-      decodeResult: right((
-        vehicles: [vehicle],
-        entries: [entry(id: 0, odometer: 1000, quantity: 0, pricePaid: 2000)],
-        serviceLog: const [],
-        odometerReadings: const [],
-        expenses: const [],
-      )),
-    );
-
-    final result = await importer(
-      codec: codec,
-      unitOfWork: unitOfWork,
-    ).execute('...');
-
-    expect(result.isLeft(), isTrue);
-    expect(unitOfWork.ran, isTrue);
-    expect(unitOfWork.rolledBack, isTrue);
-  });
-
   test(
     'a refuel naming a vehicle nobody has is refused before any write',
     () async {

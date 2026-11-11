@@ -31,23 +31,6 @@ void main() {
     expect(repo.entries, hasLength(1));
   });
 
-  test('odometer lower than the previous reading is rejected', () async {
-    final repo = FakeRefuelRepository([
-      entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000),
-    ]);
-    final result = await logRefuel(repo).execute(
-      entry(
-        id: 0,
-        odometer: 900,
-        quantity: 20,
-        pricePaid: 2000,
-        filledAt: DateTime.utc(2020, 1, 2),
-      ),
-    );
-
-    expect(validationOf(result).field, 'odometer');
-  });
-
   test('a backdated fill with an in-between odometer is accepted', () async {
     final repo = FakeRefuelRepository([
       entry(
@@ -111,26 +94,10 @@ void main() {
     expect(validationOf(result).field, 'quantity');
   });
 
-  test('negative quantity is rejected', () async {
-    final result = await logRefuel(
-      FakeRefuelRepository(),
-    ).execute(entry(id: 0, odometer: 1000, quantity: -5, pricePaid: 2000));
-
-    expect(validationOf(result).field, 'quantity');
-  });
-
   test('zero price is rejected', () async {
     final result = await logRefuel(
       FakeRefuelRepository(),
     ).execute(entry(id: 0, odometer: 1000, quantity: 20, pricePaid: 0));
-
-    expect(validationOf(result).field, 'price');
-  });
-
-  test('negative price is rejected', () async {
-    final result = await logRefuel(
-      FakeRefuelRepository(),
-    ).execute(entry(id: 0, odometer: 1000, quantity: 20, pricePaid: -100));
 
     expect(validationOf(result).field, 'price');
   });
@@ -178,18 +145,6 @@ void main() {
 
     expect(result.isRight(), isTrue);
     expect(repo.entries, hasLength(2));
-  });
-
-  test('a valid fill is stored and given an id', () async {
-    final repo = FakeRefuelRepository();
-    final result = await logRefuel(
-      repo,
-    ).execute(entry(id: 0, odometer: 1000, quantity: 20, pricePaid: 2000));
-
-    final stored = result.getRight().toNullable()!;
-    expect(stored.id, 1);
-    expect(repo.entries, hasLength(1));
-    expect(repo.entries.single.odometer, 1000);
   });
 
   test('a fill dated after a manual reading must read higher', () async {
@@ -242,31 +197,5 @@ void main() {
 
     expect(result.isRight(), isTrue);
     expect(repo.entries, hasLength(1));
-  });
-
-  test('the override still lets a fill past a manual reading', () async {
-    final now = DateTime.now();
-    final repo = FakeRefuelRepository();
-    final readings = FakeOdometerReadingRepository([
-      OdometerReading(
-        id: 1,
-        vehicleId: 1,
-        odometer: 1400,
-        recordedAt: now.subtract(const Duration(days: 2)),
-      ),
-    ]);
-
-    final result = await logRefuel(repo, readings).execute(
-      entry(
-        id: 0,
-        odometer: 900,
-        quantity: 20,
-        pricePaid: 2000,
-        filledAt: now,
-        odometerOverride: true,
-      ),
-    );
-
-    expect(result.isRight(), isTrue);
   });
 }

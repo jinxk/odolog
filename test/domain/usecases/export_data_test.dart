@@ -49,43 +49,28 @@ void main() {
         quantity: 20,
         pricePaid: 2000,
       );
+      final reading = OdometerReading(
+        id: 1,
+        vehicleId: vehicle.id,
+        odometer: 1400,
+        recordedAt: DateTime.now(),
+      );
       final codec = FakeDataBundleCodec();
       final result = await ExportData(
         FakeVehicleRepository([vehicle]),
         FakeRefuelRepository([refuel]),
         FakeServiceLogRepository(),
         FakeExpenseRepository(),
-        FakeOdometerReadingRepository(),
+        FakeOdometerReadingRepository([reading]),
         codec,
       ).execute();
 
       expect(result.getRight().toNullable(), 'encoded');
       expect(codec.lastEncoded!.vehicles, [vehicle]);
       expect(codec.lastEncoded!.entries, [refuel]);
-      expect(codec.lastEncoded!.odometerReadings, isEmpty);
+      expect(codec.lastEncoded!.odometerReadings, [reading]);
     },
   );
-
-  test('odometer readings are collected per vehicle', () async {
-    final reading = OdometerReading(
-      id: 1,
-      vehicleId: vehicle.id,
-      odometer: 1400,
-      recordedAt: DateTime.now(),
-    );
-    final codec = FakeDataBundleCodec();
-
-    await ExportData(
-      FakeVehicleRepository([vehicle]),
-      FakeRefuelRepository(),
-      FakeServiceLogRepository(),
-      FakeExpenseRepository(),
-      FakeOdometerReadingRepository([reading]),
-      codec,
-    ).execute();
-
-    expect(codec.lastEncoded!.odometerReadings, [reading]);
-  });
 
   test(
     'a repository failure short circuits before reaching the codec',

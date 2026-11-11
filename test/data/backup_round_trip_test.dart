@@ -471,40 +471,6 @@ void main() {
     expect(statsAfter.getRight().toNullable(), statsBefore);
   });
 
-  test('a backup holding an override fill dated before a later manual reading '
-      'restores every row and the same stats into an empty store', () async {
-    await expectRoundTrip([
-      entry(
-        id: 0,
-        odometer: 1000,
-        quantity: 20,
-        pricePaid: 2000,
-        filledAt: daysAgo(40),
-      ),
-      entry(
-        id: 0,
-        odometer: 3000,
-        quantity: 20,
-        pricePaid: 2000,
-        filledAt: daysAgo(20),
-      ),
-      OdometerReading(
-        id: 0,
-        vehicleId: vehicle.id,
-        odometer: 2000,
-        recordedAt: daysAgo(25),
-      ),
-      entry(
-        id: 0,
-        odometer: 3500,
-        quantity: 20,
-        pricePaid: 2000,
-        odometerOverride: true,
-        filledAt: daysAgo(30),
-      ),
-    ]);
-  });
-
   test('a backup holding a rollover and an override fill dated before a later '
       'manual reading restores every row and the same stats into an empty '
       'store', () async {

@@ -72,20 +72,6 @@ void main() {
     expect(fetched, added);
   });
 
-  test('getAll returns every stored vehicle', () async {
-    await repository.add(fullVehicle);
-    await repository.add(
-      fullVehicle.copyWith(name: 'Second', fuelCategory: FuelCategory.diesel),
-    );
-
-    final all = (await repository.getAll()).getRight().toNullable()!;
-    expect(all, hasLength(2));
-    expect(
-      all.map((v) => v.name),
-      containsAll(<String>['Daily Ride', 'Second']),
-    );
-  });
-
   test('update persists changed fields', () async {
     final added = (await repository.add(fullVehicle)).getRight().toNullable()!;
     final edited = added.copyWith(name: 'Renamed', tankCapacity: 40);

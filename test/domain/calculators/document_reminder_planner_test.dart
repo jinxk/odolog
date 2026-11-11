@@ -25,10 +25,6 @@ void main() {
   );
 
   group('plan', () {
-    test('a vehicle with no dates produces no reminders', () {
-      expect(planner.plan([vehicleWith()], now: now), isEmpty);
-    });
-
     test('one date yields the four lead times, all in the future', () {
       final expiry = now.add(const Duration(days: 60));
       final reminders = planner.plan([

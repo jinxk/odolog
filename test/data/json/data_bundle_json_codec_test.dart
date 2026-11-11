@@ -36,7 +36,7 @@ void main() {
   const codec = DataBundleJsonCodec();
 
   group('round trip', () {
-    test('all four sections survive a full write and read cycle', () {
+    test('every section survives a full write and read cycle', () {
       final data = bundle(
         vehicles: [
           Vehicle(
@@ -104,27 +104,6 @@ void main() {
             category: 'Tyre',
           ),
         ],
-      );
-
-      final encoded = codec.encode(data);
-      final read = codec.decode(encoded).getRight().toNullable()!;
-
-      expect(read.vehicles, data.vehicles);
-      expect(read.entries, data.entries);
-      expect(read.serviceLog, data.serviceLog);
-      expect(read.expenses, data.expenses);
-    });
-
-    test('the writer stamps the current version', () {
-      final document =
-          json.decode(codec.encode(bundle())) as Map<String, Object?>;
-
-      expect(document['version'], 2);
-      expect(document, contains('odometerReadings'));
-    });
-
-    test('odometer readings survive a write and read cycle', () {
-      final data = bundle(
         odometerReadings: [
           OdometerReading(
             id: 1,
@@ -142,8 +121,13 @@ void main() {
         ],
       );
 
-      final read = codec.decode(codec.encode(data)).getRight().toNullable()!;
+      final encoded = codec.encode(data);
+      final read = codec.decode(encoded).getRight().toNullable()!;
 
+      expect(read.vehicles, data.vehicles);
+      expect(read.entries, data.entries);
+      expect(read.serviceLog, data.serviceLog);
+      expect(read.expenses, data.expenses);
       expect(read.odometerReadings, data.odometerReadings);
     });
 

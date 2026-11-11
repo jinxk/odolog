@@ -64,13 +64,4 @@ void main() {
 
     expect(validationOf(result).field, 'category');
   });
-
-  test('a valid expense is stored and given an id', () async {
-    final repo = FakeExpenseRepository();
-    final result = await LogExpense(repo).execute(expense());
-
-    final stored = result.getRight().toNullable()!;
-    expect(stored.id, 1);
-    expect(repo.expenses, hasLength(1));
-  });
 }

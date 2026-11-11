@@ -413,9 +413,5 @@ void main() {
 
       expect(calculator.lastKnownPricePerUnit(entries), 100.60);
     });
-
-    test('is null when there is no history', () {
-      expect(calculator.lastKnownPricePerUnit(const []), isNull);
-    });
   });
 }

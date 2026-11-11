@@ -33,27 +33,26 @@ void main() {
   });
 
   test(
-    'an unknown distance since the last full fill falls back to the tank capacity',
+    'an unknown distance or average mileage falls back to the tank capacity',
     () {
-      final result = estimator.estimate(
-        tankCapacity: 35,
-        distanceSinceLastFullFill: null,
-        averageMileage: 25,
+      expect(
+        estimator.estimate(
+          tankCapacity: 35,
+          distanceSinceLastFullFill: null,
+          averageMileage: 25,
+        ),
+        35.0,
       );
-
-      expect(result, 35.0);
+      expect(
+        estimator.estimate(
+          tankCapacity: 35,
+          distanceSinceLastFullFill: 500,
+          averageMileage: null,
+        ),
+        35.0,
+      );
     },
   );
-
-  test('an unknown average mileage falls back to the tank capacity', () {
-    final result = estimator.estimate(
-      tankCapacity: 35,
-      distanceSinceLastFullFill: 500,
-      averageMileage: null,
-    );
-
-    expect(result, 35.0);
-  });
 
   test('a negative distance falls back to the tank capacity', () {
     final result = estimator.estimate(

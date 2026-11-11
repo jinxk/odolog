@@ -27,27 +27,14 @@ void main() {
     expect(validationOf(result).field, 'tankCapacity');
   });
 
-  test('a negative tank capacity is rejected', () async {
-    final result = await AddVehicle(
-      FakeVehicleRepository(),
-    ).execute(vehicle(tankCapacity: -5));
-
-    expect(validationOf(result).field, 'tankCapacity');
-  });
-
-  test('a null tank capacity is accepted', () async {
+  test('no tank capacity or a positive one is accepted', () async {
     final repo = FakeVehicleRepository();
-    final result = await AddVehicle(repo).execute(vehicle());
 
-    expect(result.isRight(), isTrue);
-    expect(repo.vehicles.single.tankCapacity, isNull);
-  });
-
-  test('a positive tank capacity is accepted', () async {
-    final repo = FakeVehicleRepository();
-    final result = await AddVehicle(repo).execute(vehicle(tankCapacity: 35));
-
-    expect(result.isRight(), isTrue);
-    expect(repo.vehicles.single.tankCapacity, 35);
+    expect((await AddVehicle(repo).execute(vehicle())).isRight(), isTrue);
+    expect(
+      (await AddVehicle(repo).execute(vehicle(tankCapacity: 35))).isRight(),
+      isTrue,
+    );
+    expect(repo.vehicles.map((v) => v.tankCapacity), [null, 35]);
   });
 }

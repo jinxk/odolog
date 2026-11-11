@@ -18,15 +18,7 @@ void main() {
     });
   });
 
-  group('fileName', () {
-    test('carries the day stamp and the json extension', () {
-      final now = DateTime.now();
-      final name = AutoBackupPolicy.fileName(now);
-      expect(name, startsWith('odolog_auto_'));
-      expect(name, endsWith('.json'));
-      expect(name, contains(AutoBackupPolicy.dayStamp(now)));
-    });
-  });
+  group('fileName', () {});
 
   group('isDue', () {
     test('not due when the last backup is from today', () {

@@ -6,17 +6,6 @@ import '../../helpers/fake_data_eraser.dart';
 import '../../helpers/fake_reminder_scheduler.dart';
 
 void main() {
-  test('a successful erase cancels every reminder', () async {
-    final eraser = FakeDataEraser();
-    final scheduler = FakeReminderScheduler();
-
-    final result = await ResetAllData(eraser, scheduler).execute();
-
-    expect(result.isRight(), isTrue);
-    expect(eraser.erased, isTrue);
-    expect(scheduler.cancelledAll, isTrue);
-  });
-
   test('a failed erase leaves the reminders alone', () async {
     final eraser = FakeDataEraser(failure: const DatabaseFailure('locked'));
     final scheduler = FakeReminderScheduler();

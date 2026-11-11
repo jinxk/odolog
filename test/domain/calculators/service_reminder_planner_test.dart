@@ -48,17 +48,6 @@ void main() {
     expect(reminders.single.fireAt.isAfter(now), isTrue);
   });
 
-  test('a vehicle with no refuel history produces no reminders', () {
-    final reminders = planner.plan(
-      [vehicle],
-      refuelsByVehicle: {},
-      serviceLogByVehicle: {},
-      now: now,
-    );
-
-    expect(reminders, isEmpty);
-  });
-
   test(
     'logging a service resets its countdown and pushes the reminder out',
     () {

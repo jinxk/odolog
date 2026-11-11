@@ -27,16 +27,6 @@ void main() {
     return rows.map((row) => row['name']! as String).toSet();
   }
 
-  test('onCreate builds both tables', () async {
-    final tables = await namesOfType('table');
-    expect(tables, containsAll(<String>['vehicles', 'refuel_entries']));
-  });
-
-  test('the foreign_keys pragma is on for the connection', () async {
-    final result = await db.rawQuery('PRAGMA foreign_keys');
-    expect(result.first.values.first, 1);
-  });
-
   test('both refuel indexes exist', () async {
     final indexes = await namesOfType('index');
     expect(

@@ -56,6 +56,7 @@ void main() {
     expect(stats.totalQuantity, 55.0);
     expect(stats.averageMileage, closeTo(24.0, 0.0001));
     expect(stats.lastFillRange, 600);
+    expect(stats.costPerKmOfOwnership, closeTo(5.515, 0.0001));
   });
 
   test('a reading behind the last fill leaves the distance alone', () {
@@ -75,25 +76,6 @@ void main() {
     final stats = calculator.lifetime(entries, readings: readings);
 
     expect(stats.totalDistance, 600);
-  });
-
-  test('cost per km of ownership follows the extended distance', () {
-    final entries = <RefuelEntry>[
-      entry(id: 1, odometer: 10000, quantity: 30, pricePaid: 3000),
-      entry(id: 2, odometer: 10600, quantity: 25, pricePaid: 1000),
-    ];
-    final readings = [
-      OdometerReading(
-        id: 1,
-        vehicleId: 1,
-        odometer: 11000,
-        recordedAt: DateTime.now(),
-      ),
-    ];
-
-    final stats = calculator.lifetime(entries, readings: readings);
-
-    expect(stats.costPerKmOfOwnership, closeTo(4.0, 0.0001));
   });
 
   test('distance into a month first fill is counted in that month', () {
