@@ -21,7 +21,7 @@ It is 100% offline. No account, no cloud, no ads, no analytics. Your data lives 
   </tr>
   <tr>
     <td><img src="docs/screenshots/refuel.png" width="220" alt="Log a refuel" /></td>
-    <td><img src="docs/screenshots/vehicles.png" width="220" alt="Vehicle list" /></td>
+    <td><img src="docs/screenshots/service.png" width="220" alt="Service log with due reminders" /></td>
     <td><img src="docs/screenshots/home_dark.png" width="220" alt="Home dashboard in dark theme" /></td>
   </tr>
 </table>
