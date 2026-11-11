@@ -83,7 +83,11 @@ abstract final class AppTheme {
           backgroundColor: AppColors.amber,
           foregroundColor: AppColors.ink,
           shape: AppShapes.buttonBorder,
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
