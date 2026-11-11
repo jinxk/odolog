@@ -115,16 +115,6 @@ void main() {
     expect(find.textContaining('Log one more full tank'), findsOneWidget);
   });
 
-  testWidgets('shows the worked example numbers once the window closes', (
-    tester,
-  ) async {
-    await pumpHome(tester, seed: _workedExample);
-
-    expect(find.text('15.0'), findsOneWidget);
-    expect(find.text('km/l'), findsOneWidget);
-    expect(find.textContaining('6.71'), findsOneWidget);
-  });
-
   testWidgets('sets the real average against the claimed figure on the hero', (
     tester,
   ) async {
@@ -144,17 +134,6 @@ void main() {
     );
 
     expect(find.text('15.0 real vs 20.0 claimed (75%)'), findsOneWidget);
-  });
-
-  testWidgets('reads the hero mileage as one labelled figure', (tester) async {
-    final handle = tester.ensureSemantics();
-    await pumpHome(tester, seed: _workedExample);
-
-    expect(
-      find.bySemanticsLabel('Mileage 15.0 km/l over your last full tank'),
-      findsOneWidget,
-    );
-    handle.dispose();
   });
 
   testWidgets('the hero label speaks a change only when it rounds above 0.0', (

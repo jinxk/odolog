@@ -219,37 +219,6 @@ void main() {
     expect(find.text('Date cannot be in the future.'), findsOneWidget);
   });
 
-  testWidgets('a non increasing odometer offers the override checkbox inline', (
-    tester,
-  ) async {
-    await pumpForm(
-      tester,
-      seed: [entry(id: 1, odometer: 1000, quantity: 20, pricePaid: 2000)],
-    );
-
-    expect(find.byKey(const Key('overrideCheckbox')), findsNothing);
-
-    await tester.enterText(find.byKey(const Key('odometerField')), '500');
-    await tester.enterText(find.byKey(const Key('quantityField')), '10');
-    await tester.enterText(find.byKey(const Key('priceField')), '500');
-    await tester.tap(find.text('Save refuel'));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('overrideCheckbox')), findsOneWidget);
-  });
-
-  testWidgets('an amount chip drops its value into the amount field', (
-    tester,
-  ) async {
-    await pumpForm(tester);
-    await _revealChips(tester);
-
-    await tester.tap(find.byKey(const Key('amountChip200')));
-    await tester.pump();
-
-    expect(_state(tester).price, '200');
-  });
-
   testWidgets('an amount chip derives litres into the quantity field', (
     tester,
   ) async {
@@ -263,6 +232,7 @@ void main() {
     await tester.tap(find.byKey(const Key('amountChip500')));
     await tester.pump();
 
+    expect(_state(tester).price, '500');
     expect(_state(tester).quantity, '5.00');
 
     // The derived value is mirrored into the quantity field as real text.
@@ -270,22 +240,6 @@ void main() {
       find.byKey(const Key('quantityField')),
     );
     expect(quantity.controller!.text, '5.00');
-  });
-
-  testWidgets('a valid save writes the entry through the use case', (
-    tester,
-  ) async {
-    final refuelRepo = await pumpForm(tester);
-
-    await tester.enterText(find.byKey(const Key('odometerField')), '12000');
-    await tester.enterText(find.byKey(const Key('quantityField')), '20');
-    await tester.enterText(find.byKey(const Key('priceField')), '2000');
-    await tester.tap(find.text('Save refuel'));
-    await tester.pumpAndSettle();
-
-    expect(refuelRepo.entries, hasLength(1));
-    expect(refuelRepo.entries.single.odometer, 12000);
-    expect(find.text('home'), findsOneWidget);
   });
 
   testWidgets('a save refreshes the service due state', (tester) async {

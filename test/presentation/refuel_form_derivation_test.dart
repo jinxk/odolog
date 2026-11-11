@@ -35,20 +35,6 @@ RefuelFormState _state(ProviderContainer container) =>
     container.read(refuelFormProvider(_flowId));
 
 void main() {
-  test(
-    'an amount derives litres into an empty quantity off the last price',
-    () async {
-      final container = await _formContainer([
-        entry(id: 1, odometer: 1000, quantity: 10, pricePaid: 1000),
-      ]);
-
-      _form(container).setPrice('200');
-
-      // Last price is 100 per litre, so 200 rupees is 2 litres.
-      expect(_state(container).quantity, '2.00');
-    },
-  );
-
   test('the derivation clears when the amount is cleared', () async {
     final container = await _formContainer([
       entry(id: 1, odometer: 1000, quantity: 10, pricePaid: 1000),

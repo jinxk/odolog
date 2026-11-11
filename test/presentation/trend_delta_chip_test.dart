@@ -33,14 +33,14 @@ void main() {
     expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
   });
 
-  testWidgets('a drop too small to show renders no chip', (tester) async {
+  testWidgets('a flat figure or a drop too small to show renders no chip', (
+    tester,
+  ) async {
     await pumpChip(tester, -0.04);
 
     expect(find.text('-0.0'), findsNothing);
     expect(find.byType(Icon), findsNothing);
-  });
 
-  testWidgets('an exactly flat figure renders no chip', (tester) async {
     await pumpChip(tester, 0);
 
     expect(find.byType(Icon), findsNothing);

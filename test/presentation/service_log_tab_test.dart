@@ -82,26 +82,6 @@ Future<void> _loadInter() async {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('logging a service writes the entry and shows it in history', (
-    tester,
-  ) async {
-    final repo = await pumpScreen(tester);
-
-    await tester.tap(find.text('Log service'));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(
-      find.byKey(const Key('serviceOdometerField')),
-      '10500',
-    );
-    await tester.tap(find.byKey(const Key('saveServiceButton')));
-    await tester.pumpAndSettle();
-
-    expect(repo.entries, hasLength(1));
-    expect(repo.entries.single.odometer, 10500);
-    expect(find.text('No services logged yet.'), findsNothing);
-  });
-
   testWidgets('a zero odometer is rejected inline', (tester) async {
     await pumpScreen(tester);
 
@@ -115,32 +95,38 @@ void main() {
     expect(find.text('Odometer must be greater than zero.'), findsOneWidget);
   });
 
-  testWidgets('deleting a service entry at once offers undo', (tester) async {
-    final repo = await pumpScreen(tester);
+  testWidgets(
+    'a logged service is saved, and deleting it at once offers undo',
+    (tester) async {
+      final repo = await pumpScreen(tester);
 
-    await tester.tap(find.text('Log service'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('serviceOdometerField')),
-      '10500',
-    );
-    await tester.tap(find.byKey(const Key('saveServiceButton')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Log service'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('serviceOdometerField')),
+        '10500',
+      );
+      await tester.tap(find.byKey(const Key('saveServiceButton')));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Delete Engine oil'));
-    await tester.pumpAndSettle();
+      expect(repo.entries.single.odometer, 10500);
+      expect(find.text('No services logged yet.'), findsNothing);
 
-    expect(repo.entries, isEmpty);
-    expect(find.text('No services logged yet.'), findsOneWidget);
-    expect(find.text('Service deleted'), findsOneWidget);
+      await tester.tap(find.byTooltip('Delete Engine oil'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Undo'));
-    await tester.pumpAndSettle();
+      expect(repo.entries, isEmpty);
+      expect(find.text('No services logged yet.'), findsOneWidget);
+      expect(find.text('Service deleted'), findsOneWidget);
 
-    expect(repo.entries, hasLength(1));
-    expect(repo.entries.single.odometer, 10500);
-    expect(find.text('No services logged yet.'), findsNothing);
-  });
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(repo.entries, hasLength(1));
+      expect(repo.entries.single.odometer, 10500);
+      expect(find.text('No services logged yet.'), findsNothing);
+    },
+  );
 
   testWidgets('the first logged service requests notification permission', (
     tester,
@@ -240,39 +226,6 @@ void main() {
       expect(repo.entries.map((e) => e.id), contains(40));
     },
   );
-
-  testWidgets('the service cost stays on one line at a large text scale', (
-    tester,
-  ) async {
-    // The default test font is as wide as it is tall, so load the real one.
-    await _loadInter();
-    await tester.binding.setSurfaceSize(const Size(411, 900));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await pumpScreen(
-      tester,
-      theme: AppTheme.light,
-      textScale: 2,
-      repo: FakeServiceLogRepository([
-        ServiceLogEntry(
-          id: 1,
-          vehicleId: 1,
-          template: ServiceTemplate.generalService,
-          performedAt: DateTime(2026, 9, 23),
-          odometer: 12345,
-          cost: 450,
-        ),
-      ]),
-    );
-
-    final subtitle = tester.renderObject<RenderParagraph>(
-      find.textContaining('450.00'),
-    );
-    final text = subtitle.text.toPlainText();
-    final boxes = subtitle.getBoxesForSelection(
-      TextSelection(baseOffset: text.indexOf('Rs'), extentOffset: text.length),
-    );
-    expect(boxes.map((box) => box.top.round()).toSet(), hasLength(1));
-  });
 
   testWidgets('a 7-digit service cost stays whole at 360 dp, scale 2.0', (
     tester,

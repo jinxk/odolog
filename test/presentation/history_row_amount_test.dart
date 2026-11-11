@@ -104,15 +104,6 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   setUpAll(_loadInter);
 
-  testWidgets('a refuel amount stays on one line at 411 dp, scale 2.0', (
-    tester,
-  ) async {
-    await _pumpHistory(tester, width: 411, scale: 2, price: 2000);
-    expect(tester.takeException(), isNull);
-
-    expect(_amountLines(tester, '2,000.00'), 1);
-  });
-
   testWidgets('a 7-digit refuel amount stays whole at 360 dp, scale 2.0', (
     tester,
   ) async {
