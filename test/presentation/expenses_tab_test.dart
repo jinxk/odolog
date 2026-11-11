@@ -122,6 +122,7 @@ void main() {
 
       expect(repo.expenses.single.amount, 800);
       expect(repo.expenses.single.category, 'Tyre');
+      expect(find.text('No expenses yet'), findsNothing);
 
       await tester.tap(find.byTooltip('Delete Tyre'));
       await tester.pumpAndSettle();

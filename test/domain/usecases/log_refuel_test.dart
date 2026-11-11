@@ -198,4 +198,30 @@ void main() {
     expect(result.isRight(), isTrue);
     expect(repo.entries, hasLength(1));
   });
+
+  test('the override still lets a fill past a manual reading', () async {
+    final now = DateTime.now();
+    final repo = FakeRefuelRepository();
+    final readings = FakeOdometerReadingRepository([
+      OdometerReading(
+        id: 1,
+        vehicleId: 1,
+        odometer: 1400,
+        recordedAt: now.subtract(const Duration(days: 2)),
+      ),
+    ]);
+
+    final result = await logRefuel(repo, readings).execute(
+      entry(
+        id: 0,
+        odometer: 900,
+        quantity: 20,
+        pricePaid: 2000,
+        filledAt: now,
+        odometerOverride: true,
+      ),
+    );
+
+    expect(result.isRight(), isTrue);
+  });
 }

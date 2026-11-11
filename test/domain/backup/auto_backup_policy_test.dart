@@ -18,8 +18,6 @@ void main() {
     });
   });
 
-  group('fileName', () {});
-
   group('isDue', () {
     test('not due when the last backup is from today', () {
       final now = DateTime.now();
