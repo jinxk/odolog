@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.3 - 2026-11-14
+
+- Settings can download a template that already lists your vehicles, for adding new items and importing them back. Its example rows are for the newest vehicle and start after its newest odometer reading.
+- The import summary counts odometer readings too.
+- Importing a backup whose ids are already on this phone shows the "already on this phone" message even when another error came first.
+- Picking a file that cannot be read as text, in Settings or on the welcome screen, shows the import failure message and gives the controls back.
+- A spinner shows on the import controls while an import runs.
+- After a save, the Home figures count up from their old value instead of dropping first, and History and Stats stay on screen while they reload.
+- Large amounts in the History, Service and Expenses rows are no longer cut off. The service cost stays on one line.
+- The history date no longer overflows at large text sizes.
+- Rows in Settings, Service and Expenses show the ripple when tapped.
+- Filled buttons use the Inter font like the rest of the app.
+- Dependency updates.
+
 ## 1.5.2 - 2026-10-21
 
 - Importing a backup whose fills or odometer readings are already on this phone now shows the "already on this phone" message instead of an odometer error.

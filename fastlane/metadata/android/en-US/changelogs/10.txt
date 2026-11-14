@@ -1,0 +1,1 @@
+New template with your vehicles, from Settings. The import summary counts odometer readings, an unreadable file shows the failure message, and a spinner shows while an import runs. Home, History and Stats no longer flash or dip after a save. Large amounts are no longer cut off, and the history date fits at large text sizes.
